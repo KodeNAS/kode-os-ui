@@ -40,6 +40,37 @@
         padding-bottom: 0.5rem !important;
     }
 
+    /* KODE NAS brand row in the sidebar — logo sits flush-left above
+     * the "Files" section header. The SVG fills with currentColor which
+     * doesn't apply when loaded via <img>; brightness(0) clamps to
+     * black, then we don't invert because the sidebar background is
+     * light enough that a dark wordmark reads cleanly. */
+    .kode-fb-brand-row {
+        padding-left: 0.85rem !important;
+        padding-right: 0.85rem !important;
+        gap: 0.5rem;
+    }
+
+    .kode-fb-brand {
+        width: 140px;
+        max-width: 100%;
+        height: auto;
+        display: block;
+        filter:
+            brightness(0)
+            saturate(100%)
+            drop-shadow(0 1px 2px rgba(255, 255, 255, 0.6));
+        opacity: 0.82;
+    }
+
+    .kode-fb-brand-cog {
+        margin-left: auto;
+        color: rgba(0, 0, 0, 0.45);
+        transition: color 0.15s;
+
+        &:hover { color: #2d5f4e; }
+    }
+
     /* Header — taller and quieter. Buttons get the same rounded chip
      * treatment used in the dashboard. */
     .modal-card-head {
@@ -155,7 +186,10 @@
             }
         }
 
-        /* Cover area — bigger, no harsh borders. */
+        /* Cover area — bigger, no harsh borders. Upstream sized the
+         * inner .folder-cover at 116x96 (rectangular) which was tuned
+         * for the old manila-tab icons. We force it square so the new
+         * icon set renders flush. */
         .cover {
             border-radius: 10px;
             margin: 4px 4px 0;
@@ -166,6 +200,25 @@
             justify-content: center;
             position: relative;
             overflow: hidden;
+
+            .folder-cover,
+            .file-cover {
+                width: 100% !important;
+                height: 100% !important;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            }
+
+            .folder-icon,
+            .files-icon {
+                width: 72% !important;
+                height: 72% !important;
+                max-width: 100px;
+                max-height: 100px;
+                object-fit: contain;
+                filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.18));
+            }
 
             img {
                 border-radius: 8px;

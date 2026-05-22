@@ -18,16 +18,28 @@
 							<div class="is-flex-grow-1 is-flex-shrink-1 nav-bar-top scrollbars-light">
 								<!-- Files Start -->
 								<div class="files-section">
-									<!--  storage settings requirement document -->
-									<div class="is-flex is-align-items-center pt-3">
-										<div class="is-flex-grow-1">
-											<h3 class="title is-3 mb-0 pb-3 pt-3 has-text-left">
-												{{ $t("Files") }}
-											</h3>
-										</div>
-										<div v-show="hasMergerFunction" class="is-flex-shrink-0 mr-5 is-clickable"
+									<!-- KODE NAS brand row — logo sits before the "Files" title
+									     so the file manager carries the same mark as the rest of
+									     the OS. The SVG fills with currentColor and is loaded via
+									     <img>, so we recolor it in scss via filter (brightness 0
+									     for black, then a hue tint into KODE green). -->
+									<div class="is-flex is-align-items-center pt-3 kode-fb-brand-row">
+										<img
+											:src="require('@/assets/img/logo/logo.svg')"
+											:srcset="`${require('@/assets/img/logo/logo.png')} 1x, ${require('@/assets/img/logo/logo.svg')} 2x`"
+											alt="KODE NAS"
+											class="kode-fb-brand"
+										/>
+										<div v-show="hasMergerFunction" class="is-flex-shrink-0 mr-5 is-clickable kode-fb-brand-cog"
 											@click="showStorageSettingsModal">
 											<b-icon custom-size="mdi-18px" icon="cog-outline"></b-icon>
+										</div>
+									</div>
+									<div class="is-flex is-align-items-center">
+										<div class="is-flex-grow-1">
+											<h3 class="title is-3 mb-0 pb-3 pt-2 has-text-left">
+												{{ $t("Files") }}
+											</h3>
 										</div>
 									</div>
 									<div class="list-container scrollbars-light pt-0 is-flex-grow-1">
