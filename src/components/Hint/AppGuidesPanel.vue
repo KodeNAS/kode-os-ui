@@ -9,16 +9,30 @@
     class="app-guides-sidebar"
   >
     <div class="guides-content">
+      <!-- Header: shows title when at list, shows back arrow when in walkthrough -->
       <header class="guides-header">
-        <h2 class="guides-title">{{ $t('App guides') }}</h2>
-        <p class="guides-subtitle">{{ $t('Step-by-step setup walkthroughs for each app on your pebble.') }}</p>
+        <button
+          v-if="selectedKey"
+          class="guides-back"
+          :aria-label="$t('Back to list')"
+          @click="selectedKey = ''"
+        >
+          <b-icon icon="arrow-back" pack="casa" size="is-small" />
+          <span>{{ $t('All guides') }}</span>
+        </button>
+        <h2 v-else class="guides-title">{{ $t('App guides') }}</h2>
+        <p v-if="!selectedKey" class="guides-subtitle">
+          {{ $t('Step-by-step setup walkthroughs for each app on your pebble.') }}
+        </p>
+
         <button class="guides-close" :aria-label="$t('Close')" @click="open = false">
           <b-icon icon="close-outline" pack="casa" size="is-small" />
         </button>
       </header>
 
-      <ul class="guides-list">
-        <li v-for="app in apps" :key="app.key" class="guides-row">
+      <!-- List view -->
+      <ul v-if="!selectedKey" class="guides-list">
+        <li v-for="app in apps" :key="app.key" class="guides-row" @click="selectedKey = app.key">
           <span class="guide-icon" :class="`is-${app.key}`">
             <b-icon :icon="app.icon" pack="casa" size="is-medium" />
           </span>
@@ -26,13 +40,21 @@
             <div class="guide-name">{{ app.title }}</div>
             <div class="guide-tagline">{{ app.tagline }}</div>
           </div>
-          <b-button rounded size="is-small" type="is-primary" @click="openWalkthrough(app.key)">
-            {{ $t('Show guide') }}
-          </b-button>
+          <b-icon icon="arrow-right" pack="casa" size="is-small" class="guide-chevron" />
         </li>
       </ul>
 
-      <p class="guides-foot">
+      <!-- Inline walkthrough view -->
+      <div v-else class="guides-walkthrough">
+        <component
+          :is="walkthroughComponent"
+          :host="host"
+          :is-last="true"
+          @done="onWalkthroughDone"
+        />
+      </div>
+
+      <p v-if="!selectedKey" class="guides-foot">
         {{ $t('You can replay any guide from this panel anytime.') }}
       </p>
     </div>
@@ -64,12 +86,25 @@ const WALKTHROUGHS = {
 
 export default {
   name: 'AppGuidesPanel',
+  components: {
+    ImmichWalkthrough,
+    JellyfinWalkthrough,
+    FileBrowserWalkthrough,
+    PiHoleWalkthrough,
+    HomeAssistantWalkthrough,
+  },
   data() {
     return {
       open: true,
       apps: APPS,
+      selectedKey: '',
       host: window.location.hostname || 'pebble.local',
     }
+  },
+  computed: {
+    walkthroughComponent() {
+      return WALKTHROUGHS[this.selectedKey] || null
+    },
   },
   watch: {
     open(val) {
@@ -77,19 +112,10 @@ export default {
     },
   },
   methods: {
-    openWalkthrough(key) {
-      const component = WALKTHROUGHS[key]
-      if (!component) return
-      this.$buefy.modal.open({
-        parent: this,
-        component,
-        hasModalCard: true,
-        trapFocus: true,
-        scroll: 'keep',
-        animation: 'zoom-in',
-        props: { host: this.host, isLast: true },
-        events: { done: () => { /* user closed/finished — modal handles via $emit('done') */ } },
-      })
+    onWalkthroughDone() {
+      // Walkthrough finished — return to the list rather than closing the
+      // whole sidebar, so the user can browse another.
+      this.selectedKey = ''
     },
   },
 }
@@ -97,7 +123,7 @@ export default {
 
 <style lang="scss" scoped>
 .app-guides-sidebar ::v-deep .sidebar-content {
-  width: 420px;
+  width: 460px;
   max-width: 95vw;
   background: rgba(255, 255, 255, 0.97);
   backdrop-filter: blur(24px) saturate(180%);
@@ -110,12 +136,14 @@ export default {
   height: 100%;
   display: flex;
   flex-direction: column;
+  overflow: hidden;
 }
 
 .guides-header {
   position: relative;
   margin-bottom: 1.25rem;
   padding-right: 2rem;
+  flex-shrink: 0;
 }
 
 .guides-title {
@@ -131,6 +159,22 @@ export default {
   color: rgba(0, 0, 0, 0.6);
   line-height: 1.5;
   margin: 0;
+}
+
+.guides-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  background: none;
+  border: none;
+  font-size: 0.875rem;
+  color: #2d5f4e;
+  cursor: pointer;
+  padding: 0.25rem 0;
+
+  &:hover {
+    color: #3f7a66;
+  }
 }
 
 .guides-close {
@@ -169,12 +213,18 @@ export default {
   background: rgba(255, 255, 255, 0.85);
   border: 1px solid rgba(0, 0, 0, 0.06);
   border-radius: 14px;
-  transition: border-color 0.15s, transform 0.15s;
+  cursor: pointer;
+  transition: border-color 0.15s, transform 0.15s, background 0.15s;
 
   &:hover {
     border-color: rgba(45, 95, 78, 0.4);
+    background: rgba(255, 255, 255, 1);
     transform: translateY(-1px);
   }
+}
+
+.guide-chevron {
+  color: rgba(0, 0, 0, 0.35);
 }
 
 .guide-icon {
@@ -210,10 +260,23 @@ export default {
   margin-top: 1px;
 }
 
+.guides-walkthrough {
+  flex: 1;
+  overflow-y: auto;
+  margin: 0 -0.25rem;  // small breath so the walkthrough card edges line up
+}
+
+/* The walkthrough's outer .walkthrough already has its own glass styling;
+   loosen the padding so it fits the narrower sidebar nicely. */
+.guides-walkthrough ::v-deep .walkthrough {
+  padding: 1rem;
+}
+
 .guides-foot {
   font-size: 0.75rem;
   color: rgba(0, 0, 0, 0.5);
   text-align: center;
   margin-top: 1rem;
+  flex-shrink: 0;
 }
 </style>
