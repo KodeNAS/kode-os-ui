@@ -15,6 +15,7 @@
           <aside class="beginner-side">
             <RecentActivityTile />
             <FamilyTile />
+            <AddDeviceTile />
           </aside>
           <main class="beginner-main">
             <AppSection ref="apps" />
@@ -29,6 +30,7 @@
 import AppSection from '@/components/Apps/AppSection.vue'
 import RecentActivityTile from '@/components/beginner/RecentActivityTile.vue'
 import FamilyTile from '@/components/beginner/FamilyTile.vue'
+import AddDeviceTile from '@/components/beginner/AddDeviceTile.vue'
 
 export default {
   name: 'BeginnerDashboard',
@@ -36,6 +38,7 @@ export default {
     AppSection,
     RecentActivityTile,
     FamilyTile,
+    AddDeviceTile,
   },
 }
 </script>
