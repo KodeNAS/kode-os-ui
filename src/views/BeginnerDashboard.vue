@@ -27,43 +27,59 @@
           </p>
         </header>
 
-        <div class="beginner-grid" :class="{ 'is-edit-mode': editMode }">
-          <!-- 3 columns; vuedraggable group "kode-widgets" connects them so
-               widgets (including the apps grid) drag freely between any
-               column when edit mode is on. -->
-          <draggable
-            v-for="(column, ci) in columns"
-            :key="`col-${ci}`"
-            v-model="columns[ci]"
-            tag="section"
-            class="beginner-column"
-            :class="{ 'is-empty': column.length === 0 }"
-            :group="{ name: 'kode-widgets', pull: true, put: true }"
-            :animation="200"
-            :disabled="!editMode"
-            :delay="40"
-            :delay-on-touch-only="true"
-            :touch-start-threshold="3"
-            ghost-class="widget-ghost"
-            @end="saveLayout"
-          >
-            <div
-              v-for="key in column"
-              :key="key"
-              class="widget-slot"
-              :class="`is-${key}`"
-              :data-tour="tourKeyFor(key)"
+        <div ref="grid" class="beginner-grid" :class="{ 'is-edit-mode': editMode }" :style="gridStyle">
+          <!-- 3 columns separated by 2 dividers (col1 | div | col2 | div |
+               col3). Vuedraggable group "kode-widgets" connects all three
+               so widgets (including the apps grid) drag freely between
+               any column when edit mode is on. Dividers are click-and-drag
+               only in edit mode; otherwise inert. -->
+          <template v-for="(column, ci) in columns">
+            <draggable
+              :key="`col-${ci}`"
+              v-model="columns[ci]"
+              tag="section"
+              class="beginner-column"
+              :class="{ 'is-empty': column.length === 0 }"
+              :group="{ name: 'kode-widgets', pull: true, put: true }"
+              :animation="200"
+              :disabled="!editMode"
+              :delay="40"
+              :delay-on-touch-only="true"
+              :touch-start-threshold="3"
+              ghost-class="widget-ghost"
+              @end="saveLayout"
             >
-              <FilesTile          v-if="key === 'files'" />
-              <RecentActivityTile v-else-if="key === 'recent'" />
-              <FamilyTile         v-else-if="key === 'family'" />
-              <AddDeviceTile      v-else-if="key === 'addDevice'" />
-              <AppSection         v-else-if="key === 'apps'" ref="apps" :allowed-keys="pickedApps" />
+              <div
+                v-for="key in column"
+                :key="key"
+                class="widget-slot"
+                :class="`is-${key}`"
+                :data-tour="tourKeyFor(key)"
+              >
+                <FilesTile          v-if="key === 'files'" />
+                <RecentActivityTile v-else-if="key === 'recent'" />
+                <FamilyTile         v-else-if="key === 'family'" />
+                <AddDeviceTile      v-else-if="key === 'addDevice'" />
+                <AppSection         v-else-if="key === 'apps'" ref="apps" :allowed-keys="pickedApps" />
+              </div>
+              <div v-if="editMode && column.length === 0" class="column-empty-hint">
+                {{ $t('Drag a widget here') }}
+              </div>
+            </draggable>
+
+            <div
+              v-if="ci < columns.length - 1"
+              :key="`div-${ci}`"
+              class="col-divider"
+              :class="{ 'is-dragging': activeDivider === ci }"
+              role="separator"
+              :aria-label="$t('Drag to resize columns')"
+              @mousedown="startDividerResize(ci, $event)"
+              @touchstart.passive="startDividerResize(ci, $event)"
+            >
+              <span class="col-divider-grip"></span>
             </div>
-            <div v-if="editMode && column.length === 0" class="column-empty-hint">
-              {{ $t('Drag a widget here') }}
-            </div>
-          </draggable>
+          </template>
         </div>
       </div>
     </div>
@@ -80,6 +96,7 @@ import FilesTile from '@/components/beginner/FilesTile.vue'
 import { maybeStartEasyTourOnce } from '@/service/tour'
 
 const LAYOUT_KEY = 'kode_columns_layout_v2'
+const WEIGHTS_KEY = 'kode_columns_weights_v1'
 const ALL_WIDGETS = ['files', 'recent', 'apps', 'family', 'addDevice']
 
 // Default 3-column layout: small tiles on the sides, the apps grid in
@@ -89,6 +106,11 @@ const DEFAULT_LAYOUT = [
   ['apps'],
   ['family', 'addDevice'],
 ]
+
+const DEFAULT_WEIGHTS = [1, 1.2, 1]  // middle column gets a touch more by default
+const MIN_WEIGHT = 0.35
+const MAX_WEIGHT = 2.5
+const DIVIDER_PX = 6
 
 export default {
   name: 'BeginnerDashboard',
@@ -104,8 +126,18 @@ export default {
     return {
       pickedApps: [],
       columns: this.loadLayout(),
+      colWeights: this.loadWeights(),
+      activeDivider: -1,
       editMode: false,
     }
+  },
+  computed: {
+    gridStyle() {
+      const [a, b, c] = this.colWeights
+      return {
+        gridTemplateColumns: `${a}fr ${DIVIDER_PX}px ${b}fr ${DIVIDER_PX}px ${c}fr`,
+      }
+    },
   },
   created() {
     this.loadPickedApps()
@@ -157,6 +189,83 @@ export default {
       try {
         localStorage.setItem(LAYOUT_KEY, JSON.stringify(this.columns))
       } catch (e) { /* ignore quota / disabled storage */ }
+    },
+    loadWeights() {
+      try {
+        const raw = localStorage.getItem(WEIGHTS_KEY)
+        if (!raw) return [...DEFAULT_WEIGHTS]
+        const parsed = JSON.parse(raw)
+        if (!Array.isArray(parsed) || parsed.length !== 3) return [...DEFAULT_WEIGHTS]
+        return parsed.map(w => {
+          const n = Number(w)
+          if (!isFinite(n)) return 1
+          return Math.max(MIN_WEIGHT, Math.min(MAX_WEIGHT, n))
+        })
+      } catch (e) {
+        return [...DEFAULT_WEIGHTS]
+      }
+    },
+    saveWeights() {
+      try {
+        localStorage.setItem(WEIGHTS_KEY, JSON.stringify(this.colWeights))
+      } catch (e) { /* ignore */ }
+    },
+    startDividerResize(dividerIdx, e) {
+      if (!this.editMode) return
+      this.activeDivider = dividerIdx
+      const point = (e.touches && e.touches[0]) || e
+      this._dragStartX = point.clientX
+      this._dragStartWeights = [...this.colWeights]
+      // Container width minus the two divider pixels — that's the area
+      // distributed by the fr units, so the fr-per-pixel conversion is
+      // correct.
+      const gridEl = this.$refs.grid
+      this._gridUsableWidth = (gridEl ? gridEl.clientWidth : 0) - (DIVIDER_PX * 2)
+      this._totalWeight = this.colWeights.reduce((a, b) => a + b, 0)
+
+      document.body.style.cursor = 'col-resize'
+      document.body.style.userSelect = 'none'
+
+      window.addEventListener('mousemove', this.onDividerMove)
+      window.addEventListener('mouseup', this.endDividerResize)
+      window.addEventListener('touchmove', this.onDividerMove, { passive: false })
+      window.addEventListener('touchend', this.endDividerResize)
+    },
+    onDividerMove(e) {
+      if (this.activeDivider < 0) return
+      if (e.cancelable && e.preventDefault) e.preventDefault()
+      const point = (e.touches && e.touches[0]) || e
+      const deltaPx = point.clientX - this._dragStartX
+      if (this._gridUsableWidth <= 0) return
+      // Convert pixel delta to fr delta using the total weight share of
+      // the usable grid width.
+      const deltaFr = (deltaPx / this._gridUsableWidth) * this._totalWeight
+
+      const i = this.activeDivider
+      const left = this._dragStartWeights[i] + deltaFr
+      const right = this._dragStartWeights[i + 1] - deltaFr
+
+      // Clamp both sides; if either would breach a limit, refuse the
+      // change so the total weight stays conserved and the layout
+      // doesn't visually jump.
+      if (left < MIN_WEIGHT || left > MAX_WEIGHT) return
+      if (right < MIN_WEIGHT || right > MAX_WEIGHT) return
+
+      const next = [...this.colWeights]
+      next[i] = left
+      next[i + 1] = right
+      this.colWeights = next
+    },
+    endDividerResize() {
+      if (this.activeDivider < 0) return
+      this.activeDivider = -1
+      document.body.style.cursor = ''
+      document.body.style.userSelect = ''
+      this.saveWeights()
+      window.removeEventListener('mousemove', this.onDividerMove)
+      window.removeEventListener('mouseup', this.endDividerResize)
+      window.removeEventListener('touchmove', this.onDividerMove)
+      window.removeEventListener('touchend', this.endDividerResize)
     },
     toggleEditMode() {
       this.editMode = !this.editMode
@@ -231,22 +340,66 @@ export default {
   }
 }
 
-/* Three equal-width columns. The apps grid widget squeezes /
-   expands to whatever column it lands in. */
+/* Three fr-weighted columns plus two divider tracks. gridStyle (inline)
+   sets the actual fr values per session. */
 .beginner-grid {
   max-width: 1280px;
   margin: 0 auto;
   padding: 0 2rem;
   display: grid;
   gap: 1rem;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
   align-items: start;
 
   @media (max-width: 1024px) {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
   }
   @media (max-width: 700px) {
-    grid-template-columns: 1fr;
+    grid-template-columns: 1fr !important;
+  }
+}
+
+.col-divider {
+  align-self: stretch;
+  border-radius: 3px;
+  background: transparent;
+  position: relative;
+  cursor: default;
+  pointer-events: none;
+  opacity: 0;
+  transition: background 0.15s, opacity 0.15s;
+
+  .is-edit-mode & {
+    cursor: col-resize;
+    pointer-events: auto;
+    opacity: 1;
+  }
+
+  &:hover,
+  &.is-dragging {
+    background: rgba(45, 95, 78, 0.40);
+  }
+
+  @media (max-width: 1024px) {
+    display: none;
+  }
+}
+
+.col-divider-grip {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 3px;
+  height: 48px;
+  background: rgba(255, 255, 255, 0.65);
+  border-radius: 2px;
+  transform: translate(-50%, -50%);
+  opacity: 0.6;
+  transition: opacity 0.15s;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.35);
+
+  .col-divider:hover &,
+  .col-divider.is-dragging & {
+    opacity: 1;
   }
 }
 
