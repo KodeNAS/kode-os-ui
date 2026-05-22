@@ -11,28 +11,54 @@
     <!-- Analog -->
     <template v-else>
       <svg class="analog-face" viewBox="0 0 100 100" aria-hidden="true">
-        <circle cx="50" cy="50" r="48" class="face-bg" />
-        <circle cx="50" cy="50" r="48" class="face-ring" />
-        <!-- Hour ticks -->
-        <g class="face-ticks">
-          <line v-for="t in 12" :key="`t-${t}`"
-                x1="50" :y1="4" x2="50" :y2="9"
+        <defs>
+          <radialGradient id="faceShade" cx="50%" cy="42%" r="55%">
+            <stop offset="0%" stop-color="#ffffff" />
+            <stop offset="85%" stop-color="#f5f7fa" />
+            <stop offset="100%" stop-color="#e6e9ee" />
+          </radialGradient>
+        </defs>
+
+        <!-- Outer ring + face -->
+        <circle cx="50" cy="50" r="48" class="face-outer" />
+        <circle cx="50" cy="50" r="46" class="face-bg" fill="url(#faceShade)" />
+        <circle cx="50" cy="50" r="46" class="face-inner-ring" />
+
+        <!-- Cardinal ticks (12 / 3 / 6 / 9) — thick + long -->
+        <g class="ticks-cardinal">
+          <line v-for="t in [0, 3, 6, 9]" :key="`c-${t}`"
+                x1="50" y1="5" x2="50" y2="13"
                 :transform="`rotate(${t * 30} 50 50)`" />
         </g>
-        <!-- Hands -->
+        <!-- Hour ticks (the other 8) — thinner, shorter -->
+        <g class="ticks-hour">
+          <line v-for="t in [1, 2, 4, 5, 7, 8, 10, 11]" :key="`h-${t}`"
+                x1="50" y1="5.5" x2="50" y2="10"
+                :transform="`rotate(${t * 30} 50 50)`" />
+        </g>
+
+        <!-- Hour hand: rooted slightly behind center for a more watch-like look -->
         <line class="hand hour"
-              x1="50" y1="50"
+              :x1="50 - Math.sin(hourAngle) * 4"
+              :y1="50 + Math.cos(hourAngle) * 4"
               :x2="50 + Math.sin(hourAngle) * 22"
               :y2="50 - Math.cos(hourAngle) * 22" />
+        <!-- Minute hand: longer, thinner -->
         <line class="hand minute"
-              x1="50" y1="50"
+              :x1="50 - Math.sin(minuteAngle) * 5"
+              :y1="50 + Math.cos(minuteAngle) * 5"
               :x2="50 + Math.sin(minuteAngle) * 32"
               :y2="50 - Math.cos(minuteAngle) * 32" />
+        <!-- Second hand with a short counterweight tail -->
         <line class="hand second"
-              x1="50" y1="50"
-              :x2="50 + Math.sin(secondAngle) * 36"
-              :y2="50 - Math.cos(secondAngle) * 36" />
-        <circle cx="50" cy="50" r="2.5" class="face-pin" />
+              :x1="50 - Math.sin(secondAngle) * 8"
+              :y1="50 + Math.cos(secondAngle) * 8"
+              :x2="50 + Math.sin(secondAngle) * 38"
+              :y2="50 - Math.cos(secondAngle) * 38" />
+
+        <!-- Center hub: dark ring with terracotta inset for a brass-pin feel -->
+        <circle cx="50" cy="50" r="3.2" class="hub-outer" />
+        <circle cx="50" cy="50" r="1.4" class="hub-inner" />
       </svg>
       <div class="clock-date analog-date">{{ formattedDate }}</div>
     </template>
@@ -149,39 +175,68 @@ export default {
   margin-top: 0.4rem;
 }
 
-/* Analog face */
+/* Analog face — slate-on-bone with a soft inset ring and brass hub.
+   100x100 viewBox keeps coordinate math simple; the actual rendered size
+   is set on the SVG element via width/height. filter: drop-shadow gives
+   subtle depth without needing inner-shadow gymnastics. */
 .analog-face {
-  width: 140px;
-  height: 140px;
-  margin: 0 auto 0.4rem;
+  width: 160px;
+  height: 160px;
+  margin: 0 auto 0.45rem;
   display: block;
+  filter: drop-shadow(0 6px 14px rgba(0, 0, 0, 0.22));
 
-  .face-bg { fill: #fff; }
-  .face-ring {
-    fill: none;
-    stroke: rgba(45, 95, 78, 0.18);
-    stroke-width: 2;
+  /* Outer ring — the requested "bit of black outline". */
+  .face-outer {
+    fill: #1a1f2e;
   }
-  .face-ticks line {
-    stroke: rgba(31, 41, 55, 0.5);
-    stroke-width: 1.6;
+  .face-bg {
+    /* fill set inline via gradient id */
+  }
+  .face-inner-ring {
+    fill: none;
+    stroke: rgba(26, 31, 46, 0.18);
+    stroke-width: 0.6;
+  }
+
+  .ticks-cardinal line {
+    stroke: #1a1f2e;
+    stroke-width: 2.4;
     stroke-linecap: round;
   }
+  .ticks-hour line {
+    stroke: rgba(26, 31, 46, 0.78);
+    stroke-width: 1.3;
+    stroke-linecap: round;
+  }
+
   .hand {
     stroke-linecap: round;
-    transition: x2 0.18s cubic-bezier(0.25, 0.46, 0.45, 0.94),
+    transition: x1 0.18s cubic-bezier(0.25, 0.46, 0.45, 0.94),
+                y1 0.18s cubic-bezier(0.25, 0.46, 0.45, 0.94),
+                x2 0.18s cubic-bezier(0.25, 0.46, 0.45, 0.94),
                 y2 0.18s cubic-bezier(0.25, 0.46, 0.45, 0.94);
 
-    &.hour   { stroke: #1f2937; stroke-width: 3.5; }
-    &.minute { stroke: #1f2937; stroke-width: 2.5; }
+    &.hour   {
+      stroke: #1a1f2e;
+      stroke-width: 4;
+    }
+    &.minute {
+      stroke: #1a1f2e;
+      stroke-width: 2.6;
+    }
     &.second {
       stroke: #b45f6d;
-      stroke-width: 1.5;
-      // Disable transition on second hand for crisp ticks.
+      stroke-width: 1.2;
+      /* Crisp tick rather than easing for the second hand. */
       transition: none;
     }
   }
-  .face-pin {
+
+  .hub-outer {
+    fill: #1a1f2e;
+  }
+  .hub-inner {
     fill: #b45f6d;
   }
 }
