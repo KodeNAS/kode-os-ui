@@ -91,7 +91,10 @@ router.beforeEach(async (to, from, next) => {
 			}
 		}
 	} else {
-		if (needInitRes) {
+		// KODE OS: allow re-entering /welcome from inside the app when the
+		// user clicks "Re-run setup" in Settings (?replay=1) — they're
+		// already authenticated and just want to replay the wizard.
+		if (needInitRes || (to.query.replay === '1' && accessToken)) {
 			next();
 		} else {
 			next("/login");
