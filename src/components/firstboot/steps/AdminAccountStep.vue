@@ -3,7 +3,7 @@
     <h2 class="step-title">{{ $t('Create your account') }}</h2>
     <p class="step-intro">{{ $t('This account is the owner of your pebble. Keep the password somewhere safe.') }}</p>
 
-    <ValidationObserver ref="observer" v-slot="{ handleSubmit, invalid }">
+    <ValidationObserver ref="observer" v-slot="{ handleSubmit }">
       <ValidationProvider v-slot="{ errors, valid }" name="User" rules="required">
         <b-field
           :label="$t('Username')"
@@ -39,7 +39,6 @@
           rounded
           type="is-primary"
           :loading="isSubmitting"
-          :disabled="invalid"
           @click="handleSubmit(submit)"
         >
           {{ $t('Create account') }}
@@ -51,6 +50,11 @@
 
 <script>
 import { ValidationObserver, ValidationProvider } from 'vee-validate'
+// Side-effect import that registers required/min/confirmed/email rules.
+// Login.vue imports this on its own load, but on first-boot the router
+// goes straight to /welcome and Login.vue never mounts — so the rules
+// are unregistered and our form's "invalid" never clears.
+import '@/plugins/vee-validate'
 
 export default {
   name: 'AdminAccountStep',
