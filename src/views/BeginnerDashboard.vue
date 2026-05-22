@@ -22,48 +22,48 @@
           </h1>
           <p class="subtitle is-5 has-text-white">
             {{ editMode
-              ? $t('Drag tiles to reorder. Drag the divider to resize the rail.')
+              ? $t('Drag any widget to any column.')
               : $t('Your own private cloud, ready when you are.') }}
           </p>
         </header>
 
-        <div class="beginner-grid" :class="{ 'is-edit-mode': editMode }" :style="gridStyle">
-          <!-- Vuedraggable distinguishes a click from a drag by movement
-               threshold (default 0px → any movement starts a drag, but a
-               clean click still fires the underlying handler). No explicit
-               handle so the whole tile is grabbable. -->
+        <div class="beginner-grid" :class="{ 'is-edit-mode': editMode }">
+          <!-- 3 columns; vuedraggable group "kode-widgets" connects them so
+               widgets (including the apps grid) drag freely between any
+               column when edit mode is on. -->
           <draggable
-            v-model="tileOrder"
-            tag="aside"
-            class="beginner-side"
+            v-for="(column, ci) in columns"
+            :key="`col-${ci}`"
+            v-model="columns[ci]"
+            tag="section"
+            class="beginner-column"
+            :class="{ 'is-empty': column.length === 0 }"
+            :group="{ name: 'kode-widgets', pull: true, put: true }"
             :animation="200"
             :disabled="!editMode"
             :delay="40"
             :delay-on-touch-only="true"
             :touch-start-threshold="3"
-            ghost-class="tile-ghost"
-            @end="saveTileOrder"
+            ghost-class="widget-ghost"
+            @end="saveLayout"
           >
-            <component
-              v-for="key in tileOrder"
+            <div
+              v-for="key in column"
               :key="key"
-              :is="tileMap[key]"
+              class="widget-slot"
+              :class="`is-${key}`"
               :data-tour="tourKeyFor(key)"
-            />
+            >
+              <FilesTile          v-if="key === 'files'" />
+              <RecentActivityTile v-else-if="key === 'recent'" />
+              <FamilyTile         v-else-if="key === 'family'" />
+              <AddDeviceTile      v-else-if="key === 'addDevice'" />
+              <AppSection         v-else-if="key === 'apps'" ref="apps" :allowed-keys="pickedApps" />
+            </div>
+            <div v-if="editMode && column.length === 0" class="column-empty-hint">
+              {{ $t('Drag a widget here') }}
+            </div>
           </draggable>
-          <div
-            class="rail-resizer"
-            :class="{ 'is-dragging': isResizing }"
-            :aria-label="$t('Drag to resize the side rail')"
-            role="separator"
-            @mousedown="startResize"
-            @touchstart.passive="startResize"
-          >
-            <span class="rail-resizer-grip"></span>
-          </div>
-          <main class="beginner-main" data-tour="apps">
-            <AppSection ref="apps" :allowed-keys="pickedApps" />
-          </main>
         </div>
       </div>
     </div>
@@ -79,8 +79,16 @@ import AddDeviceTile from '@/components/beginner/AddDeviceTile.vue'
 import FilesTile from '@/components/beginner/FilesTile.vue'
 import { maybeStartEasyTourOnce } from '@/service/tour'
 
-const ORDER_KEY = 'kode_tile_order'
-const DEFAULT_ORDER = ['files', 'recent', 'family', 'addDevice']
+const LAYOUT_KEY = 'kode_columns_layout_v2'
+const ALL_WIDGETS = ['files', 'recent', 'apps', 'family', 'addDevice']
+
+// Default 3-column layout: small tiles on the sides, the apps grid in
+// the middle column where it has room to breathe.
+const DEFAULT_LAYOUT = [
+  ['files', 'recent'],
+  ['apps'],
+  ['family', 'addDevice'],
+]
 
 export default {
   name: 'BeginnerDashboard',
@@ -95,24 +103,9 @@ export default {
   data() {
     return {
       pickedApps: [],
-      tileOrder: this.loadTileOrder(),
-      tileMap: {
-        files: 'FilesTile',
-        recent: 'RecentActivityTile',
-        family: 'FamilyTile',
-        addDevice: 'AddDeviceTile',
-      },
-      railWidth: this.loadRailWidth(),
-      isResizing: false,
+      columns: this.loadLayout(),
       editMode: false,
     }
-  },
-  computed: {
-    gridStyle() {
-      return {
-        gridTemplateColumns: `${this.railWidth}px 6px 1fr`,
-      }
-    },
   },
   created() {
     this.loadPickedApps()
@@ -124,9 +117,6 @@ export default {
   },
   methods: {
     async loadPickedApps() {
-      // kode_first_boot was written by the wizard's finish handler. If it
-      // doesn't exist, leave pickedApps empty so the dock falls back to
-      // showing every installed app (Advanced-style behaviour).
       try {
         const res = await this.$api.users.getCustomStorage('kode_first_boot')
         const data = res && res.data && res.data.data
@@ -137,74 +127,42 @@ export default {
         this.pickedApps = []
       }
     },
-    loadTileOrder() {
-      try {
-        const raw = localStorage.getItem(ORDER_KEY)
-        if (!raw) return [...DEFAULT_ORDER]
-        const parsed = JSON.parse(raw)
-        if (!Array.isArray(parsed)) return [...DEFAULT_ORDER]
-        // Drop unknown keys + append any new defaults the saved order is
-        // missing (so adding tiles in a future release doesn't strand the
-        // user with their old layout).
-        const filtered = parsed.filter(k => DEFAULT_ORDER.includes(k))
-        const missing = DEFAULT_ORDER.filter(k => !filtered.includes(k))
-        return [...filtered, ...missing]
-      } catch (e) {
-        return [...DEFAULT_ORDER]
-      }
-    },
-    saveTileOrder() {
-      try {
-        localStorage.setItem(ORDER_KEY, JSON.stringify(this.tileOrder))
-      } catch (e) { /* quota / disabled storage — accept loss */ }
-    },
-    loadRailWidth() {
-      try {
-        const raw = parseInt(localStorage.getItem('kode_rail_width'), 10)
-        if (!isNaN(raw) && raw >= 240 && raw <= 520) return raw
-      } catch (e) { /* fall through */ }
-      return 300
-    },
-    startResize(e) {
-      if (e.touches && e.touches[0]) {
-        this._resizeStartX = e.touches[0].clientX
-      } else {
-        this._resizeStartX = e.clientX
-      }
-      this._resizeStartWidth = this.railWidth
-      this.isResizing = true
-      document.body.style.cursor = 'col-resize'
-      document.body.style.userSelect = 'none'
 
-      window.addEventListener('mousemove', this.onResizeMove)
-      window.addEventListener('mouseup', this.endResize)
-      window.addEventListener('touchmove', this.onResizeMove, { passive: false })
-      window.addEventListener('touchend', this.endResize)
+    loadLayout() {
+      try {
+        const raw = localStorage.getItem(LAYOUT_KEY)
+        if (!raw) return DEFAULT_LAYOUT.map(c => [...c])
+        const parsed = JSON.parse(raw)
+        if (!Array.isArray(parsed) || parsed.length !== 3) {
+          return DEFAULT_LAYOUT.map(c => [...c])
+        }
+        // Sanitise: drop unknown keys and add any default keys that
+        // are missing entirely (so a future widget addition doesn't
+        // strand existing layouts).
+        const cleaned = parsed.map(col => {
+          if (!Array.isArray(col)) return []
+          return col.filter(k => ALL_WIDGETS.includes(k))
+        })
+        const present = new Set()
+        cleaned.forEach(col => col.forEach(k => present.add(k)))
+        const missing = ALL_WIDGETS.filter(k => !present.has(k))
+        // Drop missing widgets into the first column as a safe fallback.
+        if (missing.length > 0) cleaned[0].push(...missing)
+        return cleaned
+      } catch (e) {
+        return DEFAULT_LAYOUT.map(c => [...c])
+      }
     },
-    onResizeMove(e) {
-      if (!this.isResizing) return
-      if (e.cancelable && e.preventDefault) e.preventDefault()
-      const x = (e.touches && e.touches[0] ? e.touches[0].clientX : e.clientX)
-      const delta = x - this._resizeStartX
-      const next = Math.max(240, Math.min(520, this._resizeStartWidth + delta))
-      this.railWidth = next
+    saveLayout() {
+      try {
+        localStorage.setItem(LAYOUT_KEY, JSON.stringify(this.columns))
+      } catch (e) { /* ignore quota / disabled storage */ }
     },
     toggleEditMode() {
       this.editMode = !this.editMode
     },
-    endResize() {
-      if (!this.isResizing) return
-      this.isResizing = false
-      document.body.style.cursor = ''
-      document.body.style.userSelect = ''
-      try { localStorage.setItem('kode_rail_width', String(this.railWidth)) } catch (e) { /* ignore */ }
-      window.removeEventListener('mousemove', this.onResizeMove)
-      window.removeEventListener('mouseup', this.endResize)
-      window.removeEventListener('touchmove', this.onResizeMove)
-      window.removeEventListener('touchend', this.endResize)
-    },
     tourKeyFor(key) {
-      return ({ files: 'files', recent: 'recent', family: 'family', addDevice: 'adddevice' })[key]
+      return ({ files: 'files', recent: 'recent', family: 'family', addDevice: 'adddevice', apps: 'apps' })[key]
     },
   },
 }
@@ -219,9 +177,6 @@ export default {
   padding-top: 55px;
 }
 
-/* The global wallpaper scrim in App.vue already darkens the background
-   uniformly; this overlay is now a transparent wrapper that just holds
-   layout padding. Kept as a hook in case we want a per-mode tint later. */
 .beginner-overlay {
   min-height: 100%;
   padding: 2.5rem 0 6rem;
@@ -229,7 +184,7 @@ export default {
 
 .beginner-hero {
   position: relative;
-  max-width: 1180px;
+  max-width: 1280px;
   margin: 0 auto 2.5rem;
   padding: 0 2rem;
 
@@ -276,97 +231,69 @@ export default {
   }
 }
 
-/* Three-column layout: rail | resizer | apps. The grid-template-columns
-   is set inline so JS can update the rail width on drag. */
+/* Three equal-width columns. The apps grid widget squeezes /
+   expands to whatever column it lands in. */
 .beginner-grid {
-  max-width: 1180px;
+  max-width: 1280px;
   margin: 0 auto;
   padding: 0 2rem;
   display: grid;
   gap: 1rem;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   align-items: start;
 
-  @media (max-width: 900px) {
-    /* Stack vertically and hide the resizer — drag-width only makes sense
-       on the desktop two-column layout. */
-    grid-template-columns: 1fr !important;
+  @media (max-width: 1024px) {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  @media (max-width: 700px) {
+    grid-template-columns: 1fr;
   }
 }
 
-.rail-resizer {
-  width: 6px;
-  align-self: stretch;
-  cursor: col-resize;
-  border-radius: 3px;
-  background: transparent;
-  position: relative;
-  transition: background 0.15s, opacity 0.15s;
-  pointer-events: none;
-  opacity: 0;
-
-  .is-edit-mode & {
-    pointer-events: auto;
-    opacity: 1;
-  }
-
-  &:hover,
-  &.is-dragging {
-    background: rgba(45, 95, 78, 0.40);
-  }
-
-  @media (max-width: 900px) {
-    display: none;
-  }
-}
-
-.rail-resizer-grip {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  width: 3px;
-  height: 36px;
-  background: rgba(255, 255, 255, 0.6);
-  border-radius: 2px;
-  transform: translate(-50%, -50%);
-  opacity: 0.6;
-  transition: opacity 0.15s;
-
-  .rail-resizer:hover &,
-  .rail-resizer.is-dragging & {
-    opacity: 1;
-  }
-}
-
-/* Visual cue that the dashboard is in edit mode — dashed teal outline on
-   each tile, plus a small grab cursor. Tiles still feel clickable; the
-   draggable's `disabled` flag is what actually gates the drag. */
-.beginner-grid.is-edit-mode {
-  .beginner-side > * {
-    cursor: grab;
-    outline: 2px dashed rgba(45, 95, 78, 0.55);
-    outline-offset: 4px;
-    border-radius: 22px;
-  }
-
-  .beginner-side > *:active {
-    cursor: grabbing;
-  }
-}
-
-.beginner-side {
+.beginner-column {
   display: flex;
   flex-direction: column;
   gap: 1rem;
-  position: sticky;
-  top: 1rem;
-
-  @media (max-width: 900px) {
-    position: static;
-  }
+  min-height: 120px;
 }
 
-/* Drag-feedback: the placeholder where the tile will land. */
-.tile-ghost {
+.widget-slot {
+  /* Inherit any internal positioning from the child tile; this is just
+     a draggable wrapper. */
+  display: contents;
+}
+
+/* When in edit mode, the wrapper becomes a block so we can paint a
+   dashed outline + grab cursor around each widget. display:contents
+   would prevent that. */
+.beginner-grid.is-edit-mode .widget-slot {
+  display: block;
+  outline: 2px dashed rgba(45, 95, 78, 0.55);
+  outline-offset: 4px;
+  border-radius: 22px;
+  cursor: grab;
+
+  &:active { cursor: grabbing; }
+}
+
+.beginner-grid.is-edit-mode .beginner-column.is-empty {
+  outline: 2px dashed rgba(255, 255, 255, 0.3);
+  outline-offset: -1px;
+  border-radius: 18px;
+  padding: 1rem;
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.column-empty-hint {
+  font-size: 0.8125rem;
+  color: rgba(255, 255, 255, 0.7);
+  text-align: center;
+  padding: 1rem 0;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.45);
+}
+
+/* Drag-feedback: the placeholder where the widget will land. */
+.widget-ghost {
   opacity: 0.45;
   transform: scale(0.98);
   background: rgba(45, 95, 78, 0.10);
@@ -374,31 +301,22 @@ export default {
   border: 2px dashed rgba(45, 95, 78, 0.45);
 }
 
-
-/* Override the upstream AppSection grid: force 3 columns in Easy mode and
-   give each app card the same liquid-glass treatment as the side tiles. */
-.beginner-main {
+/* The apps grid adapts to whatever column it lands in via auto-fit
+   instead of a fixed 3-col template, so it works whether it's in a
+   narrow side column or a wider middle column. */
+.widget-slot.is-apps {
   ::v-deep .home-section {
-    /* Hide the upstream "Drag icons to sort." title row — Beginner doesn't
-       need the editorial chrome. The + dropdown stays but the title bar
-       collapses. */
+    /* Hide the upstream "Drag icons to sort." title row. */
     > .is-flex:first-child {
       display: none;
     }
   }
 
   ::v-deep .app-list {
-    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)) !important;
     gap: 1rem;
-
-    @media (max-width: 600px) {
-      grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
-    }
   }
 
-  /* The visible card background comes from an inner .blur-background div
-     defined in assets/scss/common/_others.scss, NOT from .common-card.
-     Override that inner element so the glass actually lands on the card. */
   ::v-deep .common-card .blur-background,
   ::v-deep .app-card .blur-background {
     background-color: rgba(255, 255, 255, 0.55) !important;
@@ -412,7 +330,6 @@ export default {
       0 8px 28px rgba(0, 0, 0, 0.18) !important;
   }
 
-  /* common-card paints white text — flip to dark for legibility on the glass. */
   ::v-deep .common-card,
   ::v-deep .common-card .info,
   ::v-deep .common-card a,
@@ -420,7 +337,6 @@ export default {
     color: #1f2937 !important;
   }
 
-  /* Lift-on-hover on the wrapper. */
   ::v-deep .common-card,
   ::v-deep .app-card {
     transition: transform 0.18s ease;
