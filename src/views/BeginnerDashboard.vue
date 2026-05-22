@@ -97,8 +97,8 @@
                   <RecentActivityTile v-else-if="widgetType(key) === 'recent'" />
                   <FamilyTile         v-else-if="widgetType(key) === 'family'" />
                   <AddDeviceTile      v-else-if="widgetType(key) === 'addDevice'" />
-                  <ClockWidget        v-else-if="widgetType(key) === 'clock'" />
-                  <WeatherWidget      v-else-if="widgetType(key) === 'weather'" />
+                  <ClockWidget        v-else-if="widgetType(key) === 'clock'" :edit-mode="editMode" />
+                  <WeatherWidget      v-else-if="widgetType(key) === 'weather'" :edit-mode="editMode" />
                   <SearchWidget       v-else-if="widgetType(key) === 'search'" />
                   <SystemInfoWidget   v-else-if="widgetType(key) === 'sysInfo'" />
                   <NetworkStatusWidget v-else-if="widgetType(key) === 'network'" />
@@ -175,8 +175,8 @@
                     <RecentActivityTile v-else-if="widgetType(key) === 'recent'" />
                     <FamilyTile         v-else-if="widgetType(key) === 'family'" />
                     <AddDeviceTile      v-else-if="widgetType(key) === 'addDevice'" />
-                    <ClockWidget        v-else-if="widgetType(key) === 'clock'" />
-                    <WeatherWidget      v-else-if="widgetType(key) === 'weather'" />
+                    <ClockWidget        v-else-if="widgetType(key) === 'clock'" :edit-mode="editMode" />
+                    <WeatherWidget      v-else-if="widgetType(key) === 'weather'" :edit-mode="editMode" />
                     <SearchWidget       v-else-if="widgetType(key) === 'search'" />
                     <SystemInfoWidget   v-else-if="widgetType(key) === 'sysInfo'" />
                     <NetworkStatusWidget v-else-if="widgetType(key) === 'network'" />

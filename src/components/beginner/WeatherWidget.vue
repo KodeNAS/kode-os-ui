@@ -1,9 +1,19 @@
 <template>
   <div class="kode-tile weather-widget">
     <span v-if="hintModeOn" class="kode-hint">{{ hintLabel }}</span>
+    <button
+      v-if="editMode"
+      type="button"
+      class="widget-gear"
+      :aria-label="$t('Weather settings')"
+      :title="$t('Weather settings')"
+      @click.stop="openSettings"
+    >
+      <b-icon icon="control-outline" pack="casa" size="is-small" />
+    </button>
     <header class="weather-header">
       <h2 class="tile-title">{{ $t('Weather') }}</h2>
-      <span class="weather-location">{{ locationName }}</span>
+      <span class="weather-location">{{ settings.locationName }}</span>
       <button
         type="button"
         class="weather-toggle"
@@ -38,7 +48,7 @@
             </div>
             <div class="extra">
               <div class="extra-label">{{ $t('Wind') }}</div>
-              <div class="extra-value">{{ wind != null ? `${wind} km/h` : '—' }}</div>
+              <div class="extra-value">{{ wind != null ? `${wind} ${windUnit}` : '—' }}</div>
             </div>
             <div class="extra">
               <div class="extra-label">{{ $t('Sunrise') }}</div>
@@ -50,7 +60,7 @@
             </div>
           </div>
 
-          <div v-if="forecast.length > 0" class="weather-forecast">
+          <div v-if="settings.forecastDays > 0 && forecast.length > 0" class="weather-forecast" :style="forecastStyle">
             <div v-for="d in forecast" :key="d.date" class="forecast-day">
               <div class="forecast-day-label">{{ d.label }}</div>
               <div class="forecast-emoji">{{ d.emoji }}</div>
@@ -68,6 +78,27 @@
 
 <script>
 import { hintMode } from '@/mixins/hintMode'
+import WeatherSettingsModal from '@/components/beginner/WeatherSettingsModal.vue'
+
+const SETTINGS_KEY = 'kode_weather_settings'
+const DEFAULT_SETTINGS = {
+  locationName: 'Toronto',
+  latitude: 43.65,
+  longitude: -79.38,
+  units: 'celsius',     // 'celsius' | 'fahrenheit'
+  forecastDays: 5,      // 0 / 5 / 7 / 14
+}
+
+function loadSettings() {
+  try {
+    const raw = localStorage.getItem(SETTINGS_KEY)
+    if (raw) {
+      const parsed = JSON.parse(raw)
+      return { ...DEFAULT_SETTINGS, ...parsed }
+    }
+  } catch (e) { /* ignore */ }
+  return { ...DEFAULT_SETTINGS }
+}
 
 const WEATHER_CODES = {
   0:  { label: 'Clear',           emoji: '☀️' },
@@ -96,9 +127,6 @@ const WEATHER_CODES = {
   99: { label: 'Thunder + hail',  emoji: '⛈️' },
 }
 
-const DEFAULT_LAT = 43.65
-const DEFAULT_LON = -79.38
-const DEFAULT_NAME = 'Toronto'
 const EXPANDED_KEY = 'kode_weather_expanded'
 
 function formatTime(iso) {
@@ -119,6 +147,9 @@ function dayLabel(iso, offset) {
 export default {
   name: 'WeatherWidget',
   mixins: [hintMode],
+  props: {
+    editMode: { type: Boolean, default: false },
+  },
   data() {
     let savedExpanded = false
     try { savedExpanded = localStorage.getItem(EXPANDED_KEY) === '1' } catch (e) { /* ignore */ }
@@ -132,7 +163,7 @@ export default {
       sunrise: '',
       sunset: '',
       forecast: [],
-      locationName: DEFAULT_NAME,
+      settings: loadSettings(),
       isLoading: true,
       error: false,
       pollId: null,
@@ -141,7 +172,20 @@ export default {
   },
   computed: {
     hintLabel() {
-      return this.$t('Live weather from Open-Meteo. Click the arrow to expand for humidity, wind, sun times, and 5-day forecast.')
+      return this.$t('Live weather from Open-Meteo. Gear in edit mode for location, units, and forecast horizon.')
+    },
+    windUnit() {
+      return this.settings.units === 'fahrenheit' ? 'mph' : 'km/h'
+    },
+    forecastStyle() {
+      const cols = Math.min(this.forecast.length, 7)
+      return { gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))` }
+    },
+  },
+  watch: {
+    settings: {
+      handler() { this.fetchWeather() },
+      deep: true,
     },
   },
   mounted() {
@@ -156,12 +200,37 @@ export default {
       this.expanded = !this.expanded
       try { localStorage.setItem(EXPANDED_KEY, this.expanded ? '1' : '0') } catch (e) { /* ignore */ }
     },
+    openSettings() {
+      this.$buefy.modal.open({
+        parent: this,
+        component: WeatherSettingsModal,
+        hasModalCard: true,
+        trapFocus: true,
+        scroll: 'keep',
+        animation: 'zoom-in',
+        props: { value: { ...this.settings } },
+        events: {
+          save: (next) => {
+            this.settings = { ...this.settings, ...next }
+            try { localStorage.setItem(SETTINGS_KEY, JSON.stringify(this.settings)) } catch (e) { /* ignore */ }
+          },
+        },
+      })
+    },
     async fetchWeather() {
       try {
-        const url = `https://api.open-meteo.com/v1/forecast?latitude=${DEFAULT_LAT}&longitude=${DEFAULT_LON}` +
+        const lat = this.settings.latitude
+        const lon = this.settings.longitude
+        const tempUnit = this.settings.units === 'fahrenheit' ? 'fahrenheit' : 'celsius'
+        const windUnit = this.settings.units === 'fahrenheit' ? 'mph' : 'kmh'
+        const days = Math.max(1, this.settings.forecastDays || 0)
+        const includeDaily = (this.settings.forecastDays || 0) > 0
+        const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}` +
           `&current=temperature_2m,weather_code,apparent_temperature,relative_humidity_2m,wind_speed_10m` +
-          `&daily=temperature_2m_max,temperature_2m_min,weather_code,sunrise,sunset` +
-          `&forecast_days=5&temperature_unit=celsius&wind_speed_unit=kmh&timezone=auto`
+          (includeDaily
+            ? `&daily=temperature_2m_max,temperature_2m_min,weather_code,sunrise,sunset&forecast_days=${days}`
+            : '&daily=sunrise,sunset&forecast_days=1') +
+          `&temperature_unit=${tempUnit}&wind_speed_unit=${windUnit}&timezone=auto`
         const res = await fetch(url)
         if (!res.ok) throw new Error(`HTTP ${res.status}`)
         const data = await res.json()
@@ -180,19 +249,21 @@ export default {
         this.sunrise = formatTime((daily.sunrise && daily.sunrise[0]))
         this.sunset = formatTime((daily.sunset && daily.sunset[0]))
 
-        const days = []
+        const forecastDays = []
         const len = (daily.time || []).length
-        for (let i = 0; i < len; i++) {
-          const dCode = WEATHER_CODES[daily.weather_code && daily.weather_code[i]]
-          days.push({
-            date: daily.time[i],
-            label: dayLabel(daily.time[i], i),
-            emoji: dCode ? dCode.emoji : '🌡️',
-            high: Math.round(daily.temperature_2m_max[i]),
-            low: Math.round(daily.temperature_2m_min[i]),
-          })
+        if (daily.temperature_2m_max && daily.temperature_2m_min) {
+          for (let i = 0; i < len; i++) {
+            const dCode = WEATHER_CODES[daily.weather_code && daily.weather_code[i]]
+            forecastDays.push({
+              date: daily.time[i],
+              label: dayLabel(daily.time[i], i),
+              emoji: dCode ? dCode.emoji : '🌡️',
+              high: Math.round(daily.temperature_2m_max[i]),
+              low: Math.round(daily.temperature_2m_min[i]),
+            })
+          }
         }
-        this.forecast = days
+        this.forecast = forecastDays
         this.error = false
       } catch (e) {
         this.error = true
