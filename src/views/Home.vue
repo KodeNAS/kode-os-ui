@@ -267,16 +267,13 @@ export default {
     <TopBar v-animate-css="topBarAni" :init-bar-data="barData" @showSideBar="showSideBar" />
     <!-- NavBar End -->
 
-    <!-- KODE OS widget canvas. Used in BOTH Easy and Advanced modes — the
-         layout, widget catalog, templates, and resize behaviour are
-         identical across modes. Advanced power-user features (terminal,
-         compose, settings) are still reachable via TopBar dropdowns. -->
-    <BeginnerDashboard />
+    <!-- Beginner Dashboard (KODE OS) — widget canvas with custom layout. -->
+    <BeginnerDashboard v-if="isBeginner" />
 
-    <!-- Legacy upstream layout kept for reference. Hidden because both
-         modes now use the widget canvas; flip the v-if to re-enable if a
-         classic CasaOS view is needed during development. -->
-    <div v-if="false" class="contents  pt-55 contextmenu-canvas" @contextmenu.prevent="openHomeContaxtMenu">
+    <!-- Advanced mode: upstream CasaOS layout (SideBar + SearchBar + Apps).
+         Restored after a brief over-correction; the widget canvas + custom
+         layouts live in Easy mode only. -->
+    <div v-else class="contents  pt-55 contextmenu-canvas" @contextmenu.prevent="openHomeContaxtMenu">
       <div class="container">
         <div class="columns is-variable is-2">
           <div class="column is-one-quarter slider-content">

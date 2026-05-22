@@ -29,7 +29,7 @@
     </b-dropdown>
 
     <!-- Templates dropdown -->
-    <b-dropdown aria-role="list" position="is-bottom-right" animation="fade1" class="templates-dropdown">
+    <b-dropdown aria-role="list" position="is-bottom-right" animation="fade1" class="templates-dropdown" :close-on-click="false">
       <template #trigger>
         <button type="button" class="settings-chip">
           <b-icon icon="wallpaper-outline" pack="casa" size="is-small" />
@@ -37,9 +37,53 @@
           <b-icon icon="arrow-down" pack="casa" size="is-small" class="chip-caret" />
         </button>
       </template>
+
+      <b-dropdown-item :focusable="true" custom class="template-item">
+        <button type="button" class="template-save-row" @click="$emit('save-current')">
+          <b-icon icon="plus-outline" pack="casa" size="is-small" class="save-plus" />
+          <span class="template-text">
+            <span class="template-name">{{ $t('Save current layout…') }}</span>
+            <span class="template-desc">{{ $t('Save your current columns + widgets as a reusable layout.') }}</span>
+          </span>
+        </button>
+      </b-dropdown-item>
+
+      <div v-if="userTemplates.length > 0" class="template-section-label">{{ $t('Your layouts') }}</div>
       <b-dropdown-item
-        v-for="t in templates"
-        :key="t.key"
+        v-for="t in userTemplates"
+        :key="`user-${t.key}`"
+        :focusable="true"
+        custom
+        class="template-item"
+      >
+        <div class="template-row-wrap">
+          <button type="button" class="template-row" @click="$emit('apply-template', t.key)">
+            <span class="template-preview" :style="previewStyle(t)">
+              <span v-for="(col, ci) in t.cols" :key="ci" class="preview-col">
+                <span v-for="w in col" :key="w" class="preview-widget"></span>
+              </span>
+            </span>
+            <span class="template-text">
+              <span class="template-name">{{ t.name }}</span>
+              <span class="template-desc">{{ t.description || $t('Your saved layout.') }}</span>
+            </span>
+          </button>
+          <button
+            type="button"
+            class="template-delete"
+            :aria-label="$t('Delete layout')"
+            :title="$t('Delete this saved layout')"
+            @click.stop="$emit('delete-template', t.key)"
+          >
+            <b-icon icon="close-outline" pack="casa" size="is-small" />
+          </button>
+        </div>
+      </b-dropdown-item>
+
+      <div class="template-section-label">{{ $t('Pre-made') }}</div>
+      <b-dropdown-item
+        v-for="t in builtInTemplates"
+        :key="`builtin-${t.key}`"
         :focusable="true"
         custom
         class="template-item"
@@ -67,6 +111,12 @@ export default {
   props: {
     columnCount: { type: Number, required: true },
     templates: { type: Array, required: true },
+    userTemplates: { type: Array, default: () => [] },
+  },
+  computed: {
+    builtInTemplates() {
+      return this.templates
+    },
   },
   methods: {
     previewStyle(t) {
@@ -195,5 +245,84 @@ export default {
   color: rgba(0, 0, 0, 0.6);
   margin-top: 1px;
   line-height: 1.4;
+}
+
+.template-section-label {
+  font-size: 0.6875rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: rgba(0, 0, 0, 0.5);
+  padding: 0.6rem 0.85rem 0.25rem;
+  font-weight: 600;
+}
+
+.template-row-wrap {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  border-radius: 8px;
+
+  &:hover {
+    background: rgba(45, 95, 78, 0.10);
+  }
+
+  .template-row {
+    flex: 1;
+
+    &:hover { background: none; }
+  }
+}
+
+.template-delete {
+  flex-shrink: 0;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: none;
+  border: none;
+  color: rgba(0, 0, 0, 0.45);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 0.35rem;
+  transition: background 0.15s, color 0.15s;
+
+  &:hover {
+    background: rgba(176, 74, 74, 0.12);
+    color: #b04a4a;
+  }
+}
+
+.template-save-row {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  width: 100%;
+  padding: 0.6rem 0.85rem;
+  background: rgba(45, 95, 78, 0.06);
+  border: 1px dashed rgba(45, 95, 78, 0.3);
+  border-radius: 8px;
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.15s, border-color 0.15s;
+  margin-bottom: 0.25rem;
+
+  &:hover {
+    background: rgba(45, 95, 78, 0.12);
+    border-color: rgba(45, 95, 78, 0.5);
+  }
+}
+
+.save-plus {
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: #2d5f4e;
+  color: #fff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 </style>

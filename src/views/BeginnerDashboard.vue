@@ -35,8 +35,11 @@
           v-if="editMode"
           :column-count="columnCount"
           :templates="templates"
+          :user-templates="userTemplates"
           @column-count="setColumnCount"
           @apply-template="applyTemplate"
+          @save-current="saveCurrentAsTemplate"
+          @delete-template="deleteUserTemplate"
         />
 
         <div ref="grid" class="beginner-grid" :class="{ 'is-edit-mode': editMode }" :style="gridStyle">
@@ -140,6 +143,7 @@ import { maybeStartEasyTourOnce } from '@/service/tour'
 const LAYOUT_KEY = 'kode_columns_layout_v2'
 const WEIGHTS_KEY = 'kode_columns_weights_v1'
 const COLCOUNT_KEY = 'kode_column_count_v1'
+const USER_TEMPLATES_KEY = 'kode_user_templates_v1'
 
 const TEMPLATES = [
   {
@@ -254,6 +258,7 @@ export default {
       activeDivider: -1,
       editMode: false,
       templates: TEMPLATES,
+      userTemplates: this.loadUserTemplates(),
     }
   },
   computed: {
@@ -442,15 +447,71 @@ export default {
       this.saveWeights()
     },
     applyTemplate(key) {
-      const t = TEMPLATES.find(x => x.key === key)
+      const t = TEMPLATES.find(x => x.key === key) || this.userTemplates.find(x => x.key === key)
       if (!t) return
       const next = t.cols.map(c => [...c])
       this.columns = next
       this.columnCount = next.length
-      this.colWeights = Array(next.length).fill(1)
+      this.colWeights = Array.isArray(t.weights) && t.weights.length === next.length
+        ? t.weights.map(w => Math.max(MIN_WEIGHT, Math.min(MAX_WEIGHT, Number(w) || 1)))
+        : Array(next.length).fill(1)
       try { localStorage.setItem(COLCOUNT_KEY, String(next.length)) } catch (e) { /* ignore */ }
       this.saveLayout()
       this.saveWeights()
+    },
+    loadUserTemplates() {
+      try {
+        const raw = localStorage.getItem(USER_TEMPLATES_KEY)
+        if (!raw) return []
+        const parsed = JSON.parse(raw)
+        if (!Array.isArray(parsed)) return []
+        return parsed.filter(t => t && t.key && Array.isArray(t.cols))
+      } catch (e) {
+        return []
+      }
+    },
+    saveUserTemplates() {
+      try {
+        localStorage.setItem(USER_TEMPLATES_KEY, JSON.stringify(this.userTemplates))
+      } catch (e) { /* ignore */ }
+    },
+    saveCurrentAsTemplate() {
+      this.$buefy.dialog.prompt({
+        title: this.$t('Save layout'),
+        message: this.$t('Give this layout a name. You\'ll find it under "Your layouts" in the Layouts menu.'),
+        inputAttrs: { placeholder: this.$t('My layout'), maxlength: 40 },
+        trapFocus: true,
+        confirmText: this.$t('Save'),
+        cancelText: this.$t('Cancel'),
+        onConfirm: (name) => {
+          const trimmed = String(name || '').trim()
+          if (!trimmed) return
+          // Unique key. Slug + short id keeps it stable across reloads.
+          const slug = trimmed.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '').slice(0, 24) || 'layout'
+          const key = `user-${slug}-${Date.now().toString(36).slice(-4)}`
+          this.userTemplates = [
+            ...this.userTemplates,
+            {
+              key,
+              name: trimmed,
+              description: '',
+              cols: this.columns.map(c => [...c]),
+              weights: [...this.colWeights],
+            },
+          ]
+          this.saveUserTemplates()
+          this.$buefy.toast.open({
+            message: `${this.$t('Saved')} "${trimmed}"`,
+            type: 'is-success',
+            position: 'is-top',
+            duration: 2500,
+          })
+        },
+      })
+    },
+    deleteUserTemplate(key) {
+      this.userTemplates = this.userTemplates.filter(t => t.key !== key)
+      this.saveUserTemplates()
     },
     placedWidgets() {
       // Flat list of every widget key currently in any column.
