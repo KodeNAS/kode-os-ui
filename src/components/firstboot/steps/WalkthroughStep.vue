@@ -5,14 +5,8 @@
       {{ $t('App {n} of {total}: {name}', { n: idx + 1, total: apps.length, name: currentAppTitle }) }}
     </p>
 
-    <ImmichWalkthrough
-      v-if="currentApp === 'immich'"
-      :host="host"
-      :is-last="isLastApp"
-      @done="advance"
-    />
-    <PlaceholderWalkthrough
-      v-else
+    <component
+      :is="walkthroughComponent"
       :key="currentApp"
       :app-key="currentApp"
       :host="host"
@@ -30,6 +24,10 @@
 
 <script>
 import ImmichWalkthrough from '../walkthroughs/ImmichWalkthrough.vue'
+import JellyfinWalkthrough from '../walkthroughs/JellyfinWalkthrough.vue'
+import FileBrowserWalkthrough from '../walkthroughs/FileBrowserWalkthrough.vue'
+import PiHoleWalkthrough from '../walkthroughs/PiHoleWalkthrough.vue'
+import HomeAssistantWalkthrough from '../walkthroughs/HomeAssistantWalkthrough.vue'
 import PlaceholderWalkthrough from '../walkthroughs/PlaceholderWalkthrough.vue'
 
 const APP_TITLES = {
@@ -40,9 +38,24 @@ const APP_TITLES = {
   homeassistant: 'Home Assistant',
 }
 
+const WALKTHROUGH_MAP = {
+  immich: ImmichWalkthrough,
+  jellyfin: JellyfinWalkthrough,
+  filebrowser: FileBrowserWalkthrough,
+  pihole: PiHoleWalkthrough,
+  homeassistant: HomeAssistantWalkthrough,
+}
+
 export default {
   name: 'WalkthroughStep',
-  components: { ImmichWalkthrough, PlaceholderWalkthrough },
+  components: {
+    ImmichWalkthrough,
+    JellyfinWalkthrough,
+    FileBrowserWalkthrough,
+    PiHoleWalkthrough,
+    HomeAssistantWalkthrough,
+    PlaceholderWalkthrough,
+  },
   props: {
     apps: { type: Array, required: true },
     host: { type: String, required: true },
@@ -54,6 +67,9 @@ export default {
     currentApp() { return this.apps[this.idx] || '' },
     currentAppTitle() { return APP_TITLES[this.currentApp] || this.currentApp },
     isLastApp() { return this.idx === this.apps.length - 1 },
+    walkthroughComponent() {
+      return WALKTHROUGH_MAP[this.currentApp] || PlaceholderWalkthrough
+    },
   },
   methods: {
     advance() {
