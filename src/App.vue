@@ -11,8 +11,11 @@
 
 			<div class="base-bar is-flex"
 				 style="background: linear-gradient(180deg, rgba(0, 0, 0, 0) 0%, #000000 100%);">
-				<!-- BrandBar Start -->
-				<brand-bar v-if="!$store.state.isMobile && $router.currentRoute.path === '/'"
+				<!-- BrandBar Start — desktop only. Hidden on mobile, off-route,
+				     or whenever a full-screen overlay (file browser etc.) is
+				     up. Home.vue dispatches kode:files-open / kode:files-close
+				     events so we don't have to reach into its local state. -->
+				<brand-bar v-if="!$store.state.isMobile && $router.currentRoute.path === '/' && !fullscreenOverlayActive"
 						   v-animate-css="brandAni"></brand-bar>
 				<!-- BrandBar End -->
 				<!-- KODE OS: ContactBar removed — Discord/GitHub/Share/Feedback links pointed at IceWhale/CasaOS channels. -->
@@ -89,7 +92,11 @@ export default {
 				classes: "fadeInLeft",
 				duration: 700
 			},
-			"vh": "0px"
+			"vh": "0px",
+			// True while any full-screen view (currently just the file
+			// browser) is open. Toggled by window CustomEvents dispatched
+			// from Home.vue so App.vue doesn't need a direct reference.
+			fullscreenOverlayActive: false,
 		}
 	},
 
@@ -117,11 +124,20 @@ _____             _____ _____
 	mounted() {
 		this.setInitLang();
 		window.addEventListener('resize', this.onWindowResize);
+		window.addEventListener('kode:files-open', this.onFilesOpen);
+		window.addEventListener('kode:files-close', this.onFilesClose);
 		this.onWindowResize();
 		let vh = window.innerHeight * 0.01;
 		this["vh"] = `${vh}px`;
 	},
+	beforeUnmount() {
+		window.removeEventListener('resize', this.onWindowResize);
+		window.removeEventListener('kode:files-open', this.onFilesOpen);
+		window.removeEventListener('kode:files-close', this.onFilesClose);
+	},
 	methods: {
+		onFilesOpen() { this.fullscreenOverlayActive = true; },
+		onFilesClose() { this.fullscreenOverlayActive = false; },
 		/**
 		 * @description: Get and Set default language
 		 * @return {*} void

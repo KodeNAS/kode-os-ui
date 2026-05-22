@@ -160,9 +160,18 @@ export default {
         this._topbarHideTimer = null
       }
       this.topbarHidden = true
+      // Let App.vue know to hide the BrandBar attribution row — the
+      // translucent file panel lets that text show through otherwise.
+      try { window.dispatchEvent(new CustomEvent('kode:files-open')) } catch (e) { /* ignore */ }
       this.$nextTick(() => {
         this.$refs.filePanel.init(path)
       })
+    },
+    onFilesClose() {
+      // Wired to the file-modal close event so App.vue can re-show the
+      // BrandBar and the top bar can resume its hover behavior.
+      this.isFileActive = false
+      try { window.dispatchEvent(new CustomEvent('kode:files-close')) } catch (e) { /* ignore */ }
     },
 
     afterFileEnter() {
@@ -409,6 +418,7 @@ export default {
     <b-modal
       v-model="isFileActive" :can-cancel="[]" :destroy-on-hide="false" animation="zoom-in" aria-modal
       custom-class="file-panel" full-screen has-modal-card @after-enter="afterFileEnter"
+      @close="onFilesClose"
     >
       <template #default="props">
         <FilePanel ref="filePanel" @close="props.close" />
