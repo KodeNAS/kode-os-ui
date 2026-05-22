@@ -37,16 +37,20 @@
           <main class="beginner-main" data-tour="apps">
             <AppSection ref="apps" :allowed-keys="pickedApps">
               <template #prepend>
-                <div
-                  class="files-app-card"
-                  :title="hintModeOn ? hintFilesLabel : null"
-                  @click="openFiles"
-                >
-                  <span v-if="hintModeOn" class="kode-hint">{{ hintFilesLabel }}</span>
-                  <span class="files-app-icon">
-                    <b-icon icon="folder" pack="casa" size="is-large" />
-                  </span>
-                  <span class="files-app-name">{{ $t('Files') }}</span>
+                <div class="files-app-card" @click="openFiles">
+                  <b-tooltip
+                    :label="$t('Open')"
+                    :triggers="['hover']"
+                    animation="fade1"
+                    type="is-white"
+                  >
+                    <div class="files-app-inner">
+                      <span class="files-app-icon">
+                        <b-icon icon="folder" pack="casa" size="is-large" />
+                      </span>
+                      <span class="files-app-name">{{ $t('Files') }}</span>
+                    </div>
+                  </b-tooltip>
                 </div>
               </template>
             </AppSection>
@@ -64,7 +68,6 @@ import RecentActivityTile from '@/components/beginner/RecentActivityTile.vue'
 import FamilyTile from '@/components/beginner/FamilyTile.vue'
 import AddDeviceTile from '@/components/beginner/AddDeviceTile.vue'
 import { maybeStartEasyTourOnce } from '@/service/tour'
-import { hintMode } from '@/mixins/hintMode'
 
 const ORDER_KEY = 'kode_tile_order'
 // Files is rendered as an app-grid card now, not a left-rail tile.
@@ -72,7 +75,6 @@ const DEFAULT_ORDER = ['recent', 'family', 'addDevice']
 
 export default {
   name: 'BeginnerDashboard',
-  mixins: [hintMode],
   inject: {
     homeShowFiles: { default: null },
   },
@@ -93,11 +95,6 @@ export default {
         addDevice: 'AddDeviceTile',
       },
     }
-  },
-  computed: {
-    hintFilesLabel() {
-      return this.$t('Browse everything on your pebble — opens the built-in file browser.')
-    },
   },
   created() {
     this.loadPickedApps()
@@ -252,6 +249,24 @@ export default {
       inset 0 1px 0 rgba(255, 255, 255, 0.85),
       0 14px 36px rgba(0, 0, 0, 0.22);
   }
+}
+
+/* b-tooltip wraps the inner; this keeps the inner content laid out
+   like a real AppCard regardless of the tooltip wrapper. */
+.files-app-card ::v-deep .b-tooltip {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.files-app-inner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
 }
 
 .files-app-icon {
