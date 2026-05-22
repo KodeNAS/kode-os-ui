@@ -34,6 +34,16 @@
               :data-tour="tourKeyFor(key)"
             />
           </draggable>
+          <div
+            class="rail-resizer"
+            :class="{ 'is-dragging': isResizing }"
+            :aria-label="$t('Drag to resize the side rail')"
+            role="separator"
+            @mousedown="startResize"
+            @touchstart.passive="startResize"
+          >
+            <span class="rail-resizer-grip"></span>
+          </div>
           <main class="beginner-main" data-tour="apps">
             <AppSection ref="apps" :allowed-keys="pickedApps" />
           </main>
@@ -75,7 +85,16 @@ export default {
         family: 'FamilyTile',
         addDevice: 'AddDeviceTile',
       },
+      railWidth: this.loadRailWidth(),
+      isResizing: false,
     }
+  },
+  computed: {
+    gridStyle() {
+      return {
+        gridTemplateColumns: `${this.railWidth}px 6px 1fr`,
+      }
+    },
   },
   created() {
     this.loadPickedApps()
@@ -121,6 +140,48 @@ export default {
         localStorage.setItem(ORDER_KEY, JSON.stringify(this.tileOrder))
       } catch (e) { /* quota / disabled storage — accept loss */ }
     },
+    loadRailWidth() {
+      try {
+        const raw = parseInt(localStorage.getItem('kode_rail_width'), 10)
+        if (!isNaN(raw) && raw >= 240 && raw <= 520) return raw
+      } catch (e) { /* fall through */ }
+      return 300
+    },
+    startResize(e) {
+      if (e.touches && e.touches[0]) {
+        this._resizeStartX = e.touches[0].clientX
+      } else {
+        this._resizeStartX = e.clientX
+      }
+      this._resizeStartWidth = this.railWidth
+      this.isResizing = true
+      document.body.style.cursor = 'col-resize'
+      document.body.style.userSelect = 'none'
+
+      window.addEventListener('mousemove', this.onResizeMove)
+      window.addEventListener('mouseup', this.endResize)
+      window.addEventListener('touchmove', this.onResizeMove, { passive: false })
+      window.addEventListener('touchend', this.endResize)
+    },
+    onResizeMove(e) {
+      if (!this.isResizing) return
+      if (e.cancelable && e.preventDefault) e.preventDefault()
+      const x = (e.touches && e.touches[0] ? e.touches[0].clientX : e.clientX)
+      const delta = x - this._resizeStartX
+      const next = Math.max(240, Math.min(520, this._resizeStartWidth + delta))
+      this.railWidth = next
+    },
+    endResize() {
+      if (!this.isResizing) return
+      this.isResizing = false
+      document.body.style.cursor = ''
+      document.body.style.userSelect = ''
+      try { localStorage.setItem('kode_rail_width', String(this.railWidth)) } catch (e) { /* ignore */ }
+      window.removeEventListener('mousemove', this.onResizeMove)
+      window.removeEventListener('mouseup', this.endResize)
+      window.removeEventListener('touchmove', this.onResizeMove)
+      window.removeEventListener('touchend', this.endResize)
+    },
     tourKeyFor(key) {
       return ({ files: 'files', recent: 'recent', family: 'family', addDevice: 'adddevice' })[key]
     },
@@ -160,18 +221,57 @@ export default {
   }
 }
 
-/* Two-column layout: narrow side rail on the left, app grid on the right. */
+/* Three-column layout: rail | resizer | apps. The grid-template-columns
+   is set inline so JS can update the rail width on drag. */
 .beginner-grid {
   max-width: 1180px;
   margin: 0 auto;
   padding: 0 2rem;
   display: grid;
-  gap: 1.5rem;
-  grid-template-columns: minmax(260px, 320px) 1fr;
+  gap: 1rem;
   align-items: start;
 
   @media (max-width: 900px) {
-    grid-template-columns: 1fr;
+    /* Stack vertically and hide the resizer — drag-width only makes sense
+       on the desktop two-column layout. */
+    grid-template-columns: 1fr !important;
+  }
+}
+
+.rail-resizer {
+  width: 6px;
+  align-self: stretch;
+  cursor: col-resize;
+  border-radius: 3px;
+  background: transparent;
+  position: relative;
+  transition: background 0.15s;
+
+  &:hover,
+  &.is-dragging {
+    background: rgba(45, 95, 78, 0.40);
+  }
+
+  @media (max-width: 900px) {
+    display: none;
+  }
+}
+
+.rail-resizer-grip {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 3px;
+  height: 36px;
+  background: rgba(255, 255, 255, 0.6);
+  border-radius: 2px;
+  transform: translate(-50%, -50%);
+  opacity: 0.6;
+  transition: opacity 0.15s;
+
+  .rail-resizer:hover &,
+  .rail-resizer.is-dragging & {
+    opacity: 1;
   }
 }
 
