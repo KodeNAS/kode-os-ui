@@ -15,11 +15,14 @@
           <AppSection ref="apps" />
         </section>
 
-        <!--
-          Future Beginner-only surfaces (photo backup status, recent files,
-          add-device wizard, family list) land in subsequent commits — see
-          Phase 2 Part B in the project brief.
-        -->
+        <section class="beginner-tiles columns is-variable is-4 is-multiline">
+          <div class="column is-two-thirds-tablet is-full-mobile">
+            <RecentActivityTile />
+          </div>
+          <div class="column is-one-third-tablet is-full-mobile">
+            <FamilyTile />
+          </div>
+        </section>
       </div>
     </div>
   </div>
@@ -27,11 +30,15 @@
 
 <script>
 import AppSection from '@/components/Apps/AppSection.vue'
+import RecentActivityTile from '@/components/beginner/RecentActivityTile.vue'
+import FamilyTile from '@/components/beginner/FamilyTile.vue'
 
 export default {
   name: 'BeginnerDashboard',
   components: {
     AppSection,
+    RecentActivityTile,
+    FamilyTile,
   },
 }
 </script>
@@ -71,6 +78,12 @@ export default {
 .beginner-apps {
   max-width: 1100px;
   margin: 0 auto;
+  padding: 0 1.5rem;
+}
+
+.beginner-tiles {
+  max-width: 1100px;
+  margin: 2rem auto 0;
   padding: 0 1.5rem;
 }
 </style>
