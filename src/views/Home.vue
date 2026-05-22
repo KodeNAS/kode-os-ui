@@ -143,10 +143,14 @@ export default {
      */
     showFiles(path) {
       this.isFileActive = true
-      // Files has its own header — make sure the global top bar isn't
-      // stuck in the auto-hidden state from the desktop, and clear any
-      // pending hide timer.
-      this.cancelHideTopBar()
+      // Top bar is desktop-only. Force it hidden the moment files opens
+      // and cancel any pending hover-show / hide timers so it can't
+      // sneak back in while the file browser is up.
+      if (this._topbarHideTimer) {
+        clearTimeout(this._topbarHideTimer)
+        this._topbarHideTimer = null
+      }
+      this.topbarHidden = true
       this.$nextTick(() => {
         this.$refs.filePanel.init(path)
       })
@@ -240,17 +244,14 @@ export default {
     },
 
     onMouseMoveTopBar(e) {
-      // Auto-hide only applies on the desktop dashboard. The file browser
-      // has its own header / controls — letting the global top bar
-      // disappear and re-appear on hover there was distracting, so we
-      // bail early and keep the bar permanently visible while files is
-      // open. cancelHideTopBar() makes sure it isn't left hidden from
-      // a prior pass on the desktop.
+      // Top bar is desktop-only. While files (or any other full-screen
+      // view) is up, ignore hover entirely so the bar stays hidden no
+      // matter where the cursor goes — that view has its own header.
       if (this.isFileActive) {
-        this.cancelHideTopBar()
+        if (!this.topbarHidden) this.topbarHidden = true
         return
       }
-      // Show TopBar whenever the mouse is within ~80px of the top edge,
+      // Desktop: show when the mouse is within ~80px of the top edge,
       // otherwise schedule a hide after 700ms idle.
       if (e.clientY < 80) {
         this.cancelHideTopBar()
@@ -264,6 +265,10 @@ export default {
         clearTimeout(this._topbarHideTimer)
         this._topbarHideTimer = null
       }
+      // Desktop only. If we're inside a full-screen view (files etc.)
+      // the bar stays hidden no matter what — defensive guard in case
+      // the off-screen topbar-shell still receives a mouseenter.
+      if (this.isFileActive) return
       this.topbarHidden = false
     },
     scheduleHideTopBar() {
