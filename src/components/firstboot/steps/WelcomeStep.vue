@@ -8,7 +8,7 @@
     </div>
 
     <h1 class="title is-2 has-text-white">
-      {{ isReplay ? $t('Walk through setup again') : $t('Welcome to your pebble') }}
+      {{ isReplay ? $t('Walk through setup again') : $t('Welcome to pebble') }}
     </h1>
     <p class="subtitle is-5 has-text-white-bis">
       {{ isReplay ? $t('Update your pebble\'s name, apps, and walkthroughs.') : $t('Your own private cloud, ready in 5 minutes.') }}

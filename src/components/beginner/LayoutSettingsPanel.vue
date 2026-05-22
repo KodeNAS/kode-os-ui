@@ -80,6 +80,15 @@
           </button>
           <button
             type="button"
+            class="template-overwrite"
+            :aria-label="$t('Save current as this layout')"
+            :title="$t('Overwrite this saved layout with your current setup')"
+            @click.stop="$emit('overwrite-template', t.key)"
+          >
+            <b-icon icon="restart-outline" pack="casa" size="is-small" />
+          </button>
+          <button
+            type="button"
             class="template-delete"
             :aria-label="$t('Delete layout')"
             :title="$t('Delete this saved layout')"
@@ -283,6 +292,7 @@ export default {
   }
 }
 
+.template-overwrite,
 .template-delete {
   flex-shrink: 0;
   width: 30px;
@@ -295,13 +305,17 @@ export default {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  margin-right: 0.35rem;
   transition: background 0.15s, color 0.15s;
+}
 
-  &:hover {
-    background: rgba(176, 74, 74, 0.12);
-    color: #b04a4a;
-  }
+.template-overwrite {
+  margin-right: 0.15rem;
+  &:hover { background: rgba(45, 95, 78, 0.12); color: #2d5f4e; }
+}
+
+.template-delete {
+  margin-right: 0.35rem;
+  &:hover { background: rgba(176, 74, 74, 0.12); color: #b04a4a; }
 }
 
 .template-save-row {

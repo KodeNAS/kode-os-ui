@@ -1,7 +1,17 @@
 <template>
   <div class="kode-tile network-status-widget">
     <span v-if="hintModeOn" class="kode-hint">{{ hintLabel }}</span>
-    <header class="tile-header">
+    <button
+      v-if="editMode"
+      type="button"
+      class="widget-gear"
+      :aria-label="$t('Network settings')"
+      :title="$t('Network settings')"
+      @click.stop="openSettings"
+    >
+      <b-icon icon="control-outline" pack="casa" size="is-small" />
+    </button>
+    <header class="tile-header" :class="{ 'has-gear': editMode }">
       <h2 class="tile-title">{{ $t('Network') }}</h2>
       <span class="net-pill" :class="primaryStatus === 'up' ? 'is-up' : 'is-down'">
         {{ primaryStatus === 'up' ? $t('Online') : $t('Offline') }}
@@ -16,10 +26,15 @@
         </span>
         <div class="net-primary-text">
           <div class="net-primary-name">{{ currentName || 'No connection' }}</div>
-          <div class="net-primary-host">{{ host }}</div>
+          <div v-if="settings.showHost" class="net-primary-host">{{ host }}</div>
         </div>
         <!-- Interface picker. Auto means "pick the most active up interface". -->
-        <select v-if="interfaces.length > 0" v-model="selectedInterface" class="net-picker" @change="onSelectInterface">
+        <select
+          v-if="settings.showPicker && interfaces.length > 0"
+          v-model="selectedInterface"
+          class="net-picker"
+          @change="onSelectInterface"
+        >
           <option value="">{{ $t('Auto') }}</option>
           <option v-for="iface in interfaces" :key="iface.name" :value="iface.name">
             {{ iface.name }}
@@ -45,7 +60,7 @@
       <!-- Sparkline. Rx is the lower band, Tx the upper. Both auto-scale to
            the max value in the visible window. -->
       <svg
-        v-if="rxSamples.length > 1"
+        v-if="settings.showGraph && rxSamples.length > 1"
         class="net-graph"
         :viewBox="`0 0 ${graphWidth} ${graphHeight}`"
         preserveAspectRatio="none"
@@ -62,10 +77,26 @@
 
 <script>
 import { hintMode } from '@/mixins/hintMode'
+import NetworkSettingsModal from '@/components/beginner/NetworkSettingsModal.vue'
 
-const POLL_MS = 2000
-const SAMPLE_WINDOW = 30  // 30 samples * 2s = 60 seconds of history
+const DEFAULT_POLL_MS = 2000
+const SAMPLE_WINDOW = 30  // 30 samples * pollMs = ~60s history at 2s polling
 const SELECTED_INTERFACE_KEY = 'kode_network_interface'
+const SETTINGS_KEY = 'kode_network_settings'
+const DEFAULT_SETTINGS = {
+  showGraph: true,
+  showHost: true,
+  showPicker: true,
+  pollMs: DEFAULT_POLL_MS,
+}
+
+function loadSettings() {
+  try {
+    const raw = localStorage.getItem(SETTINGS_KEY)
+    if (raw) return { ...DEFAULT_SETTINGS, ...JSON.parse(raw) }
+  } catch (e) { /* ignore */ }
+  return { ...DEFAULT_SETTINGS }
+}
 
 function formatBytes(b) {
   if (!b || !isFinite(b)) return '0 B'
@@ -79,6 +110,9 @@ function formatBytes(b) {
 export default {
   name: 'NetworkStatusWidget',
   mixins: [hintMode],
+  props: {
+    editMode: { type: Boolean, default: false },
+  },
   data() {
     return {
       isLoading: true,
@@ -97,7 +131,11 @@ export default {
       pollId: null,
       graphWidth: 100,
       graphHeight: 36,
+      settings: loadSettings(),
     }
+  },
+  watch: {
+    'settings.pollMs'() { this.restartPolling() },
   },
   computed: {
     hintLabel() {
@@ -122,12 +160,33 @@ export default {
     } catch (e) { /* fall back to window.location.hostname */ }
 
     this.fetch()
-    this.pollId = setInterval(() => this.fetch(), POLL_MS)
+    this.restartPolling()
   },
   beforeDestroy() {
     if (this.pollId) clearInterval(this.pollId)
   },
   methods: {
+    restartPolling() {
+      if (this.pollId) clearInterval(this.pollId)
+      this.pollId = setInterval(() => this.fetch(), this.settings.pollMs || DEFAULT_POLL_MS)
+    },
+    openSettings() {
+      this.$buefy.modal.open({
+        parent: this,
+        component: NetworkSettingsModal,
+        hasModalCard: true,
+        trapFocus: true,
+        scroll: 'keep',
+        animation: 'zoom-in',
+        props: { value: { ...this.settings } },
+        events: {
+          save: (next) => {
+            this.settings = { ...this.settings, ...next }
+            try { localStorage.setItem(SETTINGS_KEY, JSON.stringify(this.settings)) } catch (e) { /* ignore */ }
+          },
+        },
+      })
+    },
     iconFor(name) {
       const n = String(name || '').toLowerCase()
       if (n.startsWith('wlan') || n.startsWith('wlp') || n.includes('wifi')) return 'wifi'
@@ -257,6 +316,26 @@ export default {
 }
 .kode-tile:hover .kode-hint { opacity: 1; }
 
+.widget-gear {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.08);
+  border: none;
+  color: rgba(0, 0, 0, 0.7);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 5;
+  transition: background 0.15s, color 0.15s;
+
+  &:hover { background: rgba(45, 95, 78, 0.18); color: #2d5f4e; }
+}
+
 .tile-header {
   display: flex;
   align-items: center;
@@ -264,6 +343,8 @@ export default {
   margin-bottom: 0.65rem;
   padding-bottom: 0.5rem;
   border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+
+  &.has-gear { padding-right: 36px; }
 }
 .tile-title {
   flex: 1;

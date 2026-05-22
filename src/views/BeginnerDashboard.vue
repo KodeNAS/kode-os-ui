@@ -18,7 +18,7 @@
           </button>
 
           <h1 class="title is-2 has-text-white">
-            {{ $t('Welcome to your pebble') }}
+            {{ $t('Welcome to pebble') }}
           </h1>
           <p class="subtitle is-5 has-text-white">
             <template v-if="editMode">
@@ -40,6 +40,7 @@
           @apply-template="applyTemplate"
           @save-current="saveCurrentAsTemplate"
           @delete-template="deleteUserTemplate"
+          @overwrite-template="overwriteUserTemplate"
           @reset-layout="resetLayoutToDefault"
         />
 
@@ -100,8 +101,8 @@
                   <ClockWidget        v-else-if="widgetType(key) === 'clock'" :edit-mode="editMode" />
                   <WeatherWidget      v-else-if="widgetType(key) === 'weather'" :edit-mode="editMode" />
                   <SearchWidget       v-else-if="widgetType(key) === 'search'" />
-                  <SystemInfoWidget   v-else-if="widgetType(key) === 'sysInfo'" />
-                  <NetworkStatusWidget v-else-if="widgetType(key) === 'network'" />
+                  <SystemInfoWidget   v-else-if="widgetType(key) === 'sysInfo'" :edit-mode="editMode" />
+                  <NetworkStatusWidget v-else-if="widgetType(key) === 'network'" :edit-mode="editMode" />
                   <AppsRunningWidget  v-else-if="widgetType(key) === 'appsRunning'" />
                   <TipsTricksWidget   v-else-if="widgetType(key) === 'tips'" />
                   <StorageWidget      v-else-if="widgetType(key) === 'storage'" />
@@ -178,8 +179,8 @@
                     <ClockWidget        v-else-if="widgetType(key) === 'clock'" :edit-mode="editMode" />
                     <WeatherWidget      v-else-if="widgetType(key) === 'weather'" :edit-mode="editMode" />
                     <SearchWidget       v-else-if="widgetType(key) === 'search'" />
-                    <SystemInfoWidget   v-else-if="widgetType(key) === 'sysInfo'" />
-                    <NetworkStatusWidget v-else-if="widgetType(key) === 'network'" />
+                    <SystemInfoWidget   v-else-if="widgetType(key) === 'sysInfo'" :edit-mode="editMode" />
+                    <NetworkStatusWidget v-else-if="widgetType(key) === 'network'" :edit-mode="editMode" />
                     <AppsRunningWidget  v-else-if="widgetType(key) === 'appsRunning'" />
                     <TipsTricksWidget   v-else-if="widgetType(key) === 'tips'" />
                     <StorageWidget      v-else-if="widgetType(key) === 'storage'" />
@@ -442,15 +443,28 @@ export default {
     LayoutSettingsPanel,
   },
   data() {
-    // Compute sequentially so each helper sees the previous values via the
-    // local consts. Earlier this used `this.columnCount` inside loadWeights
-    // — but inside data(), `this` doesn't yet have those reactive props,
-    // so loadWeights silently fell back to a 3-length array even when 4
-    // columns were saved. That mismatch is what caused the "broken 3
-    // column" jump on hard refresh in 4-column mode.
-    const columns = this.loadLayout()
-    const columnCount = columns.length
-    const colWeights = this.loadWeights(columnCount)
+    // Single source of truth: columns.length drives columnCount, which in
+    // turn drives the weights array length. Compute sequentially so each
+    // step sees the previous local — `this` doesn't yet have reactive
+    // props inside data(), so we can't read them via this.* yet.
+    let columns = this.loadLayout()
+    let columnCount = columns.length
+    // Clamp to supported range and re-expand if storage was somehow corrupt.
+    if (columnCount < 2 || columnCount > 4) {
+      columnCount = Math.max(2, Math.min(4, columnCount || 3))
+      columns = this.expandLayoutTo(columns, columnCount)
+    }
+    let colWeights = this.loadWeights(columnCount)
+    // Belt-and-suspenders: if loadWeights returned something wonky, force
+    // it back to a clean Nfr split so the inline gridTemplateColumns
+    // always has exactly columnCount weights — otherwise the grid renders
+    // with N tracks but only M weights and the layout jumps to garbage.
+    if (!Array.isArray(colWeights) || colWeights.length !== columnCount) {
+      colWeights = Array(columnCount).fill(1)
+    }
+    // Keep the standalone count key in sync with the canonical
+    // columns.length so any downstream read sees the right value.
+    try { localStorage.setItem(COLCOUNT_KEY, String(columnCount)) } catch (e) { /* ignore */ }
     return {
       pickedApps: [],
       columnCount,
@@ -482,6 +496,17 @@ export default {
     // First visit only — fires the driver.js tour if kode_tour_seen
     // isn't set. Tour itself marks the flag on close/finish.
     maybeStartEasyTourOnce()
+    // Final reconciliation pass — covers the Easy→Advanced→Easy round-trip
+    // where stale state from a prior mount could leave colWeights at a
+    // different length than columns (e.g. user changed column count in
+    // Easy, the Advanced view didn't share state, and we re-mounted with
+    // a half-synced cache). Force-rebuild if there's any mismatch.
+    if (this.colWeights.length !== this.columns.length) {
+      this.colWeights = Array(this.columns.length).fill(1)
+      this.columnCount = this.columns.length
+      this.saveWeights()
+      try { localStorage.setItem(COLCOUNT_KEY, String(this.columnCount)) } catch (e) { /* ignore */ }
+    }
   },
   methods: {
     async loadPickedApps() {
@@ -823,6 +848,36 @@ export default {
     deleteUserTemplate(key) {
       this.userTemplates = this.userTemplates.filter(t => t.key !== key)
       this.saveUserTemplates()
+    },
+    overwriteUserTemplate(key) {
+      const target = this.userTemplates.find(t => t.key === key)
+      if (!target) return
+      this.$buefy.dialog.confirm({
+        title: this.$t('Overwrite saved layout'),
+        message: `${this.$t('Replace')} "<strong>${target.name}</strong>" ${this.$t('with your current setup? This can\'t be undone.')}`,
+        confirmText: this.$t('Overwrite'),
+        cancelText: this.$t('Cancel'),
+        type: 'is-warning',
+        hasIcon: true,
+        onConfirm: () => {
+          const clonedCols = this.columns.map(c => ({
+            widgets: Array.isArray(c.widgets) ? [...c.widgets] : [],
+            subCols: Array.isArray(c.subCols) ? c.subCols.map(sub => [...sub]) : null,
+          }))
+          this.userTemplates = this.userTemplates.map(t => (
+            t.key === key
+              ? { ...t, cols: clonedCols, weights: [...this.colWeights] }
+              : t
+          ))
+          this.saveUserTemplates()
+          this.$buefy.toast.open({
+            message: `${this.$t('Updated')} "${target.name}"`,
+            type: 'is-success',
+            position: 'is-top',
+            duration: 2200,
+          })
+        },
+      })
     },
     resetLayoutToDefault() {
       // Recovery hatch — clears the columns layout + weights + column-count

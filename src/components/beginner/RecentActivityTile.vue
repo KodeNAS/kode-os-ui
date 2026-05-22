@@ -1,8 +1,19 @@
 <template>
   <div class="kode-tile recent-activity-tile">
     <span v-if="hintModeOn" class="kode-hint">{{ hintLabel }}</span>
+    <button
+      v-if="items.length > 1"
+      type="button"
+      class="recent-toggle"
+      :aria-label="expanded ? $t('Collapse list') : $t('Show more')"
+      :title="expanded ? $t('Hide older items') : $t('Show more')"
+      @click="toggleExpanded"
+    >
+      <b-icon :icon="expanded ? 'arrow-up' : 'arrow-down'" pack="casa" size="is-small" />
+    </button>
     <header class="tile-header">
       <h2 class="tile-title">{{ $t('Recent activity') }}</h2>
+      <span v-if="!expanded && items.length > 1" class="recent-count">+{{ items.length - 1 }}</span>
     </header>
 
     <div v-if="isLoading" class="tile-empty">
@@ -12,8 +23,9 @@
       {{ $t('Files saved to your pebble will appear here.') }}
     </div>
     <ul v-else class="tile-list">
+      <!-- Collapsed: just the most recent item. Expanded: full set. -->
       <li
-        v-for="item in items"
+        v-for="item in visibleItems"
         :key="item.path"
         class="tile-row"
         @click="open(item)"
@@ -40,15 +52,21 @@ export default {
     homeShowFiles: { default: null },
   },
   data() {
+    let savedExpanded = false
+    try { savedExpanded = localStorage.getItem('kode_recent_expanded') === '1' } catch (e) { /* ignore */ }
     return {
       isLoading: true,
       items: [],
+      expanded: savedExpanded,
       HOME_PATH: '/DATA',
     }
   },
   computed: {
     hintLabel() {
       return this.$t('Your latest files and folders in /DATA. Click any row to open it in the file browser.')
+    },
+    visibleItems() {
+      return this.expanded ? this.items : this.items.slice(0, 1)
     },
   },
   created() {
@@ -73,6 +91,10 @@ export default {
       if (typeof this.homeShowFiles === 'function') {
         this.homeShowFiles(item.is_dir ? item.path : this.HOME_PATH)
       }
+    },
+    toggleExpanded() {
+      this.expanded = !this.expanded
+      try { localStorage.setItem('kode_recent_expanded', this.expanded ? '1' : '0') } catch (e) { /* ignore */ }
     },
     iconName(item) {
       if (item.is_dir) return 'folder'
@@ -153,17 +175,53 @@ export default {
 }
 
 .tile-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
   margin-bottom: 0.5rem;
   padding-bottom: 0.5rem;
+  padding-right: 32px; /* reserve room for absolute chevron */
   border-bottom: 1px solid rgba(0, 0, 0, 0.08);
 }
 
 .tile-title {
+  flex: 1;
   font-size: 0.9375rem;
   font-weight: 500;
   letter-spacing: 0.01em;
   text-transform: uppercase;
   color: rgba(31, 41, 55, 0.7);
+}
+
+/* Pill that hints at hidden items when collapsed. */
+.recent-count {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: rgba(45, 95, 78, 0.14);
+  color: #2d5f4e;
+  font-feature-settings: 'tnum' 1;
+}
+
+.recent-toggle {
+  position: absolute;
+  top: 11px;
+  right: 11px;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.06);
+  border: none;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: rgba(0, 0, 0, 0.55);
+  transition: background 0.15s, color 0.15s;
+  z-index: 4;
+
+  &:hover { background: rgba(45, 95, 78, 0.18); color: #2d5f4e; }
 }
 
 .tile-empty {

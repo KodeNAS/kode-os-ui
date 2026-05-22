@@ -29,7 +29,7 @@ function easySteps() {
   return [
     {
       popover: {
-        title: 'Welcome to your pebble',
+        title: 'Welcome to pebble',
         description: 'Quick tour — 30 seconds. You can replay this anytime from the ? button in the top bar.',
         side: 'over',
         align: 'center',

@@ -11,18 +11,19 @@
     >
       <b-icon icon="control-outline" pack="casa" size="is-small" />
     </button>
+    <button
+      type="button"
+      class="weather-toggle"
+      :class="{ 'has-gear': editMode }"
+      :aria-label="expanded ? $t('Collapse details') : $t('Show more details')"
+      :title="expanded ? $t('Hide details') : $t('Show details')"
+      @click="toggleExpanded"
+    >
+      <b-icon :icon="expanded ? 'arrow-up' : 'arrow-down'" pack="casa" size="is-small" />
+    </button>
     <header class="weather-header">
       <h2 class="tile-title">{{ $t('Weather') }}</h2>
       <span class="weather-location">{{ settings.locationName }}</span>
-      <button
-        type="button"
-        class="weather-toggle"
-        :aria-label="expanded ? $t('Collapse details') : $t('Show more details')"
-        :title="expanded ? $t('Hide details') : $t('Show details')"
-        @click="toggleExpanded"
-      >
-        <b-icon :icon="expanded ? 'arrow-up' : 'arrow-down'" pack="casa" size="is-small" />
-      </button>
     </header>
 
     <div v-if="isLoading" class="weather-loading">{{ $t('Loading...') }}</div>
@@ -60,13 +61,19 @@
             </div>
           </div>
 
-          <div v-if="settings.forecastDays > 0 && forecast.length > 0" class="weather-forecast" :style="forecastStyle">
-            <div v-for="d in forecast" :key="d.date" class="forecast-day">
-              <div class="forecast-day-label">{{ d.label }}</div>
-              <div class="forecast-emoji">{{ d.emoji }}</div>
-              <div class="forecast-temps">
-                <span class="forecast-high">{{ d.high }}°</span>
-                <span class="forecast-low">{{ d.low }}°</span>
+          <!-- Horizontally scrollable forecast strip. Each day card has a
+               fixed minimum width so 5/7/14-day layouts never compress;
+               instead the user scrolls/swipes to see further out. The
+               edge fades hint that there's more on either side. -->
+          <div v-if="settings.forecastDays > 0 && forecast.length > 0" class="weather-forecast-wrap">
+            <div class="weather-forecast" ref="forecastStrip">
+              <div v-for="d in forecast" :key="d.date" class="forecast-day">
+                <div class="forecast-day-label">{{ d.label }}</div>
+                <div class="forecast-emoji">{{ d.emoji }}</div>
+                <div class="forecast-temps">
+                  <span class="forecast-high">{{ d.high }}°</span>
+                  <span class="forecast-low">{{ d.low }}°</span>
+                </div>
               </div>
             </div>
           </div>
@@ -176,10 +183,6 @@ export default {
     },
     windUnit() {
       return this.settings.units === 'fahrenheit' ? 'mph' : 'km/h'
-    },
-    forecastStyle() {
-      const cols = Math.min(this.forecast.length, 7)
-      return { gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))` }
     },
   },
   watch: {
@@ -310,16 +313,39 @@ export default {
 }
 .kode-tile:hover .kode-hint { opacity: 1; }
 
+/* Gear button — identical to ClockWidget so they look uniform in
+   edit mode. Sits in the corner; the expand chevron shifts left when
+   the gear is showing so they don't overlap. */
+.widget-gear {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.08);
+  border: none;
+  color: rgba(0, 0, 0, 0.7);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 5;
+  transition: background 0.15s, color 0.15s;
+
+  &:hover { background: rgba(45, 95, 78, 0.18); color: #2d5f4e; }
+}
+
 .weather-header {
   display: flex;
   align-items: center;
   gap: 0.5rem;
   margin-bottom: 0.7rem;
   padding-bottom: 0.5rem;
+  padding-right: 70px; /* reserve room for absolute gear + chevron */
   border-bottom: 1px solid rgba(0, 0, 0, 0.08);
 }
 .tile-title {
-  flex: 1;
   font-size: 0.9375rem;
   font-weight: 500;
   text-transform: uppercase;
@@ -328,12 +354,21 @@ export default {
   margin: 0;
 }
 .weather-location {
+  flex: 1;
   font-size: 0.75rem;
   color: rgba(0, 0, 0, 0.55);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
+/* Expand / collapse chevron — pinned top-right, shifts left when the
+   edit-mode gear button is showing so the two never overlap. */
 .weather-toggle {
-  width: 24px;
-  height: 24px;
+  position: absolute;
+  top: 11px;
+  right: 11px;
+  width: 20px;
+  height: 20px;
   border-radius: 50%;
   background: rgba(0, 0, 0, 0.06);
   border: none;
@@ -342,9 +377,11 @@ export default {
   align-items: center;
   justify-content: center;
   color: rgba(0, 0, 0, 0.55);
-  transition: background 0.15s, color 0.15s;
+  transition: background 0.15s, color 0.15s, right 0.18s ease;
+  z-index: 4;
 
   &:hover { background: rgba(45, 95, 78, 0.18); color: #2d5f4e; }
+  &.has-gear { right: 42px; }
 }
 
 .weather-loading,
@@ -411,16 +448,59 @@ export default {
   margin-top: 1px;
 }
 
-.weather-forecast {
-  display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
-  gap: 0.35rem;
+/* Horizontal-scroll forecast strip. The wrap holds the edge fades and
+   the inner div scrolls. Each day card has a fixed minimum width so
+   the row never compresses below a readable size. */
+.weather-forecast-wrap {
+  position: relative;
+  margin-top: 0.65rem;
   padding-top: 0.65rem;
   border-top: 1px solid rgba(0, 0, 0, 0.08);
+
+  &::before,
+  &::after {
+    content: '';
+    position: absolute;
+    top: 0.65rem;
+    bottom: 0;
+    width: 18px;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.18s ease;
+    z-index: 1;
+  }
+  &::before { left: 0; background: linear-gradient(to right, rgba(245, 247, 250, 0.95), transparent); }
+  &::after  { right: 0; background: linear-gradient(to left,  rgba(245, 247, 250, 0.95), transparent); }
+  &:hover::before,
+  &:hover::after { opacity: 1; }
 }
+
+.weather-forecast {
+  display: flex;
+  gap: 0.45rem;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(0, 0, 0, 0.18) transparent;
+  padding-bottom: 4px;
+
+  &::-webkit-scrollbar { height: 4px; }
+  &::-webkit-scrollbar-track { background: transparent; }
+  &::-webkit-scrollbar-thumb {
+    background: rgba(0, 0, 0, 0.18);
+    border-radius: 4px;
+  }
+}
+
 .forecast-day {
+  flex: 0 0 56px;
+  scroll-snap-align: start;
   text-align: center;
-  padding: 0.25rem 0;
+  padding: 0.3rem 0.1rem;
+  border-radius: 10px;
+  transition: background 0.15s ease;
+
+  &:hover { background: rgba(45, 95, 78, 0.08); }
 }
 .forecast-day-label {
   font-size: 0.6875rem;
