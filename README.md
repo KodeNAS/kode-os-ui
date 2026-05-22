@@ -1,3 +1,17 @@
+# KODE OS UI
+
+The web interface for **pebble v1**, a small home NAS appliance from KODE NAS.
+
+KODE OS is a derivative work of [CasaOS](https://github.com/IceWhaleTech/CasaOS)
+by IceWhale Technology Co., Ltd., licensed under
+[Apache 2.0](https://www.apache.org/licenses/LICENSE-2.0). See
+[`LICENSE-CASAOS`](./LICENSE-CASAOS), [`NOTICE.md`](./NOTICE.md), and
+[`CHANGES.md`](./CHANGES.md) for license and modification details.
+
+The upstream CasaOS-UI development instructions follow.
+
+---
+
 [![Vulnerabilities](https://sonarcloud.io/api/project_badges/measure?project=IceWhaleTech_CasaOS-UI&metric=vulnerabilities)](https://sonarcloud.io/summary/new_code?id=IceWhaleTech_CasaOS-UI)
 [![Bugs](https://sonarcloud.io/api/project_badges/measure?project=IceWhaleTech_CasaOS-UI&metric=bugs)](https://sonarcloud.io/summary/new_code?id=IceWhaleTech_CasaOS-UI)
 [![Code Smells](https://sonarcloud.io/api/project_badges/measure?project=IceWhaleTech_CasaOS-UI&metric=code_smells)](https://sonarcloud.io/summary/new_code?id=IceWhaleTech_CasaOS-UI)
