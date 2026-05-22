@@ -93,13 +93,22 @@ export default {
 <style lang="scss" scoped>
 .brand-bar {
 	position: fixed;
-	left: 2rem;
-	bottom: 0;
+	left: 1.5rem;
+	bottom: 1.5rem;
 	//z-index: 10;
+	align-items: flex-end;
+
+	// KODE OS: logo + attribution share the exact same bottom baseline so the
+	// logo and the "Made by KODE NAS · Based on CasaOS · Apache 2.0" string
+	// align cleanly. Default Bulma utility classes on the figure (mb-3) and
+	// the upstream span margin-bottom: 7px are overridden here.
+	.kode-logo {
+		margin-bottom: 0 !important;
+	}
 
 	span {
-		//font-size: 1.125rem;
-		margin-bottom: 7px;
+		margin-bottom: 0;
+		line-height: 1.25rem;
 	}
 
 	.intro-text {
