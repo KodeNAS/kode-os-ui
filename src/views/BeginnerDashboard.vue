@@ -119,23 +119,43 @@ export default {
     }
   }
 
-  ::v-deep .common-card,
-  ::v-deep .app-card {
-    background: rgba(255, 255, 255, 0.55) !important;
-    backdrop-filter: blur(24px) saturate(180%);
-    -webkit-backdrop-filter: blur(24px) saturate(180%);
-    border: 1px solid rgba(255, 255, 255, 0.4);
-    border-radius: 18px;
+  /* The visible card background comes from an inner .blur-background div
+     defined in assets/scss/common/_others.scss, NOT from .common-card.
+     Override that inner element so the glass actually lands on the card. */
+  ::v-deep .common-card .blur-background,
+  ::v-deep .app-card .blur-background {
+    background-color: rgba(255, 255, 255, 0.55) !important;
+    background-image: none !important;
+    backdrop-filter: blur(24px) saturate(180%) !important;
+    -webkit-backdrop-filter: blur(24px) saturate(180%) !important;
+    border: 1px solid rgba(255, 255, 255, 0.4) !important;
+    border-radius: 18px !important;
     box-shadow:
       inset 0 1px 0 rgba(255, 255, 255, 0.7),
-      0 8px 28px rgba(0, 0, 0, 0.18);
-    transition: transform 0.18s ease, box-shadow 0.18s ease;
+      0 8px 28px rgba(0, 0, 0, 0.18) !important;
+  }
+
+  /* common-card paints white text — flip to dark for legibility on the glass. */
+  ::v-deep .common-card,
+  ::v-deep .common-card .info,
+  ::v-deep .common-card a,
+  ::v-deep .common-card a p {
+    color: #1f2937 !important;
+  }
+
+  /* Lift-on-hover on the wrapper. */
+  ::v-deep .common-card,
+  ::v-deep .app-card {
+    transition: transform 0.18s ease;
 
     &:hover {
       transform: translateY(-2px);
-      box-shadow:
-        inset 0 1px 0 rgba(255, 255, 255, 0.85),
-        0 14px 36px rgba(0, 0, 0, 0.22);
+
+      .blur-background {
+        box-shadow:
+          inset 0 1px 0 rgba(255, 255, 255, 0.85),
+          0 14px 36px rgba(0, 0, 0, 0.22) !important;
+      }
     }
   }
 }
