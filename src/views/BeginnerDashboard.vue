@@ -11,7 +11,7 @@
           </p>
         </header>
 
-        <div class="beginner-grid">
+        <div class="beginner-grid" :style="gridStyle">
           <!-- Vuedraggable distinguishes a click from a drag by movement
                threshold (default 0px → any movement starts a drag, but a
                clean click still fires the underlying handler). No explicit
