@@ -100,12 +100,20 @@ export default {
         this.$emit('added', this.username)
         this.$emit('close')
       } catch (err) {
-        const msg = (err && err.response && err.response.data && err.response.data.message) || err.message || this.$t('Could not add user.')
+        const raw = (err && err.response && err.response.data && err.response.data.message) || err.message || ''
+        const lower = raw.toLowerCase()
+        // Translate the CasaOS "key does not exist" error into something
+        // a non-engineer can act on. The user-service's register endpoint
+        // requires a one-time init key that's consumed on first boot;
+        // adding more users isn't supported by the upstream API yet.
+        const friendly = (lower.includes('key') && (lower.includes('not exist') || lower.includes('expired')))
+          ? this.$t('CasaOS doesn\'t support adding more users from the dashboard yet — the upstream user-service is single-account by default. We can wire this up properly once we fork the backend (see the KODE OS Phase 6 plan).')
+          : (raw || this.$t('Could not add user.'))
         this.$buefy.toast.open({
-          message: `${this.$t('Add user failed:')} ${msg}`,
+          message: friendly,
           type: 'is-danger',
           position: 'is-top',
-          duration: 5000,
+          duration: 7000,
         })
       } finally {
         this.isSubmitting = false

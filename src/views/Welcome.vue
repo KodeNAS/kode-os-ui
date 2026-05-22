@@ -110,23 +110,57 @@ export default {
       }
       this.stepIndex += 1
     },
-    back() {
+    async back() {
       if (this.stepIndex <= 0) return
-      // Always skip backward past AdminAccountStep — once an account exists
-      // (either created this run or pre-existing in replay) revisiting it
-      // would try to re-register on top and fail confusingly.
+
+      // Skip backward past AdminAccountStep (step 3) when an account exists;
+      // re-entering would try to re-register on top of the existing one.
       if (this.stepIndex === 4 && (this.adminCreated || this.isReplay)) {
         this.stepIndex = 2
         return
       }
+
+      // Returning to UserTypeStep with a fresh account means the user is
+      // changing their mind — delete the account so initKey regenerates
+      // and the next forward pass can register with new credentials.
+      if (this.stepIndex === 2 && this.adminCreated && !this.isReplay) {
+        await this.deleteAccount()
+        this.stepIndex = 1
+        return
+      }
+
       this.stepIndex -= 1
+    },
+    async deleteAccount() {
+      try {
+        await this.$api.users.deleteAllUser()
+        const statusRes = await this.$api.users.getUserStatus()
+        const key = statusRes && statusRes.data && statusRes.data.data && statusRes.data.data.key
+        if (key) this.$store.commit('SET_INIT_KEY', key)
+        this.$store.commit('SET_NEED_INITIALIZATION', true)
+        localStorage.removeItem('access_token')
+        localStorage.removeItem('refresh_token')
+        localStorage.removeItem('user')
+        this.adminCreated = false
+        this.adminUsername = ''
+      } catch (e) {
+        this.$buefy.toast.open({
+          message: this.$t('Couldn\'t roll back the account. Use Factory reset in Settings to start cleanly.'),
+          type: 'is-warning',
+          position: 'is-top',
+          duration: 6000,
+        })
+      }
     },
     onUserType(payload) {
       const type = (payload && payload.userType) || 'beginner'
       this.userType = type
-      // Developer skips the rest of the wizard entirely.
+      // Developer skips the SystemCheck but STILL needs to create an admin
+      // account — otherwise the router bounces back to /welcome or /login
+      // on the next navigation (no initialized user). Jump straight to
+      // step 3 (AdminAccountStep); onAdminDone routes developer to finish.
       if (type === 'developer') {
-        this.finishDeveloper()
+        this.stepIndex = 3
         return
       }
       this.next()
@@ -145,17 +179,26 @@ export default {
       sessionStorage.setItem('fromWelcome', true)
       this.$router.push('/')
     },
-    restart() {
-      // Reset all collected data and jump back to the welcome screen. Admin
-      // account stays created since that's an API-side side effect we can't
-      // undo — the back() guard above prevents re-entering the account step.
+    async restart() {
+      // The user wants the wizard fully re-runnable. If an account was
+      // created during this attempt, delete it so initKey gets regenerated.
+      if (this.adminCreated) {
+        await this.deleteAccount()
+      }
       this.hostname = 'pebble'
       this.pickedApps = []
+      this.userType = ''
       this.stepIndex = 0
     },
     onAdminDone(payload) {
       if (payload && payload.username) this.adminUsername = payload.username
       this.adminCreated = true
+      // Developer mode finishes immediately after account creation,
+      // skipping PebbleName, PickApps, and Walkthroughs.
+      if (this.userType === 'developer') {
+        this.finishDeveloper()
+        return
+      }
       this.next()
     },
     onPebbleNameDone(payload) {
@@ -164,8 +207,10 @@ export default {
     },
     onAppsPicked(payload) {
       if (payload && Array.isArray(payload.apps)) this.pickedApps = payload.apps
-      // If the user picked zero apps somehow, skip the walkthrough step.
-      this.stepIndex = this.pickedApps.length > 0 ? 5 : 6
+      // If the user picked zero apps somehow, skip the walkthrough step
+      // and go straight to Done. With UserTypeStep inserted at index 1,
+      // Walkthrough is now step 6 and Done is step 7.
+      this.stepIndex = this.pickedApps.length > 0 ? 6 : 7
     },
     async finish() {
       // Only persist the first-boot complete flag on initial setup; replay
