@@ -1,317 +1,207 @@
 <!--
-  * @LastEditors: zhanghengxin ezreal.zhang@icewhale.org
-  * @LastEditTime: 2022/12/1 下午8:02
-  * @FilePath: /CasaOS-UI/src/views/Welcome.vue
-  * @Description:
-  *
-  * Copyright (c) 2022 by IceWhale, All Rights Reserved.
-  -->
+  KODE OS first-boot wizard. Replaces the upstream CasaOS Welcome flow
+  (Welcome → Create Account) with a multi-step setup: Welcome → System
+  check → Admin account → Pebble name → Pick apps → per-app walkthroughs
+  → Done. Reuses upstream auth/register/login plumbing via the
+  AdminAccountStep component.
 
+  Copyright (c) 2022 by IceWhale (original Welcome.vue)
+  KODE OS additions © KODE NAS, licensed separately.
+-->
 <template>
-	<div id="login-page" class="is-flex is-justify-content-center is-align-items-center">
-		<div v-if="!isLoading" v-animate-css="initAni" :class="'step' + step" class="login-panel is-shadow">
+  <div id="kode-firstboot" class="is-flex is-justify-content-center is-align-items-center">
+    <div v-if="!isLoading" class="firstboot-shell">
+      <!-- Compact step rail (skipped on the welcome screen for max impact) -->
+      <ol v-if="stepIndex > 0 && stepIndex < lastStep" class="fb-rail">
+        <li
+          v-for="(label, i) in railLabels"
+          :key="i"
+          class="fb-rail-item"
+          :class="{
+            'is-current': i === railIndex,
+            'is-done': i < railIndex,
+          }"
+        >
+          <span class="fb-rail-dot">{{ i + 1 }}</span>
+          <span class="fb-rail-label">{{ label }}</span>
+        </li>
+      </ol>
 
-			<div v-if="step == 1" class="has-text-centered">
-				<div v-animate-css="s1Ani" class=" is-flex is-justify-content-center">
-					<b-image :src="require('@/assets/img/logo/casa-dark.svg')" class="is-128x128 mb-4"></b-image>
-				</div>
-
-				<h2 v-animate-css="s2Ani" class="title is-2 mb-5 has-text-centered __attached_title">{{
-						$t('Welcome to CasaOS')
-					}}</h2>
-				<h2 v-animate-css="s3Ani" class="subtitle  has-text-centered __attached_sub_title">{{
-						$t(`Let's create your initial account`)
-					}}</h2>
-				<b-button v-animate-css="s4Ani" class="mt-2" rounded type="is-primary" @click="goToStep(2)">{{
-						$t(`Go →`)
-					}}
-				</b-button>
-			</div>
-
-			<div v-if="step == 2">
-				<h2 class="title is-3  has-text-centered">{{ $t('Create Account') }}</h2>
-				<div class="is-flex is-justify-content-center ">
-					<div class="has-text-centered">
-						<b-image :src="require('@/assets/img/account/default-avatar.svg')" class="is-128x128"
-								 rounded></b-image>
-					</div>
-				</div>
-				<ValidationObserver ref="observer" v-slot="{ handleSubmit }">
-					<ValidationProvider v-slot="{ errors, valid }" name="User" rules="required">
-						<b-field :label="$t('Username')" :message="$t(errors)"
-								 :type="{ 'is-danger': errors[0], 'is-success': valid }">
-							<b-input v-model="username" type="text"
-									 v-on:keyup.enter.native="handleSubmit(register)"></b-input>
-						</b-field>
-					</ValidationProvider>
-					<ValidationProvider v-slot="{ errors, valid }" name="Password" rules="required|min:5"
-										vid="password">
-						<b-field :label="$t('Password')" :message="$t(errors)"
-								 :type="{ 'is-danger': errors[0], 'is-success': valid }"
-								 class="mt-4">
-							<b-input v-model="password" password-reveal type="password"
-									 v-on:keyup.enter.native="handleSubmit(register)"></b-input>
-						</b-field>
-					</ValidationProvider>
-					<ValidationProvider v-slot="{ errors, valid }" name="Password Confirmation"
-										rules="required|confirmed:password">
-						<b-field :label="$t('Confirm Password')" :message="$t(errors)"
-								 :type="{ 'is-danger': errors[0], 'is-success': valid }" class="mt-4">
-							<b-input v-model="confirmation" password-reveal type="password"
-									 v-on:keyup.enter.native="handleSubmit(register)"></b-input>
-						</b-field>
-					</ValidationProvider>
-					<b-button class="mt-5" expanded rounded type="is-primary" @click="handleSubmit(register)">
-						{{ $t('Create') }}
-					</b-button>
-				</ValidationObserver>
-			</div>
-
-			<div v-if="step == 3" class="has-text-centered ">
-				<h2 class="title is-3  has-text-centered">{{ $t('All things done!') }}</h2>
-				<div class="is-flex is-align-items-center is-justify-content-center">
-					<lottie-animation :animationData="require('@/assets/ani/done.json')" :autoPlay="true" :loop="false"
-									  class="animation" @complete="complete"></lottie-animation>
-				</div>
-			</div>
-		</div>
-	</div>
+      <transition name="fb-fade" mode="out-in">
+        <WelcomeStep        v-if="stepIndex === 0" key="welcome"  @next="next" />
+        <SystemCheckStep    v-else-if="stepIndex === 1" key="sys" @next="next" />
+        <AdminAccountStep   v-else-if="stepIndex === 2" key="adm" @next="onAdminDone" />
+        <PebbleNameStep     v-else-if="stepIndex === 3" key="nm"  @next="onPebbleNameDone" />
+        <PickAppsStep       v-else-if="stepIndex === 4" key="ap"  @next="onAppsPicked" />
+        <WalkthroughStep    v-else-if="stepIndex === 5" key="wt"  :apps="pickedApps" :host="host" @next="next" />
+        <DoneStep           v-else-if="stepIndex === 6" key="dn"  :hostname="hostname" :apps="pickedApps" @finish="finish" />
+      </transition>
+    </div>
+  </div>
 </template>
 
 <script>
-import {ValidationObserver, ValidationProvider} from "vee-validate";
-import "@/plugins/vee-validate";
-import LottieAnimation                          from "lottie-web-vue";
-import smoothReflow                             from 'vue-smooth-reflow'
+import WelcomeStep      from '@/components/firstboot/steps/WelcomeStep.vue'
+import SystemCheckStep  from '@/components/firstboot/steps/SystemCheckStep.vue'
+import AdminAccountStep from '@/components/firstboot/steps/AdminAccountStep.vue'
+import PebbleNameStep   from '@/components/firstboot/steps/PebbleNameStep.vue'
+import PickAppsStep     from '@/components/firstboot/steps/PickAppsStep.vue'
+import WalkthroughStep  from '@/components/firstboot/steps/WalkthroughStep.vue'
+import DoneStep         from '@/components/firstboot/steps/DoneStep.vue'
 
 export default {
-
-	name: "welcome-page",
-	mixins: [smoothReflow],
-	data() {
-		return {
-			step: 1,
-			username: '',
-			password: '',
-			confirmation: "",
-			isLoading: true,
-			isLogin: false,
-			message: "",
-			notificationShow: false,
-			initAni: {
-				classes: 'zoomIn',
-				delay: 1000,
-				duration: 700
-			},
-			s1Ani: {
-				classes: 'fadeInUp',
-				delay: 1300,
-				duration: 700
-			},
-			s2Ani: {
-				classes: 'fadeInUp',
-				delay: 1700,
-				duration: 700
-			},
-			s3Ani: {
-				classes: 'fadeInUp',
-				delay: 1900,
-				duration: 700
-			},
-			s4Ani: {
-				classes: 'fadeIn',
-				delay: 2500,
-				duration: 700
-			}
-		}
-	},
-	components: {
-		ValidationObserver,
-		ValidationProvider,
-		LottieAnimation
-	},
-
-	mounted() {
-		this.$smoothReflow({
-			el: '.login-panel',
-			property: ['height', 'width'],
-		})
-		this.isLoading = false;
-
-	},
-
-	methods: {
-		/**
-		 * @description: register
-		 * @return {*}
-		 */
-		register() {
-			const initKey = this.$store.state.initKey;
-			this.$api.users.register(this.username, this.password, initKey).then(res => {
-				if (res.data.success == 200) {
-					this.login().then(() => {
-						// First login set default app order
-						this.$api.users.setCustomStorage("app_order", {data: ["App Store", "Files"]})
-					});
-					this.goToStep(3);
-				}
-			}).catch(err => {
-				this.$buefy.toast.open({
-					message: err.response.data.message,
-					type: 'is-danger',
-					position: 'is-top',
-					duration: 5000,
-					queue: false
-				})
-			})
-		},
-
-		/**
-		 * @description: login
-		 * @return {*}
-		 */
-		async login() {
-			const userRes = await this.$api.users.login(this.username, this.password)
-			if (userRes.data.success == 200) {
-				localStorage.setItem("access_token", userRes.data.data.token.access_token);
-				localStorage.setItem("refresh_token", userRes.data.data.token.refresh_token);
-				localStorage.setItem("expires_at", userRes.data.data.token.expires_at);
-				localStorage.setItem("user", JSON.stringify(userRes.data.data.user));
-
-				this.$store.commit("SET_NEED_INITIALIZATION", false);
-				this.$store.commit("SET_INIT_KEY", "");
-				this.$store.commit("SET_USER", userRes.data.data.user);
-				this.$store.commit("SET_ACCESS_TOKEN", userRes.data.data.token.access_token);
-				this.$store.commit("SET_REFRESH_TOKEN", userRes.data.data.token.refresh_token);
-
-				const versionRes = await this.$api.sys.getVersion();
-				if (versionRes.data.success == 200) {
-					localStorage.setItem("version", versionRes.data.data.current_version);
-				}
-				sessionStorage.setItem("fromWelcome", true);
-				this.isLogin = true
-
-			} else {
-				this.isLogin = false
-				this.message = this.$t("Username or Password error!")
-				this.notificationShow = true
-			}
-		},
-		goToStep(step) {
-			this.step = step
-		},
-		complete() {
-			if (this.isLogin) {
-				this.$router.push("/");
-			} else {
-				this.$router.push("/login");
-			}
-		}
-	}
+  name: 'welcome-page',
+  components: {
+    WelcomeStep,
+    SystemCheckStep,
+    AdminAccountStep,
+    PebbleNameStep,
+    PickAppsStep,
+    WalkthroughStep,
+    DoneStep,
+  },
+  data() {
+    return {
+      isLoading: true,
+      stepIndex: 0,
+      lastStep: 6,
+      // Compact rail labels for steps 1..5 (welcome + done are hidden).
+      railLabels: [
+        this.$t('Check'),
+        this.$t('Account'),
+        this.$t('Name'),
+        this.$t('Apps'),
+        this.$t('Set up'),
+      ],
+      // Collected wizard data
+      adminUsername: '',
+      hostname: 'pebble',
+      pickedApps: [],
+      host: window.location.hostname || 'pebble.local',
+    }
+  },
+  computed: {
+    railIndex() {
+      // rail items map to stepIndex 1..5
+      return Math.max(0, Math.min(this.railLabels.length - 1, this.stepIndex - 1))
+    },
+  },
+  mounted() {
+    this.isLoading = false
+  },
+  methods: {
+    next() {
+      if (this.stepIndex < this.lastStep) this.stepIndex += 1
+    },
+    onAdminDone(payload) {
+      if (payload && payload.username) this.adminUsername = payload.username
+      this.next()
+    },
+    onPebbleNameDone(payload) {
+      if (payload && payload.hostname) this.hostname = payload.hostname
+      this.next()
+    },
+    onAppsPicked(payload) {
+      if (payload && Array.isArray(payload.apps)) this.pickedApps = payload.apps
+      // If the user picked zero apps somehow, skip the walkthrough step.
+      this.stepIndex = this.pickedApps.length > 0 ? 5 : 6
+    },
+    async finish() {
+      // Persist a flag the OS/router can read to decide whether to short-circuit
+      // /welcome on subsequent visits. The brief calls this
+      // kode_first_boot_complete.
+      try {
+        await this.$api.users.setCustomStorage('kode_first_boot', {
+          complete: true,
+          completed_at: new Date().toISOString(),
+          hostname: this.hostname,
+          apps: this.pickedApps,
+        })
+      } catch (e) { /* non-blocking */ }
+      sessionStorage.setItem('fromWelcome', true)
+      this.$router.push('/')
+    },
+  },
 }
 </script>
 
-<style lang="scss">
-.animation {
-	width: 120px;
-	height: 120px;
+<style lang="scss" scoped>
+#kode-firstboot {
+  height: calc(100% - 5.5rem);
+  position: relative;
+  z-index: 500;
+  padding: 1.5rem;
 }
 
-#login-page {
-	height: calc(100% - 5.5rem);
-	position: relative;
-	z-index: 500;
-
-	.login-panel {
-		text-align: left;
-		background: rgba(255, 255, 255, 0.46);
-		backdrop-filter: blur(1rem);
-		border-radius: 8px;
-		padding: 2.5rem 4rem;
-
-		.label {
-			color: #dfdfdf;
-		}
-
-		.input {
-			background: rgba(255, 255, 255, 0.32);
-			border-color: transparent;
-		}
-
-		&.step1 {
-			padding: 4rem 6rem;
-		}
-
-		&.step2 {
-			padding: 2.5rem 4rem;
-			width: 32rem;
-		}
-
-		&.step3 {
-			padding: 4rem 8rem;
-		}
-
-		&.step4 {
-			width: 28rem;
-		}
-	}
+.firstboot-shell {
+  width: 560px;
+  max-width: 100%;
+  background: linear-gradient(180deg, rgba(15, 25, 30, 0.30), rgba(15, 25, 30, 0.55));
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border-radius: 22px;
+  padding: 2rem;
+  box-shadow: 0 18px 48px rgba(0, 0, 0, 0.35);
 }
 
-@media screen and (max-width: 480px) {
-	.login-panel {
-		text-align: left;
-		background: rgba(255, 255, 255, 0.46);
-		backdrop-filter: blur(1rem);
-		border-radius: 8px;
-		margin: 0 2rem;
-		padding: 2rem !important;
-
-		.label {
-			color: #dfdfdf;
-		}
-
-		.input {
-			background: rgba(255, 255, 255, 0.32);
-			border-color: transparent;
-		}
-
-		.is-128x128 {
-			height: 96px;
-			width: 96px;
-		}
-
-		.is-3 {
-			font-size: 1.5rem;
-		}
-
-		&.step1 {
-			.is-2 {
-				font-size: 1.5rem;
-			}
-
-			.subtitle {
-				font-size: 1rem;
-			}
-		}
-
-		&.step3 {
-			padding: 4rem !important;
-		}
-	}
+.fb-rail {
+  list-style: none;
+  margin: 0 0 1.25rem 0;
+  padding: 0;
+  display: flex;
+  gap: 0.4rem;
 }
 
+.fb-rail-item {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.3rem 0.55rem;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.10);
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 0.75rem;
 
-// Temporary
-.__attached_title {
-	// former color.Not in existing architecture.
-	color: hsl(211, 72%, 20%, 100%);;
+  &.is-current {
+    background: rgba(255, 255, 255, 0.22);
+    color: #fff;
+    font-weight: 500;
+  }
+  &.is-done {
+    color: #fff;
+  }
 }
 
-.__attached_sub_title {
-	color: hsl(211, 72%, 20%, 60%);
+.fb-rail-dot {
+  flex: 0 0 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.2);
+  color: #fff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.65rem;
+  font-weight: 500;
+
+  .is-current &,
+  .is-done & { background: #2d5f4e; }
 }
 
-.__op60 {
-	opacity: 0.6;
+.fb-rail-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.fb-fade-enter-active,
+.fb-fade-leave-active {
+  transition: opacity 0.25s, transform 0.25s;
+}
+.fb-fade-enter,
+.fb-fade-leave-to {
+  opacity: 0;
+  transform: translateY(8px);
 }
 </style>
