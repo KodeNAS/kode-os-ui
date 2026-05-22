@@ -48,6 +48,16 @@
         </button>
       </b-dropdown-item>
 
+      <b-dropdown-item :focusable="true" custom class="template-item">
+        <button type="button" class="template-reset-row" @click="$emit('reset-layout')">
+          <b-icon icon="restart-outline" pack="casa" size="is-small" class="reset-icon" />
+          <span class="template-text">
+            <span class="template-name">{{ $t('Reset layout to defaults') }}</span>
+            <span class="template-desc">{{ $t('Wipe column + weight state. Saved layouts in "Your layouts" are kept.') }}</span>
+          </span>
+        </button>
+      </b-dropdown-item>
+
       <div v-if="userTemplates.length > 0" class="template-section-label">{{ $t('Your layouts') }}</div>
       <b-dropdown-item
         v-for="t in userTemplates"
@@ -320,6 +330,38 @@ export default {
   height: 28px;
   border-radius: 50%;
   background: #2d5f4e;
+  color: #fff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.template-reset-row {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  width: 100%;
+  padding: 0.55rem 0.85rem;
+  background: rgba(176, 74, 74, 0.05);
+  border: 1px dashed rgba(176, 74, 74, 0.3);
+  border-radius: 8px;
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.15s, border-color 0.15s;
+  margin-bottom: 0.25rem;
+
+  &:hover {
+    background: rgba(176, 74, 74, 0.10);
+    border-color: rgba(176, 74, 74, 0.5);
+  }
+}
+
+.reset-icon {
+  flex-shrink: 0;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: #b04a4a;
   color: #fff;
   display: inline-flex;
   align-items: center;

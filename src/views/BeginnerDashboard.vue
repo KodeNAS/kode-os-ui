@@ -40,6 +40,7 @@
           @apply-template="applyTemplate"
           @save-current="saveCurrentAsTemplate"
           @delete-template="deleteUserTemplate"
+          @reset-layout="resetLayoutToDefault"
         />
 
         <div ref="grid" class="beginner-grid" :class="{ 'is-edit-mode': editMode }" :style="gridStyle">
@@ -361,10 +362,10 @@ function normalizeWidgetKey(k) {
 }
 
 // Wrap a column shape into the canonical { widgets, subCols } form. Accepts
-// either a legacy plain string[] OR the new object shape, normalizing every
-// widget key + filtering invalid entries along the way.
+// either a legacy plain string[] OR the new object shape. Mixed-mode is
+// allowed: a column can hold top widgets AND sub-columns underneath.
 function normalizeColumn(col) {
-  // Legacy array shape — wrap.
+  // Legacy array shape — wrap as flat widgets-only.
   if (Array.isArray(col)) {
     const widgets = []
     for (const k of col) {
@@ -383,17 +384,25 @@ function normalizeColumn(col) {
     }
     let subCols = null
     if (Array.isArray(col.subCols) && col.subCols.length >= 2 && col.subCols.length <= 4) {
+      const placedInSubs = new Set()
       subCols = col.subCols.map(sub => {
         const out = []
         for (const k of (Array.isArray(sub) ? sub : [])) {
           if (!isValidWidgetKey(k)) continue
           const n = normalizeWidgetKey(k)
-          if (!out.includes(n)) out.push(n)
+          // Skip duplicates across sub-cols + against the top widgets list
+          // (apps:* shortcuts get unique #N suffixes via addWidget so they
+          // genuinely differ — they pass the includes check naturally).
+          if (placedInSubs.has(n) || widgets.includes(n)) continue
+          placedInSubs.add(n)
+          out.push(n)
         }
         return out
       })
     }
-    return { widgets: subCols ? [] : widgets, subCols }
+    // KEEP both widgets and subCols when both are present — that's the
+    // mixed-mode case (flat top + nested bottom).
+    return { widgets, subCols }
   }
   return { widgets: [], subCols: null }
 }
@@ -563,7 +572,16 @@ export default {
     flattenColumn(ci) {
       const col = this.columns[ci]
       if (!col || !col.subCols) return
-      const gathered = col.subCols.reduce((acc, sub) => acc.concat(sub), [])
+      // Gather top widgets + sub-column widgets, deduped, into one flat list.
+      const seen = new Set()
+      const gathered = []
+      const addUnique = (k) => {
+        if (!seen.has(k)) { seen.add(k); gathered.push(k) }
+      }
+      for (const k of (col.widgets || [])) addUnique(k)
+      for (const sub of col.subCols) {
+        for (const k of sub) addUnique(k)
+      }
       const next = [...this.columns]
       next[ci] = { widgets: gathered, subCols: null }
       this.columns = next
@@ -793,6 +811,27 @@ export default {
     deleteUserTemplate(key) {
       this.userTemplates = this.userTemplates.filter(t => t.key !== key)
       this.saveUserTemplates()
+    },
+    resetLayoutToDefault() {
+      // Recovery hatch — clears the columns layout + weights + column-count
+      // state so the dashboard reverts to the Essential 1-style default.
+      // Keeps user-saved templates intact in case the user wants to
+      // re-apply one. Use when the layout state has drifted into a
+      // bad shape that won't render.
+      try {
+        localStorage.removeItem(LAYOUT_KEY)
+        localStorage.removeItem(WEIGHTS_KEY)
+        localStorage.removeItem(COLCOUNT_KEY)
+      } catch (e) { /* ignore */ }
+      this.columnCount = 3
+      this.columns = this.expandLayoutTo(DEFAULT_LAYOUT, 3)
+      this.colWeights = [...DEFAULT_WEIGHTS]
+      this.$buefy.toast.open({
+        message: this.$t('Layout reset to default.'),
+        type: 'is-success',
+        position: 'is-top',
+        duration: 2200,
+      })
     },
     placedWidgets() {
       // Flat list of every widget key currently in any column, including
