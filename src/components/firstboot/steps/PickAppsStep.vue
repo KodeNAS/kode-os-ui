@@ -201,17 +201,23 @@ export default {
 
 .app-option-wrap {
   position: relative;
+}
 
-  &:hover .app-detail-wrap,
-  &:focus-within .app-detail-wrap {
-    grid-template-rows: 1fr;
-    margin-top: 0.4rem;
+/* Open the detail panel on hover OR keyboard-visible focus. Using
+   :has(:focus-visible) instead of :focus-within means a mouse click
+   on the card doesn't pin the panel open after the mouse leaves —
+   only Tab-driven focus opens it. */
+.app-option-wrap:hover .app-detail-wrap,
+.app-option-wrap:has(:focus-visible) .app-detail-wrap {
+  grid-template-rows: 1fr;
+  margin-top: 0.4rem;
+}
 
-    .app-detail {
-      opacity: 1;
-      transform: translateY(0);
-    }
-  }
+.app-option-wrap:hover .app-detail,
+.app-option-wrap:has(:focus-visible) .app-detail {
+  opacity: 1;
+  transform: translateY(0);
+  padding: 1rem 1.1rem;
 }
 
 .app-option {
@@ -327,10 +333,6 @@ export default {
               padding 0.3s ease;
 }
 
-.app-option-wrap:hover .app-detail,
-.app-option-wrap:focus-within .app-detail {
-  padding: 1rem 1.1rem;
-}
 
 .detail-description {
   font-size: 0.875rem;
