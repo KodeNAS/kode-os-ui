@@ -66,6 +66,10 @@ export default {
 			},
 			wallpaperItems: [
 				{
+					name: "Forest",
+					path: require('@/assets/background/forest.jpg')
+				},
+				{
 					name: "Built-in wallpaper 1",
 					path: require('@/assets/background/wallpaper01.jpg')
 				},

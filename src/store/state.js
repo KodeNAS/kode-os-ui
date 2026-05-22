@@ -36,7 +36,7 @@ const state = {
 
   // Wallpaper
   wallpaperObject: {
-    path: require('@/assets/background/wallpaper01.jpg'),
+    path: require('@/assets/background/forest.jpg'),
     from: 'Built-in', // Built-in, Upload, Files
   },
 
