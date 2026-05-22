@@ -1,0 +1,24 @@
+# /etc/kode-screen.conf — credentials for the OLED screen daemon.
+#
+# Copy this file to /etc/kode-screen.conf on the pebble:
+#   sudo cp kode-screen.conf.example /etc/kode-screen.conf
+#   sudo chown root:root /etc/kode-screen.conf
+#   sudo chmod 600 /etc/kode-screen.conf
+#
+# Then fill in the keys you have. Missing keys cause the daemon to skip
+# that field rather than fail — you can fill these in over time.
+#
+# The daemon hot-reloads this file (watches mtime) so no restart needed
+# after editing — though `sudo systemctl restart pebble-screen` works too.
+
+# Pi-hole v6 admin password. Set this in the Pi-hole admin under
+# Settings → Web Interface / API → Password.
+pihole_password=
+
+# Immich API key. Generate in the Immich web app under
+# User → Account Settings → API Keys → Create API Key.
+immich_api_key=
+
+# Jellyfin API key. Generate at
+# Dashboard → Advanced → API Keys → +.
+jellyfin_api_key=

@@ -22,8 +22,24 @@ per Apache 2.0 best practice (§4.1 of the project brief).
 - `scripts/setup-pi-sudoers.sh` — one-time bootstrap that installs a narrow
   `/etc/sudoers.d/kode-os-deploy` entry on the pebble so the deploy user can
   run the specific `rsync` and `systemctl restart` commands needed by
-  `deploy-to-pi.sh` without a password prompt. Re-runnable; uses `visudo -c`
-  to validate syntax before installing.
+  `deploy-to-pi.sh` and `deploy-screen-to-pi.sh` without a password prompt.
+  Re-runnable; uses `visudo -c` to validate syntax before installing.
+- `pi/nas_screen.py` — v2 of the OLED status daemon. Emits the legacy
+  7-field line plus a new `KODE2|key=value|...` line every 2 s with
+  `devices`, `photos`, `ads`, `playing` fields drawn from `ip neigh show`,
+  Immich, Pi-hole v6, and Jellyfin respectively. Container port mappings
+  resolved at runtime via `docker port` (no auth needed). API credentials
+  read from `/etc/kode-screen.conf` (hot-reloaded on mtime change); missing
+  keys cause the corresponding field to be omitted.
+- `pi/kode-screen.conf.example` — template config with comments pointing at
+  where to generate each app's credentials.
+- `scripts/deploy-screen-to-pi.sh` — scp + systemctl restart helper to push
+  daemon updates to the pebble.
+- `src/service/kodeApps.js` — `resolveAppUrl(appKey, host)` helper that
+  queries the CasaOS app-management API at runtime to discover the host
+  port + URL for an app, instead of hardcoding ports. All five first-boot
+  walkthroughs and the Add-device wizard's PhoneStep / TVStep call this
+  on mount, falling back to a hardcoded URL if the API is unreachable.
 
 ### Changed
 - All user-visible CasaOS strings rebranded to KODE OS across 31 i18n files,
