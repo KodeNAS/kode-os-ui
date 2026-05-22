@@ -36,6 +36,20 @@
           </span>
         </button>
 
+        <button
+          type="button"
+          class="hint-row"
+          @click="openAppGuides"
+        >
+          <span class="hint-row-icon is-guides">
+            <b-icon icon="folder-outline" pack="casa" size="is-small" />
+          </span>
+          <span class="hint-row-text">
+            <span class="hint-row-label">{{ $t('App guides') }}</span>
+            <span class="hint-row-desc">{{ $t('Step-by-step setup for Immich, Jellyfin, Pi-hole and more.') }}</span>
+          </span>
+        </button>
+
         <div class="hint-row hint-toggle-row">
           <span class="hint-row-icon is-hover">
             <b-icon icon="show-search-outline" pack="casa" size="is-small" />
@@ -58,6 +72,7 @@
 
 <script>
 import { startEasyTour, isHintModeOn, setHintMode } from '@/service/tour'
+import AppGuidesPanel from '@/components/Hint/AppGuidesPanel.vue'
 
 export default {
   name: 'HintButton',
@@ -73,6 +88,22 @@ export default {
       }
       // small delay so the dropdown finishes closing before the overlay paints
       setTimeout(() => startEasyTour(), 120)
+    },
+    openAppGuides() {
+      if (this.$refs.dropdown && this.$refs.dropdown.toggle) {
+        this.$refs.dropdown.toggle()
+      }
+      // Slight delay so the dropdown can close cleanly before sidebar enters.
+      setTimeout(() => {
+        this.$buefy.modal.open({
+          parent: this,
+          component: AppGuidesPanel,
+          hasModalCard: false,
+          trapFocus: false,
+          customClass: 'kode-guides-modal',
+          animation: 'fade',
+        })
+      }, 80)
     },
     onHintModeChange(val) {
       setHintMode(!!val)
@@ -134,8 +165,9 @@ export default {
   justify-content: center;
   color: #fff;
 
-  &.is-tour  { background: linear-gradient(135deg, #2d5f4e, #3f7a66); }
-  &.is-hover { background: linear-gradient(135deg, #5e6ad2, #7c8af0); }
+  &.is-tour   { background: linear-gradient(135deg, #2d5f4e, #3f7a66); }
+  &.is-guides { background: linear-gradient(135deg, #c47f00, #e6a02a); }
+  &.is-hover  { background: linear-gradient(135deg, #5e6ad2, #7c8af0); }
 }
 
 .hint-row-text {
