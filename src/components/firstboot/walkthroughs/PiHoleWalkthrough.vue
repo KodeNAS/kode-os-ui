@@ -31,7 +31,10 @@
     <section v-else-if="sub === 1" class="wt-body">
       <p>{{ $t('To start blocking ads, tell your home router to use the pebble as its DNS server. This is the one technical bit — it takes about 2 minutes:') }}</p>
       <ol class="steps">
-        <li>{{ $t('Open your router\'s admin page (often <code>192.168.1.1</code> or <code>192.168.0.1</code>).') }}</li>
+        <li>
+          {{ $t('Open your router\'s admin page (often') }}
+          <code>192.168.1.1</code> {{ $t('or') }} <code>192.168.0.1</code>{{ $t(').') }}
+        </li>
         <li>{{ $t('Find DNS Settings (sometimes under LAN, DHCP, or Network).') }}</li>
         <li>{{ $t('Set the Primary DNS to your pebble\'s address:') }} <code>{{ host }}</code></li>
         <li>{{ $t('Save and reboot your router (or wait ~5 minutes).') }}</li>

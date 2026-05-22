@@ -241,14 +241,14 @@ export default {
 
 .server {
   flex: 1;
+  min-width: 0;
   padding: 0.45rem 0.7rem;
   background: rgba(0, 0, 0, 0.06);
   border-radius: 8px;
   font-size: 0.8125rem;
   color: #1f2937;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  word-break: break-all;
+  overflow-wrap: anywhere;
 }
 
 .steps {

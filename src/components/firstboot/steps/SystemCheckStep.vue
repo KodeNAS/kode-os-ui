@@ -22,6 +22,8 @@
     </ul>
 
     <div class="step-actions">
+      <b-button rounded @click="$emit('back')">{{ $t('Back') }}</b-button>
+      <div class="is-flex-grow-1"></div>
       <b-button
         rounded
         type="is-primary"
@@ -149,5 +151,5 @@ export default {
 .check-label { font-size: 0.9375rem; font-weight: 500; color: #1f2937; }
 .check-detail { font-size: 0.8125rem; color: rgba(0, 0, 0, 0.6); }
 
-.step-actions { display: flex; justify-content: flex-end; }
+.step-actions { display: flex; align-items: center; gap: 0.5rem; }
 </style>

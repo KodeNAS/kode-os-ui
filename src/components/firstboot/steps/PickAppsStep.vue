@@ -67,6 +67,8 @@
     </div>
 
     <div class="step-actions">
+      <b-button rounded @click="$emit('back')">{{ $t('Back') }}</b-button>
+      <div class="is-flex-grow-1"></div>
       <b-button
         rounded
         type="is-primary"
@@ -384,5 +386,5 @@ export default {
   }
 }
 
-.step-actions { display: flex; justify-content: flex-end; }
+.step-actions { display: flex; align-items: center; gap: 0.5rem; }
 </style>

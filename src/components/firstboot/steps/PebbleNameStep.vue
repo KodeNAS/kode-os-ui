@@ -20,6 +20,8 @@
     </p>
 
     <div class="step-actions">
+      <b-button rounded @click="$emit('back')">{{ $t('Back') }}</b-button>
+      <div class="is-flex-grow-1"></div>
       <b-button
         rounded
         type="is-primary"
@@ -92,5 +94,5 @@ export default {
 ::v-deep .field .label { color: rgba(255, 255, 255, 0.9); }
 ::v-deep .input { background: rgba(255, 255, 255, 0.85); border-color: transparent; }
 
-.step-actions { display: flex; justify-content: flex-end; }
+.step-actions { display: flex; align-items: center; gap: 0.5rem; }
 </style>

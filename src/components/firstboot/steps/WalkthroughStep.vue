@@ -14,9 +14,10 @@
       @done="advance"
     />
 
-    <div class="step-skip">
-      <button type="button" class="skip-link" @click="skipAll">
-        {{ $t('Skip the rest — I\'ll figure it out later') }}
+    <div class="step-footer">
+      <b-button rounded size="is-small" @click="back">{{ $t('Back') }}</b-button>
+      <button type="button" class="restart-link" @click="$emit('restart')">
+        {{ $t('Start over from the beginning') }}
       </button>
     </div>
   </div>
@@ -79,8 +80,14 @@ export default {
         this.idx += 1
       }
     },
-    skipAll() {
-      this.$emit('next')
+    back() {
+      if (this.idx > 0) {
+        // walk back through the apps we've already covered
+        this.idx -= 1
+      } else {
+        // first app — Back exits the walkthrough phase entirely
+        this.$emit('back')
+      }
     },
   },
 }
@@ -102,18 +109,22 @@ export default {
   font-size: 0.875rem;
 }
 
-.step-skip {
+.step-footer {
   margin-top: 1rem;
-  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
 }
 
-.skip-link {
+.restart-link {
   background: none;
   border: none;
   color: rgba(255, 255, 255, 0.7);
   font-size: 0.8125rem;
   text-decoration: underline;
   cursor: pointer;
+  padding: 0.25rem 0.5rem;
 
   &:hover { color: #fff; }
 }

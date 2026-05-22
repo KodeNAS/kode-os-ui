@@ -29,11 +29,11 @@
 
       <transition name="fb-fade" mode="out-in">
         <WelcomeStep        v-if="stepIndex === 0" key="welcome"  :is-replay="isReplay" @next="next" />
-        <SystemCheckStep    v-else-if="stepIndex === 1" key="sys" @next="next" />
-        <AdminAccountStep   v-else-if="stepIndex === 2" key="adm" @next="onAdminDone" />
-        <PebbleNameStep     v-else-if="stepIndex === 3" key="nm"  @next="onPebbleNameDone" />
-        <PickAppsStep       v-else-if="stepIndex === 4" key="ap"  @next="onAppsPicked" />
-        <WalkthroughStep    v-else-if="stepIndex === 5" key="wt"  :apps="pickedApps" :host="host" @next="next" />
+        <SystemCheckStep    v-else-if="stepIndex === 1" key="sys" @next="next"            @back="back" />
+        <AdminAccountStep   v-else-if="stepIndex === 2" key="adm" @next="onAdminDone"     @back="back" />
+        <PebbleNameStep     v-else-if="stepIndex === 3" key="nm"  @next="onPebbleNameDone" @back="back" />
+        <PickAppsStep       v-else-if="stepIndex === 4" key="ap"  @next="onAppsPicked"    @back="back" />
+        <WalkthroughStep    v-else-if="stepIndex === 5" key="wt"  :apps="pickedApps" :host="host" @next="next" @back="back" @restart="restart" />
         <DoneStep           v-else-if="stepIndex === 6" key="dn"  :hostname="hostname" :apps="pickedApps" :is-replay="isReplay" @finish="finish" />
       </transition>
     </div>
@@ -65,6 +65,7 @@ export default {
       isLoading: true,
       stepIndex: 0,
       lastStep: 6,
+      adminCreated: false,
       // Compact rail labels for steps 1..5 (welcome + done are hidden).
       railLabels: [
         this.$t('Check'),
@@ -102,8 +103,28 @@ export default {
       }
       this.stepIndex += 1
     },
+    back() {
+      if (this.stepIndex <= 0) return
+      // Always skip backward past AdminAccountStep — once an account exists
+      // (either created this run or pre-existing in replay) revisiting it
+      // would try to re-register on top and fail confusingly.
+      if (this.stepIndex === 3 && (this.adminCreated || this.isReplay)) {
+        this.stepIndex = 1
+        return
+      }
+      this.stepIndex -= 1
+    },
+    restart() {
+      // Reset all collected data and jump back to the welcome screen. Admin
+      // account stays created since that's an API-side side effect we can't
+      // undo — the back() guard above prevents re-entering the account step.
+      this.hostname = 'pebble'
+      this.pickedApps = []
+      this.stepIndex = 0
+    },
     onAdminDone(payload) {
       if (payload && payload.username) this.adminUsername = payload.username
+      this.adminCreated = true
       this.next()
     },
     onPebbleNameDone(payload) {

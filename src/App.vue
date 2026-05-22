@@ -21,7 +21,11 @@
 		</template>
 
 		<!-- Router View Start -->
-		<router-view/>
+		<!-- KODE OS: wrap in a positioned stacking-context so views render
+		     above the .kode-wallpaper-scrim (z-index 1). -->
+		<div class="kode-content-layer is-flex is-flex-direction-column">
+			<router-view/>
+		</div>
 		<!-- Router View End -->
 
 	</div>
@@ -172,6 +176,13 @@ _____             _____ _____
 		background: rgba(15, 25, 30, 0.45);
 		pointer-events: none;
 		z-index: 1;
+	}
+
+	.kode-content-layer {
+		position: relative;
+		z-index: 2;
+		flex: 1;
+		min-height: 0;
 	}
 }
 </style>

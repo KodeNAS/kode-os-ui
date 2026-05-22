@@ -35,6 +35,8 @@
       </ValidationProvider>
 
       <div class="step-actions">
+        <b-button rounded @click="$emit('back')">{{ $t('Back') }}</b-button>
+        <div class="is-flex-grow-1"></div>
         <b-button
           rounded
           type="is-primary"
@@ -130,7 +132,8 @@ export default {
 
 .step-actions {
   display: flex;
-  justify-content: flex-end;
+  align-items: center;
+  gap: 0.5rem;
   margin-top: 0.5rem;
 }
 </style>

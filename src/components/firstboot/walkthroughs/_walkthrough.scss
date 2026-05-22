@@ -71,14 +71,14 @@
 
 .server {
   flex: 1;
+  min-width: 0;
   padding: 0.5rem 0.75rem;
   background: rgba(0, 0, 0, 0.06);
   border-radius: 8px;
   font-size: 0.875rem;
   color: #1f2937;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  word-break: break-all;
+  overflow-wrap: anywhere;
 }
 
 .hint {
@@ -136,6 +136,24 @@
   font-size: 0.875rem;
   color: rgba(0, 0, 0, 0.78);
   line-height: 1.6;
+
+  code {
+    background: rgba(0, 0, 0, 0.06);
+    padding: 1px 6px;
+    border-radius: 4px;
+    color: #1f2937;
+    font-size: 0.9em;
+  }
+}
+
+/* Generic <code> inside the body picks up the same pill treatment. */
+.wt-body p code,
+.wt-body li code {
+  background: rgba(0, 0, 0, 0.06);
+  padding: 1px 6px;
+  border-radius: 4px;
+  color: #1f2937;
+  font-size: 0.9em;
 }
 
 .wt-actions {
