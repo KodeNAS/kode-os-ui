@@ -1,41 +1,63 @@
 <template>
-  <div class="layout-settings">
-    <div class="setting-block">
-      <h4 class="setting-label">{{ $t('Columns') }}</h4>
-      <div class="setting-options">
-        <button
-          v-for="n in [2, 3, 4]"
-          :key="n"
-          type="button"
-          class="option-chip"
-          :class="{ 'is-active': columnCount === n }"
-          @click="$emit('column-count', n)"
-        >
-          {{ n }} {{ $t('cols') }}
+  <div class="layout-settings-bar">
+    <!-- Columns dropdown -->
+    <b-dropdown aria-role="list" position="is-bottom-right" animation="fade1">
+      <template #trigger>
+        <button type="button" class="settings-chip">
+          <b-icon icon="control-outline" pack="casa" size="is-small" />
+          <span>{{ columnCount }} {{ $t('columns') }}</span>
+          <b-icon icon="arrow-down" pack="casa" size="is-small" class="chip-caret" />
         </button>
-      </div>
-    </div>
+      </template>
+      <b-dropdown-item
+        v-for="n in [2, 3, 4]"
+        :key="n"
+        :focusable="true"
+        @click="$emit('column-count', n)"
+      >
+        <span class="dd-row">
+          <span>{{ n }} {{ $t('columns') }}</span>
+          <b-icon
+            v-if="columnCount === n"
+            icon="check"
+            pack="casa"
+            size="is-small"
+            class="dd-check"
+          />
+        </span>
+      </b-dropdown-item>
+    </b-dropdown>
 
-    <div class="setting-block">
-      <h4 class="setting-label">{{ $t('Pre-made layouts') }}</h4>
-      <div class="template-list">
-        <button
-          v-for="t in templates"
-          :key="t.key"
-          type="button"
-          class="template-card"
-          @click="$emit('apply-template', t.key)"
-        >
-          <div class="template-preview" :style="previewStyle(t)">
+    <!-- Templates dropdown -->
+    <b-dropdown aria-role="list" position="is-bottom-right" animation="fade1" class="templates-dropdown">
+      <template #trigger>
+        <button type="button" class="settings-chip">
+          <b-icon icon="wallpaper-outline" pack="casa" size="is-small" />
+          <span>{{ $t('Layouts') }}</span>
+          <b-icon icon="arrow-down" pack="casa" size="is-small" class="chip-caret" />
+        </button>
+      </template>
+      <b-dropdown-item
+        v-for="t in templates"
+        :key="t.key"
+        :focusable="true"
+        custom
+        class="template-item"
+        @click="$emit('apply-template', t.key)"
+      >
+        <button type="button" class="template-row" @click="$emit('apply-template', t.key)">
+          <span class="template-preview" :style="previewStyle(t)">
             <span v-for="(col, ci) in t.cols" :key="ci" class="preview-col">
               <span v-for="w in col" :key="w" class="preview-widget"></span>
             </span>
-          </div>
-          <div class="template-title">{{ t.name }}</div>
-          <div class="template-desc">{{ t.description }}</div>
+          </span>
+          <span class="template-text">
+            <span class="template-name">{{ t.name }}</span>
+            <span class="template-desc">{{ t.description }}</span>
+          </span>
         </button>
-      </div>
-    </div>
+      </b-dropdown-item>
+    </b-dropdown>
   </div>
 </template>
 
@@ -57,89 +79,90 @@ export default {
 </script>
 
 <style lang="scss" scoped>
-.layout-settings {
+.layout-settings-bar {
   max-width: 1280px;
-  margin: 0 auto 1.25rem;
-  padding: 1rem 1.5rem;
-  background: rgba(255, 255, 255, 0.92);
-  border-radius: 16px;
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.7),
-    0 6px 22px rgba(0, 0, 0, 0.18);
+  margin: 0 auto 1rem;
+  padding: 0 2rem;
   display: flex;
   flex-wrap: wrap;
-  gap: 1.25rem 2rem;
+  gap: 0.5rem;
 }
 
-.setting-block {
-  flex: 1;
-  min-width: 240px;
-}
-
-.setting-label {
-  font-size: 0.6875rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: rgba(0, 0, 0, 0.6);
-  margin-bottom: 0.55rem;
-}
-
-.setting-options {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.4rem;
-}
-
-.option-chip {
-  padding: 6px 14px;
-  background: rgba(0, 0, 0, 0.05);
-  border: 1px solid transparent;
+.settings-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 7px 12px;
+  background: rgba(255, 255, 255, 0.18);
+  border: 1px solid rgba(255, 255, 255, 0.32);
   border-radius: 999px;
+  color: #fff;
   font-size: 0.8125rem;
   font-weight: 500;
-  color: #1f2937;
   cursor: pointer;
-  transition: background 0.15s, border-color 0.15s, color 0.15s;
+  backdrop-filter: blur(12px) saturate(160%);
+  -webkit-backdrop-filter: blur(12px) saturate(160%);
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.45);
+  transition: background 0.15s, border-color 0.15s, transform 0.15s;
 
-  &:hover { background: rgba(45, 95, 78, 0.08); }
-
-  &.is-active {
-    background: #2d5f4e;
-    color: #fff;
-    border-color: #2d5f4e;
+  &:hover {
+    background: rgba(255, 255, 255, 0.28);
+    border-color: rgba(255, 255, 255, 0.5);
   }
 }
 
-.template-list {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-  gap: 0.6rem;
+.chip-caret {
+  opacity: 0.85;
 }
 
-.template-card {
-  background: rgba(255, 255, 255, 0.85);
-  border: 1px solid rgba(0, 0, 0, 0.08);
-  border-radius: 10px;
-  padding: 0.7rem;
-  text-align: left;
+.dd-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 140px;
+}
+
+.dd-check {
+  margin-left: auto;
+  color: #2d5f4e;
+}
+
+.templates-dropdown ::v-deep .dropdown-content {
+  max-height: 380px;
+  overflow-y: auto;
+  padding: 0.35rem;
+}
+
+.templates-dropdown ::v-deep .template-item {
+  padding: 0 !important;
+}
+
+.template-row {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  width: 100%;
+  padding: 0.5rem 0.65rem;
+  background: none;
+  border: none;
   cursor: pointer;
-  transition: border-color 0.15s, transform 0.15s;
+  border-radius: 8px;
+  text-align: left;
+  transition: background 0.15s;
 
   &:hover {
-    border-color: rgba(45, 95, 78, 0.55);
-    transform: translateY(-1px);
+    background: rgba(45, 95, 78, 0.10);
   }
 }
 
 .template-preview {
+  flex: 0 0 56px;
+  height: 40px;
   display: grid;
-  gap: 3px;
-  height: 56px;
-  margin-bottom: 0.4rem;
-  padding: 4px;
+  gap: 2px;
+  padding: 3px;
   background: rgba(15, 25, 30, 0.6);
-  border-radius: 6px;
+  border-radius: 5px;
 }
 
 .preview-col {
@@ -150,20 +173,26 @@ export default {
 
 .preview-widget {
   flex: 1;
-  background: rgba(255, 255, 255, 0.6);
+  background: rgba(255, 255, 255, 0.55);
   border-radius: 2px;
   min-height: 4px;
 }
 
-.template-title {
-  font-size: 0.8125rem;
+.template-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.template-name {
+  font-size: 0.875rem;
   font-weight: 500;
   color: #1f2937;
 }
 
 .template-desc {
-  font-size: 0.6875rem;
-  color: rgba(0, 0, 0, 0.55);
+  font-size: 0.75rem;
+  color: rgba(0, 0, 0, 0.6);
   margin-top: 1px;
   line-height: 1.4;
 }

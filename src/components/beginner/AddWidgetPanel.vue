@@ -42,8 +42,6 @@
               :key="app.key"
               type="button"
               class="widget-option child"
-              :class="{ 'is-placed': placedSet.has(`app:${app.key}`) }"
-              :disabled="placedSet.has(`app:${app.key}`)"
               @click="add(`app:${app.key}`)"
             >
               <span class="widget-option-icon" :class="`is-${app.key}`">
@@ -53,7 +51,11 @@
                 <span class="widget-option-title">{{ app.title }}</span>
                 <span class="widget-option-desc">{{ app.tagline }}</span>
               </span>
-              <span v-if="placedSet.has(`app:${app.key}`)" class="widget-option-pill">{{ $t('On dashboard') }}</span>
+              <span
+                v-if="placedAppTypes.has(`app:${app.key}`)"
+                class="widget-option-pill"
+                :title="$t('Already on the dashboard — click to add another.')"
+              >+ {{ $t('add another') }}</span>
             </button>
 
             <!-- Whole-grid option lives under the same parent for discoverability -->
@@ -135,7 +137,16 @@ export default {
   },
   computed: {
     placedSet() {
-      return new Set(this.placed || [])
+      // Strip "#N" instance suffix when checking whether the generic
+      // widget is already placed. App shortcuts intentionally allow
+      // duplicates — those are never disabled in the picker even if
+      // an instance already exists.
+      const flat = (this.placed || []).map(k => (typeof k === 'string' ? k.split('#')[0] : ''))
+      return new Set(flat)
+    },
+    placedAppTypes() {
+      // For app shortcuts, surface "already placed" hint without disabling.
+      return new Set((this.placed || []).filter(k => typeof k === 'string' && k.startsWith('app:')).map(k => k.split('#')[0]))
     },
   },
   methods: {
