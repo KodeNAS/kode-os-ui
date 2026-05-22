@@ -5,31 +5,30 @@
     :aria-label="$t('Open Files')"
     @click="open"
   >
-    <b-tooltip
-      :label="$t('Open')"
-      :triggers="['hover']"
-      animation="fade1"
-      type="is-white"
-      class="files-tooltip"
-    >
-      <div class="files-inner">
-        <span class="files-icon">
-          <b-icon icon="folder" pack="casa" size="is-medium" />
-        </span>
-        <span class="files-text">
-          <span class="files-title">{{ $t('Files') }}</span>
-          <span class="files-desc">{{ $t('Browse everything on your pebble') }}</span>
-        </span>
-      </div>
-    </b-tooltip>
+    <span v-if="hintModeOn" class="kode-hint">{{ hintLabel }}</span>
+    <span class="files-icon">
+      <b-icon icon="folder" pack="casa" size="is-medium" />
+    </span>
+    <span class="files-text">
+      <span class="files-title">{{ $t('Files') }}</span>
+      <span class="files-desc">{{ $t('Browse everything on your pebble') }}</span>
+    </span>
   </button>
 </template>
 
 <script>
+import { hintMode } from '@/mixins/hintMode'
+
 export default {
   name: 'FilesTile',
+  mixins: [hintMode],
   inject: {
     homeShowFiles: { default: null },
+  },
+  computed: {
+    hintLabel() {
+      return this.$t('Built into your pebble. Opens the file browser with everything in /DATA.')
+    },
   },
   methods: {
     open() {
@@ -43,10 +42,11 @@ export default {
 
 <style lang="scss" scoped>
 .kode-tile {
+  position: relative;
   width: 100%;
   display: flex;
   align-items: center;
-  justify-content: flex-start;
+  gap: 0.85rem;
   padding: 1rem 1.25rem;
   background: rgba(255, 255, 255, 0.55);
   backdrop-filter: blur(24px) saturate(180%);
@@ -68,18 +68,29 @@ export default {
   }
 }
 
-/* The tooltip wrapper should fill the tile so the entire surface is the
-   click target (otherwise only the natural-sized inner is hot). */
-.files-tooltip ::v-deep .b-tooltip,
-.files-tile .files-tooltip {
-  width: 100%;
+.kode-hint {
+  position: absolute;
+  top: -10px;
+  left: 50%;
+  transform: translate(-50%, -100%);
+  background: rgba(15, 25, 30, 0.92);
+  color: #fff;
+  padding: 6px 12px;
+  border-radius: 8px;
+  font-size: 0.75rem;
+  line-height: 1.4;
+  max-width: 260px;
+  white-space: normal;
+  text-align: center;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.15s ease;
+  z-index: 50;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.25);
 }
 
-.files-inner {
-  display: flex;
-  align-items: center;
-  gap: 0.85rem;
-  width: 100%;
+.kode-tile:hover .kode-hint {
+  opacity: 1;
 }
 
 .files-icon {
