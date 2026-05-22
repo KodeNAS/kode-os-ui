@@ -4,11 +4,21 @@
     <header class="weather-header">
       <h2 class="tile-title">{{ $t('Weather') }}</h2>
       <span class="weather-location">{{ locationName }}</span>
+      <button
+        type="button"
+        class="weather-toggle"
+        :aria-label="expanded ? $t('Collapse details') : $t('Show more details')"
+        :title="expanded ? $t('Hide details') : $t('Show details')"
+        @click="toggleExpanded"
+      >
+        <b-icon :icon="expanded ? 'arrow-up' : 'arrow-down'" pack="casa" size="is-small" />
+      </button>
     </header>
 
     <div v-if="isLoading" class="weather-loading">{{ $t('Loading...') }}</div>
     <div v-else-if="error" class="weather-error">{{ $t('Couldn\'t reach the weather service.') }}</div>
     <div v-else>
+      <!-- Always visible: current temp + condition. -->
       <div class="weather-now">
         <div class="now-icon">{{ currentEmoji }}</div>
         <div class="now-numbers">
@@ -18,37 +28,40 @@
         </div>
       </div>
 
-      <!-- Today extras: humidity / wind / sunrise / sunset -->
-      <div class="weather-extras">
-        <div class="extra">
-          <div class="extra-label">{{ $t('Humidity') }}</div>
-          <div class="extra-value">{{ humidity != null ? `${humidity}%` : '—' }}</div>
-        </div>
-        <div class="extra">
-          <div class="extra-label">{{ $t('Wind') }}</div>
-          <div class="extra-value">{{ wind != null ? `${wind} km/h` : '—' }}</div>
-        </div>
-        <div class="extra">
-          <div class="extra-label">{{ $t('Sunrise') }}</div>
-          <div class="extra-value">{{ sunrise || '—' }}</div>
-        </div>
-        <div class="extra">
-          <div class="extra-label">{{ $t('Sunset') }}</div>
-          <div class="extra-value">{{ sunset || '—' }}</div>
-        </div>
-      </div>
+      <!-- Collapsible: extras grid + forecast strip. -->
+      <transition name="weather-expand">
+        <div v-if="expanded" class="weather-collapsible">
+          <div class="weather-extras">
+            <div class="extra">
+              <div class="extra-label">{{ $t('Humidity') }}</div>
+              <div class="extra-value">{{ humidity != null ? `${humidity}%` : '—' }}</div>
+            </div>
+            <div class="extra">
+              <div class="extra-label">{{ $t('Wind') }}</div>
+              <div class="extra-value">{{ wind != null ? `${wind} km/h` : '—' }}</div>
+            </div>
+            <div class="extra">
+              <div class="extra-label">{{ $t('Sunrise') }}</div>
+              <div class="extra-value">{{ sunrise || '—' }}</div>
+            </div>
+            <div class="extra">
+              <div class="extra-label">{{ $t('Sunset') }}</div>
+              <div class="extra-value">{{ sunset || '—' }}</div>
+            </div>
+          </div>
 
-      <!-- 5-day forecast strip -->
-      <div v-if="forecast.length > 0" class="weather-forecast">
-        <div v-for="d in forecast" :key="d.date" class="forecast-day">
-          <div class="forecast-day-label">{{ d.label }}</div>
-          <div class="forecast-emoji">{{ d.emoji }}</div>
-          <div class="forecast-temps">
-            <span class="forecast-high">{{ d.high }}°</span>
-            <span class="forecast-low">{{ d.low }}°</span>
+          <div v-if="forecast.length > 0" class="weather-forecast">
+            <div v-for="d in forecast" :key="d.date" class="forecast-day">
+              <div class="forecast-day-label">{{ d.label }}</div>
+              <div class="forecast-emoji">{{ d.emoji }}</div>
+              <div class="forecast-temps">
+                <span class="forecast-high">{{ d.high }}°</span>
+                <span class="forecast-low">{{ d.low }}°</span>
+              </div>
+            </div>
           </div>
         </div>
-      </div>
+      </transition>
     </div>
   </div>
 </template>
@@ -56,7 +69,6 @@
 <script>
 import { hintMode } from '@/mixins/hintMode'
 
-// Open-Meteo weather codes mapped to label + emoji.
 const WEATHER_CODES = {
   0:  { label: 'Clear',           emoji: '☀️' },
   1:  { label: 'Mainly clear',    emoji: '🌤️' },
@@ -84,10 +96,10 @@ const WEATHER_CODES = {
   99: { label: 'Thunder + hail',  emoji: '⛈️' },
 }
 
-// Toronto default — user can configure later via the deferred setup wizard.
 const DEFAULT_LAT = 43.65
 const DEFAULT_LON = -79.38
 const DEFAULT_NAME = 'Toronto'
+const EXPANDED_KEY = 'kode_weather_expanded'
 
 function formatTime(iso) {
   if (!iso) return ''
@@ -108,6 +120,8 @@ export default {
   name: 'WeatherWidget',
   mixins: [hintMode],
   data() {
+    let savedExpanded = false
+    try { savedExpanded = localStorage.getItem(EXPANDED_KEY) === '1' } catch (e) { /* ignore */ }
     return {
       temp: null,
       condition: '',
@@ -122,11 +136,12 @@ export default {
       isLoading: true,
       error: false,
       pollId: null,
+      expanded: savedExpanded,
     }
   },
   computed: {
     hintLabel() {
-      return this.$t('Live weather from Open-Meteo: current + feels-like, humidity, wind, sunrise/sunset, and a 5-day forecast. Refreshes every 15 minutes.')
+      return this.$t('Live weather from Open-Meteo. Click the arrow to expand for humidity, wind, sun times, and 5-day forecast.')
     },
   },
   mounted() {
@@ -137,6 +152,10 @@ export default {
     if (this.pollId) clearInterval(this.pollId)
   },
   methods: {
+    toggleExpanded() {
+      this.expanded = !this.expanded
+      try { localStorage.setItem(EXPANDED_KEY, this.expanded ? '1' : '0') } catch (e) { /* ignore */ }
+    },
     async fetchWeather() {
       try {
         const url = `https://api.open-meteo.com/v1/forecast?latitude=${DEFAULT_LAT}&longitude=${DEFAULT_LON}` +
@@ -222,14 +241,14 @@ export default {
 
 .weather-header {
   display: flex;
-  align-items: baseline;
-  justify-content: space-between;
+  align-items: center;
   gap: 0.5rem;
   margin-bottom: 0.7rem;
   padding-bottom: 0.5rem;
   border-bottom: 1px solid rgba(0, 0, 0, 0.08);
 }
 .tile-title {
+  flex: 1;
   font-size: 0.9375rem;
   font-weight: 500;
   text-transform: uppercase;
@@ -240,6 +259,21 @@ export default {
 .weather-location {
   font-size: 0.75rem;
   color: rgba(0, 0, 0, 0.55);
+}
+.weather-toggle {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.06);
+  border: none;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: rgba(0, 0, 0, 0.55);
+  transition: background 0.15s, color 0.15s;
+
+  &:hover { background: rgba(45, 95, 78, 0.18); color: #2d5f4e; }
 }
 
 .weather-loading,
@@ -253,7 +287,6 @@ export default {
   display: flex;
   align-items: center;
   gap: 0.85rem;
-  margin-bottom: 0.85rem;
 }
 .now-icon { font-size: 2.6rem; line-height: 1; }
 .now-numbers { flex: 1; min-width: 0; }
@@ -274,6 +307,11 @@ export default {
   font-size: 0.75rem;
   color: rgba(0, 0, 0, 0.55);
   margin-top: 1px;
+}
+
+.weather-collapsible {
+  margin-top: 0.85rem;
+  overflow: hidden;
 }
 
 .weather-extras {
@@ -330,4 +368,17 @@ export default {
 }
 .forecast-high { color: #1f2937; font-weight: 500; }
 .forecast-low  { color: rgba(0, 0, 0, 0.5); }
+
+/* Collapse / expand transition for the details section. */
+.weather-expand-enter-active,
+.weather-expand-leave-active {
+  transition: opacity 0.22s ease, transform 0.28s cubic-bezier(0.4, 0, 0.2, 1), max-height 0.28s ease;
+  max-height: 600px;
+}
+.weather-expand-enter,
+.weather-expand-leave-to {
+  opacity: 0;
+  transform: translateY(-6px);
+  max-height: 0;
+}
 </style>
