@@ -60,9 +60,12 @@
 		</draggable>
 		<!-- App List End -->
 
-		<template v-if="oldAppList.length > 0">
+		<template v-if="visibleOldAppList.length > 0">
+			<!-- KODE OS: when allowedKeys is set (Easy mode picked-apps
+			     filter) we hide the "Legacy app (To be rebuilt)" divider
+			     so all picked apps appear as one continuous grid. -->
 			<!-- Title Bar Start -->
-			<div class="title-bar is-flex is-align-items-center mt-2rem mb-5">
+			<div v-if="!isFiltered" class="title-bar is-flex is-align-items-center mt-2rem mb-5">
 				<app-section-title-tip
 					id="appTitle2"
 					class="is-flex-grow-1 has-text-sub-04"
@@ -74,7 +77,7 @@
 			<!-- Title Bar End -->
 
 			<!-- App List Start -->
-			<div class="app-list contextmenu-canvas">
+			<div class="app-list contextmenu-canvas" :class="{ 'is-merged': isFiltered }">
 				<!-- Application not imported Start -->
 				<div v-for="item in visibleOldAppList" :id="'app-' + item.name" :key="'app-' + item.name" class="handle">
 					<app-card
