@@ -3,15 +3,31 @@
     <div class="beginner-overlay">
       <div class="container">
         <header class="beginner-hero">
+          <button
+            type="button"
+            class="edit-layout-toggle"
+            :class="{ 'is-on': editMode }"
+            @click="toggleEditMode"
+          >
+            <b-icon
+              :icon="editMode ? 'check' : 'control-outline'"
+              pack="casa"
+              size="is-small"
+            />
+            <span>{{ editMode ? $t('Done') : $t('Edit layout') }}</span>
+          </button>
+
           <h1 class="title is-2 has-text-white">
             {{ $t('Welcome to your pebble') }}
           </h1>
           <p class="subtitle is-5 has-text-white">
-            {{ $t('Your own private cloud, ready when you are.') }}
+            {{ editMode
+              ? $t('Drag tiles to reorder. Drag the divider to resize the rail.')
+              : $t('Your own private cloud, ready when you are.') }}
           </p>
         </header>
 
-        <div class="beginner-grid" :style="gridStyle">
+        <div class="beginner-grid" :class="{ 'is-edit-mode': editMode }" :style="gridStyle">
           <!-- Vuedraggable distinguishes a click from a drag by movement
                threshold (default 0px → any movement starts a drag, but a
                clean click still fires the underlying handler). No explicit
@@ -21,7 +37,8 @@
             tag="aside"
             class="beginner-side"
             :animation="200"
-            :delay="80"
+            :disabled="!editMode"
+            :delay="40"
             :delay-on-touch-only="true"
             :touch-start-threshold="3"
             ghost-class="tile-ghost"
@@ -87,6 +104,7 @@ export default {
       },
       railWidth: this.loadRailWidth(),
       isResizing: false,
+      editMode: false,
     }
   },
   computed: {
@@ -171,6 +189,9 @@ export default {
       const next = Math.max(240, Math.min(520, this._resizeStartWidth + delta))
       this.railWidth = next
     },
+    toggleEditMode() {
+      this.editMode = !this.editMode
+    },
     endResize() {
       if (!this.isResizing) return
       this.isResizing = false
@@ -207,6 +228,7 @@ export default {
 }
 
 .beginner-hero {
+  position: relative;
   max-width: 1180px;
   margin: 0 auto 2.5rem;
   padding: 0 2rem;
@@ -218,6 +240,39 @@ export default {
 
   .subtitle {
     opacity: 0.92;
+  }
+}
+
+.edit-layout-toggle {
+  position: absolute;
+  top: 0;
+  right: 2rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 8px 14px;
+  background: rgba(255, 255, 255, 0.16);
+  border: 1px solid rgba(255, 255, 255, 0.32);
+  border-radius: 999px;
+  color: #fff;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  cursor: pointer;
+  backdrop-filter: blur(12px) saturate(160%);
+  -webkit-backdrop-filter: blur(12px) saturate(160%);
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.45);
+  transition: background 0.15s, border-color 0.15s, transform 0.15s;
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.26);
+    transform: translateY(-1px);
+  }
+
+  &.is-on {
+    background: #2d5f4e;
+    border-color: #3f7a66;
+    color: #fff;
+    text-shadow: none;
   }
 }
 
@@ -245,7 +300,14 @@ export default {
   border-radius: 3px;
   background: transparent;
   position: relative;
-  transition: background 0.15s;
+  transition: background 0.15s, opacity 0.15s;
+  pointer-events: none;
+  opacity: 0;
+
+  .is-edit-mode & {
+    pointer-events: auto;
+    opacity: 1;
+  }
 
   &:hover,
   &.is-dragging {
@@ -272,6 +334,22 @@ export default {
   .rail-resizer:hover &,
   .rail-resizer.is-dragging & {
     opacity: 1;
+  }
+}
+
+/* Visual cue that the dashboard is in edit mode — dashed teal outline on
+   each tile, plus a small grab cursor. Tiles still feel clickable; the
+   draggable's `disabled` flag is what actually gates the drag. */
+.beginner-grid.is-edit-mode {
+  .beginner-side > * {
+    cursor: grab;
+    outline: 2px dashed rgba(45, 95, 78, 0.55);
+    outline-offset: 4px;
+    border-radius: 22px;
+  }
+
+  .beginner-side > *:active {
+    cursor: grabbing;
   }
 }
 
