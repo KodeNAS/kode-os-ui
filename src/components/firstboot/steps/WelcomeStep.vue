@@ -1,10 +1,10 @@
 <template>
   <div class="fb-step welcome-step has-text-centered">
-    <!-- Decorative ring + glow behind the logo. The ring is a static
-         SVG; the glow is a CSS pseudo on .welcome-mark so it pulses
-         softly even without JS. -->
+    <!-- KODE NAS wordmark. The logo SVG uses `currentColor` but is loaded
+         via <img>, so we recolor it to white with a CSS filter trick
+         (brightness(0) maps to pure black, invert(1) flips to white).
+         A soft radial glow on .welcome-mark provides depth. -->
     <div class="welcome-mark">
-      <span class="welcome-ring" aria-hidden="true"></span>
       <img
         :src="require('@/assets/img/logo/logo.svg')"
         :srcset="`${require('@/assets/img/logo/logo.png')} 1x, ${require('@/assets/img/logo/logo.svg')} 2x`"
@@ -74,57 +74,57 @@ export default {
   animation: welcome-fade-in 0.55s cubic-bezier(0.2, 0.7, 0.2, 1) both;
 }
 
-/* Logo block. The ring + glow combine to give the mark a sense of
-   "lifted off the wallpaper" without using a hard border. */
+/* Wordmark block — wide enough for the KODE NAS horizontal logo
+   (5:1 aspect ratio). The radial glow behind it provides depth and
+   pulses softly so the mark feels alive without being noisy. */
 .welcome-mark {
   position: relative;
-  width: 140px;
-  height: 140px;
+  width: 260px;
+  max-width: 90%;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  margin: 0.25rem 0 0.4rem;
+  padding: 0.45rem 0.5rem;
+  margin: 0.5rem 0 0.4rem;
   animation: welcome-mark-pop 0.7s cubic-bezier(0.2, 0.9, 0.2, 1.1) 0.05s both;
 
   &::before {
-    /* Soft radial glow behind the logo. */
+    /* Soft radial glow that hugs the wordmark. Wider than the logo so
+       it doesn't read as a hard halo, but tight enough on the vertical
+       axis that it doesn't make the section feel empty. */
     content: '';
     position: absolute;
-    inset: -28px;
-    background: radial-gradient(closest-side,
-      rgba(45, 95, 78, 0.35) 0%,
-      rgba(45, 95, 78, 0.18) 40%,
-      transparent 75%);
+    left: 50%;
+    top: 50%;
+    width: 130%;
+    height: 240%;
+    transform: translate(-50%, -50%);
+    background: radial-gradient(ellipse at center,
+      rgba(45, 95, 78, 0.45) 0%,
+      rgba(45, 95, 78, 0.22) 32%,
+      transparent 70%);
     border-radius: 50%;
     z-index: 0;
+    pointer-events: none;
     animation: welcome-glow-pulse 3.4s ease-in-out infinite;
   }
-}
-
-.welcome-ring {
-  position: absolute;
-  inset: 0;
-  border-radius: 50%;
-  border: 1px solid rgba(255, 255, 255, 0.22);
-  background:
-    radial-gradient(closest-side, rgba(255, 255, 255, 0.05), transparent 70%),
-    conic-gradient(from 0deg,
-      rgba(255, 255, 255, 0.0) 0deg,
-      rgba(45, 95, 78, 0.45) 60deg,
-      rgba(255, 255, 255, 0.0) 130deg,
-      rgba(255, 255, 255, 0.0) 360deg);
-  -webkit-mask: radial-gradient(closest-side, transparent 62%, #000 64%);
-          mask: radial-gradient(closest-side, transparent 62%, #000 64%);
-  animation: welcome-ring-spin 18s linear infinite;
 }
 
 .welcome-logo {
   position: relative;
   z-index: 1;
-  width: 92px;
-  height: 92px;
-  filter: drop-shadow(0 6px 16px rgba(0, 0, 0, 0.45));
-  object-fit: contain;
+  width: 100%;
+  height: auto;
+  display: block;
+  /* The logo SVG fills with currentColor, which doesn't apply when
+     loaded via <img>. brightness(0) clamps it to pure black, invert(1)
+     flips that to pure white — yielding a clean white wordmark we can
+     drop-shadow over the dark glass. */
+  filter:
+    brightness(0)
+    invert(1)
+    drop-shadow(0 4px 14px rgba(0, 0, 0, 0.55))
+    drop-shadow(0 0 24px rgba(45, 95, 78, 0.45));
 }
 
 .welcome-title {
@@ -231,10 +231,6 @@ export default {
   100% { opacity: 1; transform: scale(1); }
 }
 
-@keyframes welcome-ring-spin {
-  to { transform: rotate(360deg); }
-}
-
 @keyframes welcome-glow-pulse {
   0%, 100% { opacity: 0.6; transform: scale(1); }
   50%      { opacity: 1.0; transform: scale(1.06); }
@@ -244,7 +240,6 @@ export default {
   .welcome-step,
   .welcome-mark,
   .welcome-mark::before,
-  .welcome-ring,
   .welcome-cta,
   .welcome-cta ::v-deep .icon {
     animation: none !important;
