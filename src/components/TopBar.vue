@@ -3,6 +3,7 @@ import AccountPanel from './account/AccountPanel.vue'
 import TerminalPanel from './logsAndTerminal/TerminalPanel.vue'
 import PortPanel from './settings/PortPanel.vue'
 import UpdateModal from './settings/UpdateModal.vue'
+import FactoryResetModal from './settings/FactoryResetModal.vue'
 import { mixin } from '@/mixins/mixin'
 import { advancedGate } from '@/mixins/advancedGate'
 import messages from '@/assets/lang'
@@ -397,6 +398,22 @@ export default {
       this.requireAdvanced(this.showPortPanel, {
         title: this.$t('Change WebUI Port'),
         message: this.$t('Changing the WebUI port changes how your pebble is reached on the network. If you set it wrong you may lose access. Switch to Advanced mode to continue?'),
+      })
+    },
+
+    // KODE OS — open the destructive factory-reset confirmation modal.
+    showFactoryResetModal() {
+      if (this.$refs.settingsDrop && typeof this.$refs.settingsDrop.toggle === 'function') {
+        this.$refs.settingsDrop.toggle()
+      }
+      this.$buefy.modal.open({
+        parent: this,
+        component: FactoryResetModal,
+        hasModalCard: true,
+        trapFocus: true,
+        scroll: 'keep',
+        animation: 'zoom-in',
+        canCancel: ['x', 'escape', 'outside'],
       })
     },
 
@@ -813,6 +830,23 @@ export default {
             </div>
           </div>
           <!-- Update End -->
+          <!-- KODE OS: Factory reset row — red-styled, type-to-confirm modal -->
+          <div
+            class="is-flex is-align-items-center mb-1 _is-large _box hover-effect-attention _is-radius pr-2 mr-4 ml-4 factory-reset-row"
+            @click="showFactoryResetModal"
+          >
+            <div class="is-flex is-align-items-center is-flex-grow-1 _is-normal _has-text-attention">
+              <b-icon class="mr-1 ml-2 _has-text-attention" icon="alert" pack="casa" size="is-20" />
+              {{ $t("Reset to factory") }}
+            </div>
+            <div class="ml-2">
+              <b-button rounded size="is-small" type="is-danger" @click.stop="showFactoryResetModal">
+                {{ $t("Reset") }}
+              </b-button>
+            </div>
+          </div>
+          <!-- KODE OS End -->
+
           <!-- Restart or Shutdown Start -->
           <div
             class="is-flex is-align-content-center is-justify-content-center _footer mt-4 pl-3 pr-3 pt-2 pb-2"
