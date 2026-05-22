@@ -2,9 +2,8 @@
   <b-dropdown
     ref="dropdown"
     animation="fade1"
-    class="hint-dropdown"
+    class="navbar-item hint-dropdown"
     aria-role="list"
-    position="is-bottom-left"
   >
     <template #trigger>
       <b-tooltip

@@ -335,7 +335,15 @@ export default {
       data-tour="modepill"
       @click="openModePanel"
     >
-      {{ isBeginner ? $t('Switch to Advanced mode') : $t('Switch to Easy mode') }}
+      <b-icon
+        :icon="isBeginner ? 'control-outline' : 'home-outline'"
+        pack="casa"
+        size="is-small"
+        class="mode-switcher-icon"
+      />
+      <span class="mode-switcher-label">
+        {{ isBeginner ? $t('Switch to Advanced mode') : $t('Switch to Easy mode') }}
+      </span>
     </button>
   </div>
 </template>
@@ -345,10 +353,13 @@ export default {
     position: fixed;
     bottom: 1.25rem;
     right: 1.25rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
     background: rgba(0, 0, 0, 0.45);
     border: 1px solid rgba(255, 255, 255, 0.25);
     border-radius: 999px;
-    padding: 8px 16px;
+    padding: 8px 16px 8px 12px;
     font-size: 13px;
     cursor: pointer;
     backdrop-filter: blur(14px);
@@ -358,6 +369,15 @@ export default {
     &:hover {
         background: rgba(0, 0, 0, 0.6);
     }
+}
+
+.mode-switcher-icon {
+    color: #fff;
+    opacity: 0.9;
+}
+
+.mode-switcher-label {
+    line-height: 1;
 }
 
 .out-container {

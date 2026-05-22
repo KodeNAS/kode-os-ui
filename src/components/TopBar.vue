@@ -882,10 +882,9 @@ export default {
       </b-dropdown>
       <!-- Settings Dropmenu End -->
 
-      <!-- KODE OS Hints & Help -->
-      <div class="is-flex is-align-items-center ml-3 _fixed-height">
-        <HintButton />
-      </div>
+      <!-- KODE OS Hints & Help — class="navbar-item" handles spacing so
+           it lines up with Account/Settings icons. -->
+      <HintButton />
       <!-- KODE OS Hints & Help End -->
 
       <!-- Terminal  Start -->
