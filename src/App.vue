@@ -258,6 +258,44 @@ _____             _____ _____
 .driver-popover.kode-tour-popover .driver-popover-arrow-side-top.driver-popover-arrow,
 .driver-popover.kode-tour-popover .driver-popover-arrow-side-left.driver-popover-arrow,
 .driver-popover.kode-tour-popover .driver-popover-arrow-side-right.driver-popover-arrow {
-	border-color: rgba(255, 255, 255, 0.97);
+	border-color: rgba(245, 247, 250, 0.97);
+}
+
+/* Global widget animations — applied to every .kode-tile across the
+   dashboard. Each tile's scoped styles override on specifics, but the
+   defaults below ensure consistent enter/hover/drop transitions. */
+.kode-tile {
+	transition:
+		transform 0.28s cubic-bezier(0.34, 1.56, 0.64, 1),
+		box-shadow 0.28s ease,
+		background 0.18s ease;
+	will-change: transform;
+}
+
+/* Subtle entry animation for any tile mounting into the dashboard. */
+@keyframes kode-tile-mount {
+	from { opacity: 0; transform: translateY(8px) scale(0.985); }
+	to   { opacity: 1; transform: translateY(0)   scale(1); }
+}
+.widget-slot > .kode-tile,
+.widget-slot > * > .kode-tile {
+	animation: kode-tile-mount 0.36s cubic-bezier(0.4, 0, 0.2, 1) both;
+}
+
+/* Vuedraggable drop animation — small settle bounce when a widget lands. */
+@keyframes kode-tile-settle {
+	0%   { transform: scale(1.03) rotate(-0.6deg); }
+	60%  { transform: scale(0.99) rotate(0.2deg);  }
+	100% { transform: scale(1) rotate(0); }
+}
+.beginner-column .sortable-drag {
+	transform: rotate(-1.5deg) scale(1.03);
+	box-shadow:
+		inset 0 1px 0 rgba(255, 255, 255, 0.85),
+		0 18px 44px rgba(0, 0, 0, 0.28),
+		0 0 0 1px rgba(45, 95, 78, 0.18) !important;
+}
+.beginner-column .sortable-chosen:not(.sortable-drag) {
+	animation: kode-tile-settle 0.4s cubic-bezier(0.4, 0, 0.2, 1);
 }
 </style>

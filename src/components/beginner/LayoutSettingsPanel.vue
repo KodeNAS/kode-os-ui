@@ -223,7 +223,7 @@ export default {
 
 .preview-widget {
   flex: 1;
-  background: rgba(255, 255, 255, 0.55);
+  background: rgba(245, 247, 250, 0.82);
   border-radius: 2px;
   min-height: 4px;
 }

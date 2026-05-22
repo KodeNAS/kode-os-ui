@@ -110,10 +110,10 @@ export default {
 <style lang="scss" scoped>
 .kode-tile {
   position: relative;
-  background: rgba(255, 255, 255, 0.55);
+  background: rgba(245, 247, 250, 0.82);
   backdrop-filter: blur(24px) saturate(180%);
   -webkit-backdrop-filter: blur(24px) saturate(180%);
-  border: 1px solid rgba(255, 255, 255, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.55);
   border-radius: 20px;
   padding: 1.1rem 1.25rem;
   box-shadow:

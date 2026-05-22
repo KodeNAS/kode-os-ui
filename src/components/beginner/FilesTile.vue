@@ -48,20 +48,20 @@ export default {
   align-items: center;
   gap: 0.85rem;
   padding: 1rem 1.25rem;
-  background: rgba(255, 255, 255, 0.55);
+  background: rgba(245, 247, 250, 0.82);
   backdrop-filter: blur(24px) saturate(180%);
   -webkit-backdrop-filter: blur(24px) saturate(180%);
-  border: 1px solid rgba(255, 255, 255, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.55);
   border-radius: 20px;
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.7),
     0 8px 28px rgba(0, 0, 0, 0.18);
   cursor: pointer;
   text-align: left;
-  transition: transform 0.18s, box-shadow 0.18s;
+  transition: transform 0.28s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.28s ease;
 
   &:hover {
-    transform: translateY(-2px);
+    transform: translateY(-4px) scale(1.015);
     box-shadow:
       inset 0 1px 0 rgba(255, 255, 255, 0.85),
       0 14px 36px rgba(0, 0, 0, 0.22);

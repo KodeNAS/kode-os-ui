@@ -37,6 +37,8 @@ export default {
       hardwareInfoLoading: true,
       user_id: localStorage.getItem('user_id') ? localStorage.getItem('user_id') : 1,
       isFileActive: false,
+      topbarHidden: false,
+      _topbarHideTimer: null,
       barData: {},
       topBarAni: {
         classes: 'fadeInDown',
@@ -65,6 +67,7 @@ export default {
   },
   mounted() {
     window.addEventListener('resize', this.onResize)
+    window.addEventListener('mousemove', this.onMouseMoveTopBar)
     this.onResize()
     if (localStorage.getItem('is_update') === 'true') {
       this.showUpdateCompleteModal()
@@ -85,6 +88,8 @@ export default {
   },
   beforeUnmount() {
     window.removeEventListener('resize', this.onResize)
+    window.removeEventListener('mousemove', this.onMouseMoveTopBar)
+    if (this._topbarHideTimer) clearTimeout(this._topbarHideTimer)
     this.$EventBus.$off('casaUI:openStorageManager')
   },
   methods: {
@@ -230,6 +235,33 @@ export default {
       })
     },
 
+    onMouseMoveTopBar(e) {
+      // Show TopBar whenever the mouse is within ~80px of the top edge,
+      // otherwise schedule a hide after 700ms idle.
+      if (e.clientY < 80) {
+        this.cancelHideTopBar()
+        if (this.topbarHidden) this.topbarHidden = false
+      } else if (!this.topbarHidden && !this._topbarHideTimer) {
+        this.scheduleHideTopBar()
+      }
+    },
+    cancelHideTopBar() {
+      if (this._topbarHideTimer) {
+        clearTimeout(this._topbarHideTimer)
+        this._topbarHideTimer = null
+      }
+      this.topbarHidden = false
+    },
+    scheduleHideTopBar() {
+      if (this._topbarHideTimer) return
+      this._topbarHideTimer = setTimeout(() => {
+        // Don't hide if any Buefy dropdown inside the TopBar is open.
+        const openDropdown = this.$el && this.$el.querySelector('.topbar-shell .dropdown.is-active')
+        if (!openDropdown) this.topbarHidden = true
+        this._topbarHideTimer = null
+      }, 700)
+    },
+
     openModePanel() {
       this.$buefy.modal.open({
         parent: this,
@@ -262,9 +294,16 @@ export default {
 </script>
 
 <template>
-  <div v-if="!isLoading" class="out-container">
-    <!-- NavBar Start -->
-    <TopBar v-animate-css="topBarAni" :init-bar-data="barData" @showSideBar="showSideBar" />
+  <div v-if="!isLoading" class="out-container" :class="{ 'is-topbar-hidden': topbarHidden }">
+    <!-- NavBar Start — auto-hides; reveals when the mouse approaches the top of
+         the viewport, when any TopBar dropdown is open, or briefly on load. -->
+    <div
+      class="topbar-shell"
+      @mouseenter="cancelHideTopBar"
+      @mouseleave="scheduleHideTopBar"
+    >
+      <TopBar v-animate-css="topBarAni" :init-bar-data="barData" @showSideBar="showSideBar" />
+    </div>
     <!-- NavBar End -->
 
     <!-- Beginner Dashboard (KODE OS) — widget canvas with custom layout. -->
@@ -351,26 +390,49 @@ export default {
 </template>
 
 <style lang="scss" scoped>
+.topbar-shell {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.out-container.is-topbar-hidden .topbar-shell {
+    transform: translateY(-100%);
+}
+
 .mode-switcher {
     position: fixed;
     bottom: 1.25rem;
     right: 1.25rem;
     display: inline-flex;
     align-items: center;
-    gap: 8px;
+    justify-content: center;
+    gap: 6px;
     background: rgba(0, 0, 0, 0.45);
     border: 1px solid rgba(255, 255, 255, 0.25);
     border-radius: 999px;
-    padding: 8px 16px 8px 12px;
+    padding: 8px 14px;
     font-size: 13px;
+    line-height: 1;
     cursor: pointer;
     backdrop-filter: blur(14px);
-    transition: background 0.15s;
+    transition: background 0.15s, transform 0.18s;
     z-index: 30;
 
     &:hover {
         background: rgba(0, 0, 0, 0.6);
+        transform: translateY(-1px);
     }
+}
+
+.mode-switcher-icon {
+    display: inline-flex;
+}
+
+.mode-switcher-label {
+    display: inline-block;
+    line-height: 1;
 }
 
 .mode-switcher-icon {
