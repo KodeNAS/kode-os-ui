@@ -16,6 +16,9 @@ per Apache 2.0 best practice (§4.1 of the project brief).
 - `NOTICE.md` — attribution required by Apache 2.0.
 - `CHANGES.md` — this file.
 - KODE OS section in `README.md` above the upstream content.
+- `scripts/deploy-to-pi.sh` — builds the UI and rsyncs it into
+  `/var/lib/casaos/www/` on the pebble, then restarts `casaos-gateway` and
+  `casaos`. Host overridable via `PI_HOST` env var.
 
 ### Changed
 - All user-visible CasaOS strings rebranded to KODE OS across 31 i18n files,
