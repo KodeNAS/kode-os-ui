@@ -46,4 +46,7 @@
 
 // Pages and Components
 @import "components/filebrowser";
+// KODE OS visual overrides — must come AFTER the upstream filebrowser
+// import so matching selectors win by source order. Hooks on .kode-fb.
+@import "components/kode-filebrowser";
 

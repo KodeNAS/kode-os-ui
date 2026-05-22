@@ -1,0 +1,316 @@
+/* KODE OS file browser polish — surgical overrides on top of the upstream
+ * CasaOS filebrowser styles. Loaded after `components/filebrowser` so
+ * matching selectors win by source order.
+ *
+ * Hooked via the `kode-fb` class on FilePanel's root element. Every rule
+ * is scoped under `.kode-fb` so this file can never bleed into other
+ * casaos surfaces. */
+
+.kode-fb {
+    /* Outer shell — match the dashboard's frosted-glass tiles. The
+     * casaos default is opaque white; we make it the same liquid-glass
+     * the rest of KODE uses and pop it off the wallpaper with the
+     * standard shadow stack. */
+    .modal-card {
+        background: rgba(245, 247, 250, 0.86) !important;
+        backdrop-filter: blur(28px) saturate(180%);
+        -webkit-backdrop-filter: blur(28px) saturate(180%);
+        border: 1px solid rgba(255, 255, 255, 0.55);
+        box-shadow:
+            inset 0 1px 0 rgba(255, 255, 255, 0.7),
+            0 24px 60px rgba(0, 0, 0, 0.32);
+    }
+
+    /* Sidebar — translucent so the wallpaper still peeks through. */
+    .b-sidebar .sidebar-content {
+        background: rgba(245, 247, 250, 0.72) !important;
+        backdrop-filter: blur(22px) saturate(180%);
+        -webkit-backdrop-filter: blur(22px) saturate(180%);
+        border-right: 1px solid rgba(0, 0, 0, 0.05);
+        width: 16rem;
+    }
+
+    .nav-bar .files-section .title,
+    .nav-bar .mounted-section .title {
+        font-size: 0.6875rem !important;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        font-weight: 600;
+        color: rgba(0, 0, 0, 0.55);
+        padding-bottom: 0.5rem !important;
+    }
+
+    /* Header — taller and quieter. Buttons get the same rounded chip
+     * treatment used in the dashboard. */
+    .modal-card-head {
+        background: transparent !important;
+        border-bottom: 1px solid rgba(0, 0, 0, 0.06) !important;
+        padding: 0.9rem 1.4rem !important;
+    }
+
+    /* Close button — soft circle matching dashboard widget gears. */
+    .modal-close-container {
+        .close-button {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: rgba(0, 0, 0, 0.05);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: background 0.15s, color 0.15s;
+            color: rgba(0, 0, 0, 0.65);
+
+            &:hover {
+                background: rgba(176, 74, 74, 0.12);
+                color: #b04a4a;
+            }
+        }
+    }
+    .modal-close-container-line {
+        border-left: none !important;
+        padding-left: 0.5rem;
+    }
+
+    /* Breadcrumb — pill segments with clear hover. */
+    #bread-container .breadcrumb {
+        a, .is-active a {
+            padding: 4px 10px;
+            border-radius: 999px;
+            color: rgba(0, 0, 0, 0.65);
+            font-weight: 500;
+            transition: background 0.15s, color 0.15s;
+
+            &:hover {
+                background: rgba(45, 95, 78, 0.10);
+                color: #2d5f4e;
+            }
+        }
+        .is-active a {
+            background: rgba(45, 95, 78, 0.14);
+            color: #2d5f4e;
+            font-weight: 600;
+        }
+        li + li::before {
+            color: rgba(0, 0, 0, 0.35);
+            padding: 0 0.25rem;
+        }
+    }
+
+    /* Toolbar — bordered chip row. */
+    .tool-bar {
+        padding: 0.2rem 1.4rem !important;
+        margin-top: 0.4rem !important;
+        margin-bottom: 0.4rem !important;
+        color: rgba(0, 0, 0, 0.6);
+    }
+
+    .view-btns {
+        .b-icon, .icon {
+            color: rgba(0, 0, 0, 0.55);
+            transition: color 0.15s;
+
+            &:hover { color: #2d5f4e; }
+        }
+    }
+
+    /* Grid view cards — round corners, hover lift, polished selection.
+     * Upstream uses small unrounded squares with a thin selection ring;
+     * we make each tile feel like a mini dashboard widget. */
+    .grid-card {
+        .file-card {
+            padding: 8px !important;
+        }
+
+        .node-card {
+            border-radius: 14px !important;
+            background: rgba(255, 255, 255, 0.55);
+            border: 1px solid rgba(255, 255, 255, 0.5);
+            backdrop-filter: blur(14px) saturate(140%);
+            -webkit-backdrop-filter: blur(14px) saturate(140%);
+            box-shadow: 0 4px 14px rgba(0, 0, 0, 0.08);
+            transition:
+                transform 0.18s cubic-bezier(0.2, 0.7, 0.2, 1),
+                box-shadow 0.18s ease,
+                background 0.18s ease;
+            overflow: hidden;
+
+            &:hover {
+                transform: translateY(-2px);
+                background: rgba(255, 255, 255, 0.78);
+                box-shadow: 0 10px 24px rgba(0, 0, 0, 0.14);
+            }
+        }
+
+        .outer-wrapper {
+            border-radius: 14px !important;
+
+            &.active .node-card {
+                background: rgba(45, 95, 78, 0.16);
+                border-color: rgba(45, 95, 78, 0.55);
+                box-shadow:
+                    0 0 0 2px rgba(45, 95, 78, 0.45),
+                    0 8px 22px rgba(45, 95, 78, 0.18);
+            }
+        }
+
+        /* Cover area — bigger, no harsh borders. */
+        .cover {
+            border-radius: 10px;
+            margin: 4px 4px 0;
+            background: rgba(0, 0, 0, 0.03);
+            aspect-ratio: 1 / 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            overflow: hidden;
+
+            img {
+                border-radius: 8px;
+            }
+        }
+
+        .info {
+            padding: 0.55rem 0.7rem 0.7rem !important;
+
+            .title {
+                font-size: 0.8125rem !important;
+                font-weight: 500;
+                color: #1f2937;
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                margin: 0 !important;
+            }
+
+            .desc {
+                font-size: 0.6875rem;
+                color: rgba(0, 0, 0, 0.5);
+                font-feature-settings: 'tnum' 1;
+                margin-top: 2px !important;
+            }
+        }
+
+        /* Checkbox — only show on hover or when selected (was always
+         * visible in upstream). Cleaner default look. */
+        .checkbox-container {
+            opacity: 0;
+            transition: opacity 0.15s;
+            top: 8px !important;
+            left: 8px !important;
+        }
+        .node-card:hover + .checkbox-container,
+        .grid-card:hover .checkbox-container,
+        .checkbox-container.show {
+            opacity: 1;
+        }
+    }
+
+    /* Cutting state — fade the source while a clipboard cut is pending. */
+    .grid-card .node-card.isCutting {
+        opacity: 0.5;
+        filter: grayscale(0.4);
+    }
+
+    /* List view — rounded rows with hover. */
+    .tbody .tr {
+        border-radius: 10px;
+        transition: background 0.15s;
+
+        &:hover {
+            background: rgba(45, 95, 78, 0.06);
+        }
+    }
+
+    /* Drag-and-drop overlay — full-panel glass with a clear, big CTA.
+     * Upstream drag-mask was just a small bottom prompt; this version
+     * fills the panel so it's unmissable when dragging from desktop. */
+    .drag-mask {
+        background: rgba(15, 25, 30, 0.55) !important;
+        backdrop-filter: blur(14px) saturate(180%);
+        -webkit-backdrop-filter: blur(14px) saturate(180%);
+        border: 2px dashed rgba(255, 255, 255, 0.55);
+        border-radius: 18px;
+        position: absolute;
+        inset: 12px;
+        z-index: 30;
+        display: flex !important;
+        flex-direction: column !important;
+        align-items: center !important;
+        justify-content: center !important;
+
+        .upload-icon {
+            width: 88px;
+            height: 88px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #2d5f4e, #3f7a66);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow:
+                0 0 0 6px rgba(255, 255, 255, 0.18),
+                0 18px 32px rgba(0, 0, 0, 0.35);
+            margin-bottom: 1rem;
+            animation: kode-fb-drop-pulse 1.6s ease-in-out infinite;
+
+            .icon { color: #fff !important; }
+        }
+
+        > div { margin-bottom: 0 !important; }
+
+        p, .has-text-primary {
+            color: #fff !important;
+            font-size: 1.05rem !important;
+            font-weight: 500;
+            text-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+            text-align: center;
+        }
+    }
+
+    @keyframes kode-fb-drop-pulse {
+        0%, 100% { transform: scale(1); }
+        50%      { transform: scale(1.08); }
+    }
+
+    /* Empty-state and error holders — center vertically with breathing room. */
+    .empty-container {
+        padding: 4rem 1rem;
+    }
+
+    /* Scrollbar — subtler, matches the rest of KODE. */
+    .scrollbars-light {
+        &::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        &::-webkit-scrollbar-track { background: transparent; }
+        &::-webkit-scrollbar-thumb {
+            background: rgba(0, 0, 0, 0.15);
+            border-radius: 999px;
+        }
+        &::-webkit-scrollbar-thumb:hover {
+            background: rgba(0, 0, 0, 0.25);
+        }
+    }
+
+    /* Upload progress card — rounded, glass. */
+    .upload-list {
+        .card {
+            background: rgba(245, 247, 250, 0.92) !important;
+            border-radius: 16px !important;
+            backdrop-filter: blur(20px) saturate(180%);
+            -webkit-backdrop-filter: blur(20px) saturate(180%);
+            box-shadow:
+                inset 0 1px 0 rgba(255, 255, 255, 0.7),
+                0 12px 28px rgba(0, 0, 0, 0.22);
+
+            .card-header {
+                background: transparent;
+                box-shadow: none;
+                border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+            }
+        }
+    }
+}

@@ -386,7 +386,12 @@ export default {
 			return this.$store.state.isViewGird ? "gird-view" : "list-view";
 		},
 		containerClass() {
-			return this.$route.path == "/files" ? "file-panel full-screen " : "";
+			// `kode-fb` is the hook for our KODE-OS visual override layer
+			// (assets/scss/components/_kode-filebrowser.scss). Upstream
+			// classes (file-panel, full-screen) are preserved so original
+			// behavior + selectors keep working.
+			const base = this.$route.path == "/files" ? "file-panel full-screen " : "";
+			return `${base}kode-fb`;
 		},
 		sideBarPosition() {
 			return this.isMobile ? "fixed" : "static";
