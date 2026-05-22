@@ -158,6 +158,9 @@ importers:
       nanoid:
         specifier: ^4.0.2
         version: 4.0.2
+      qrcode.vue:
+        specifier: '1'
+        version: 1.7.0(vue@2.7.16)
       qs:
         specifier: ^6.11.2
         version: 6.13.1
@@ -6457,6 +6460,11 @@ packages:
   punycode@2.3.1:
     resolution: {integrity: sha512-vYt7UD1U9Wg6138shLtLOvdAu+8DsC/ilFtEVHcH+wydcSpNE20AfSOduf6MkRFahL5FY7X1oU7nKVZFtfq8Fg==}
     engines: {node: '>=6'}
+
+  qrcode.vue@1.7.0:
+    resolution: {integrity: sha512-R7t6Y3fDDtcU7L4rtqwGUDP9xD64gJhIwpfjhRCTKmBoYF6SS49PIJHRJ048cse6OI7iwTwgyy2C46N9Ygoc6g==}
+    peerDependencies:
+      vue: ^2.0.0
 
   qs@6.13.0:
     resolution: {integrity: sha512-+38qI9SOr8tfZ4QmJNplMUxqjbe7LKvvZgWdExBOmd+egZTtjLB67Gu0HRX3u/XOq7UU2Nx6nsjvS16Z9uwfpg==}
@@ -14985,6 +14993,10 @@ snapshots:
   punycode@1.4.1: {}
 
   punycode@2.3.1: {}
+
+  qrcode.vue@1.7.0(vue@2.7.16):
+    dependencies:
+      vue: 2.7.16
 
   qs@6.13.0:
     dependencies:

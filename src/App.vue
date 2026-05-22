@@ -11,10 +11,7 @@
 				<brand-bar v-if="!$store.state.isMobile && $router.currentRoute.path === '/'"
 						   v-animate-css="brandAni"></brand-bar>
 				<!-- BrandBar End -->
-				<!-- ContactBar Start -->
-				<contact-bar v-if="!$store.state.isMobile && $router.currentRoute.path === '/'"
-							 v-animate-css="contactAni"></contact-bar>
-				<!-- ContactBar End -->
+				<!-- KODE OS: ContactBar removed — Discord/GitHub/Share/Feedback links pointed at IceWhale/CasaOS channels. -->
 			</div>
 
 		</template>
@@ -28,7 +25,6 @@
 
 <script>
 import BrandBar      from './components/BrandBar.vue'
-import ContactBar    from './components/ContactBar.vue'
 import CasaWallpaper from './components/wallpaper/CasaWallpaper.vue'
 import {mixin}       from './mixins/mixin';
 
@@ -66,7 +62,6 @@ const customIconConfig = {
 export default {
 	components: {
 		BrandBar,
-		ContactBar,
 		CasaWallpaper
 	},
 	mixins: [mixin],
@@ -84,10 +79,6 @@ export default {
 			},
 			brandAni: {
 				classes: "fadeInLeft",
-				duration: 700
-			},
-			contactAni: {
-				classes: "fadeInRight",
 				duration: 700
 			},
 			"vh": "0px"

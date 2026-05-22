@@ -19,10 +19,10 @@
 						size="is-24"
 					></b-icon>
 				</template>
-				<b-dropdown-item aria-role="menuitem" @click="showInstall(0, 'custom')">
+				<b-dropdown-item aria-role="menuitem" @click="gateCustomInstall">
 					{{ $t('Custom Install APP') }}
 				</b-dropdown-item>
-				<b-dropdown-item aria-role="menuitem" @click="showExternalLinkPanel">
+				<b-dropdown-item aria-role="menuitem" @click="gateExternalLink">
 					{{ $t('Add external link/APP') }}
 				</b-dropdown-item>
 			</b-dropdown>
@@ -105,6 +105,7 @@ import events from '@/events/events'
 import last from 'lodash/last'
 import business_ShowNewAppTag from '@/mixins/app/Business_ShowNewAppTag'
 import business_LinkApp from '@/mixins/app/Business_LinkApp'
+import { advancedGate } from '@/mixins/advancedGate'
 import isEqual from 'lodash/isEqual'
 import { ice_i18n } from '@/mixins/base/common-i18n'
 import YAML from 'yamljs'
@@ -138,7 +139,7 @@ const builtInApplications = [
 const orderConfig = 'app_order'
 
 export default {
-	mixins: [business_ShowNewAppTag, business_LinkApp],
+	mixins: [business_ShowNewAppTag, business_LinkApp, advancedGate],
 	data () {
 		return {
 			user_id: localStorage.getItem('user_id'),
@@ -210,6 +211,22 @@ export default {
 		this.getSkCount()
 	},
 	methods: {
+		// KODE OS — Easy-mode gate around custom-install (compose-file paste).
+		gateCustomInstall () {
+			this.requireAdvanced(() => this.showInstall(0, 'custom'), {
+				title: this.$t('Custom Install APP'),
+				message: this.$t('Custom install lets you paste a Docker Compose file to add an app. It\'s a power-user tool. Switch to Advanced mode to continue?'),
+			})
+		},
+
+		// KODE OS — Easy-mode gate around external-link app add.
+		gateExternalLink () {
+			this.requireAdvanced(() => this.showExternalLinkPanel(), {
+				title: this.$t('Add external link/APP'),
+				message: this.$t('This adds a custom link or external app shortcut. Switch to Advanced mode to continue?'),
+			})
+		},
+
 		isMobile () {
 			const userAgent = navigator.userAgent
 			const mobileRegex =

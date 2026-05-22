@@ -1,7 +1,7 @@
 <template>
 	<div class="brand-bar is-flex is-align-items-flex-end has-text-white">
-		<figure class="image _is-136x26 mb-3">
-			<img alt="logo" srcset="../assets/img/logo/logo.svg 2x, ../assets/img/logo/logo.png 1x">
+		<figure class="image kode-logo mb-3">
+			<img alt="KODE NAS" srcset="../assets/img/logo/logo.svg 2x, ../assets/img/logo/logo.png 1x">
 		</figure>
 		<span v-if="!rssShow || rss.length === 0" class="intro-text ml-4">
 			Made by KODE NAS · Based on
@@ -145,9 +145,15 @@ export default {
 	}
 }
 
-._is-136x26 {
-	width: 8.5rem;
-	height: 1.625rem;
+.kode-logo {
+	width: 14rem;
+	height: 2.7rem;
+
+	img {
+		height: 100%;
+		width: auto;
+		object-fit: contain;
+	}
 }
 
 // -----------------scroll start-----------------
