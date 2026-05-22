@@ -161,3 +161,62 @@
   align-items: center;
   gap: 0.5rem;
 }
+
+/* QR + URL pair — used by walkthroughs that want the user to scan
+   the pebble's address from a phone (Immich, Jellyfin, HA). */
+.qr-row {
+  display: grid;
+  grid-template-columns: 200px 1fr;
+  gap: 1.1rem;
+  align-items: start;
+  margin-bottom: 0.5rem;
+
+  @media (max-width: 540px) {
+    grid-template-columns: 1fr;
+    justify-items: center;
+    text-align: center;
+  }
+}
+
+.qr {
+  padding: 12px;
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.15);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.qr-side { min-width: 0; }
+
+/* Mobile app store row — for walkthroughs that want the user to grab
+   the companion app on their phone before continuing. */
+.store-row {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 0.85rem;
+}
+
+.store-button {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.6rem 1rem;
+  background: rgba(31, 41, 55, 0.92);
+  color: #fff;
+  border-radius: 10px;
+  font-size: 0.875rem;
+  text-decoration: none;
+  transition: background 0.15s;
+
+  &:hover { background: #1f2937; color: #fff; }
+}
+
+/* Inline link used in walkthrough body text. */
+.link {
+  color: #2d5f4e;
+  text-decoration: underline;
+}

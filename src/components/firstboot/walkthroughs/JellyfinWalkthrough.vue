@@ -11,10 +11,10 @@
       <div class="wt-substep">{{ sub + 1 }} / {{ total }}</div>
     </div>
 
-    <!-- Sub 0: what it is + open admin -->
+    <!-- Sub 0: open Jellyfin & finish account setup -->
     <section v-if="sub === 0" class="wt-body">
-      <p>{{ $t('Jellyfin streams the movies, shows, and music stored on your pebble to any TV, phone, or browser — no subscription.') }}</p>
-      <p>{{ $t('First, finish account setup in the Jellyfin web app:') }}</p>
+      <p>{{ $t('Jellyfin streams the movies, shows, and music stored on your pebble to any TV, phone, or browser — no subscription, no ads.') }}</p>
+      <p>{{ $t('Open it in your browser and finish the built-in setup wizard (admin account, language, etc.):') }}</p>
       <div class="server-row">
         <code class="server">{{ url }}</code>
         <b-button size="is-small" type="is-dark" rounded icon-pack="casa" icon-left="copy-outline" @click="copy(url)">
@@ -24,42 +24,96 @@
       <b-button rounded type="is-light" tag="a" :href="url" target="_blank" rel="noopener noreferrer">
         {{ $t('Open Jellyfin') }}
       </b-button>
+      <p class="hint">{{ $t('Use the same email + password as your KODE account so you don\'t have to remember a second one.') }}</p>
     </section>
 
-    <!-- Sub 1: point libraries at /DATA -->
+    <!-- Sub 1: add libraries -->
     <section v-else-if="sub === 1" class="wt-body">
-      <p>{{ $t('In the Jellyfin setup wizard, add libraries pointing at your pebble\'s media folders:') }}</p>
+      <p>{{ $t('In Jellyfin\'s setup wizard, add libraries pointing at your pebble\'s media folders:') }}</p>
       <ul class="folder-list">
-        <li><strong>{{ $t('Movies & shows:') }}</strong> <code>/DATA/Videos</code></li>
-        <li><strong>{{ $t('Music:') }}</strong> <code>/DATA/Music</code></li>
+        <li>
+          <strong>{{ $t('Movies:') }}</strong> <code>/DATA/Videos/Movies</code>
+          <span class="folder-note">{{ $t('Type: Movies') }}</span>
+        </li>
+        <li>
+          <strong>{{ $t('TV shows:') }}</strong> <code>/DATA/Videos/TV</code>
+          <span class="folder-note">{{ $t('Type: Shows') }}</span>
+        </li>
+        <li>
+          <strong>{{ $t('Music:') }}</strong> <code>/DATA/Music</code>
+          <span class="folder-note">{{ $t('Type: Music') }}</span>
+        </li>
       </ul>
-      <p>{{ $t('Drop files into those folders (via File Browser, Samba on your computer, or directly through Jellyfin) and they\'ll show up in the app.') }}</p>
+      <p>{{ $t('Drop files into those folders — via File Browser, Samba on your computer, or directly through Jellyfin — and they\'ll show up in the app.') }}</p>
       <div class="callout">
         <b-icon icon="information-outline" pack="casa" size="is-small" />
-        <span>{{ $t('Jellyfin scans for new files every few minutes — you don\'t have to restart anything.') }}</span>
+        <span>{{ $t('Naming matters for metadata. Use "Movie Title (Year).mp4" for movies and "Show/Season 01/Show - S01E01.mp4" for TV. Jellyfin auto-fetches posters and descriptions from TheMovieDB.') }}</span>
       </div>
     </section>
 
-    <!-- Sub 2: install on TV -->
+    <!-- Sub 2: install on phone + TV -->
     <section v-else-if="sub === 2" class="wt-body">
-      <p>{{ $t('Stream to your TV by installing the Jellyfin app from your TV\'s app store (Roku, Fire TV, LG, Samsung, Android TV, Apple TV all have it).') }}</p>
-      <p>{{ $t('When the app asks for a server, enter:') }}</p>
-      <div class="server-row">
-        <code class="server">{{ url }}</code>
-        <b-button size="is-small" type="is-dark" rounded icon-pack="casa" icon-left="copy-outline" @click="copy(url)">
-          {{ copied ? $t('Copied') : $t('Copy') }}
-        </b-button>
+      <p>{{ $t('Watch on every screen. Install the Jellyfin app on each device, then point it at your pebble.') }}</p>
+
+      <div class="store-row">
+        <a class="store-button" href="https://apps.apple.com/app/jellyfin-mobile/id1480192618" target="_blank" rel="noopener noreferrer">
+          <b-icon icon="ios" pack="casa" size="is-medium" />
+          <span>{{ $t('App Store') }}</span>
+        </a>
+        <a class="store-button" href="https://play.google.com/store/apps/details?id=org.jellyfin.mobile" target="_blank" rel="noopener noreferrer">
+          <b-icon icon="android" pack="casa" size="is-medium" />
+          <span>{{ $t('Google Play') }}</span>
+        </a>
       </div>
-      <p class="hint">{{ $t('No Jellyfin in your TV\'s store? Open the URL above in your TV\'s web browser instead.') }}</p>
+      <p class="hint">{{ $t('TVs: search "Jellyfin" in your TV\'s app store — Roku, Fire TV, Android TV, LG, Samsung, and Apple TV all have a native app.') }}</p>
+
+      <p class="server-label">{{ $t('When the app asks for a server, scan or paste:') }}</p>
+      <div class="qr-row">
+        <div class="qr">
+          <QrcodeVue :value="url" :size="180" level="M" background="#ffffff" foreground="#000000" />
+        </div>
+        <div class="qr-side">
+          <div class="server-row">
+            <code class="server">{{ url }}</code>
+            <b-button size="is-small" type="is-dark" rounded icon-pack="casa" icon-left="copy-outline" @click="copy(url)">
+              {{ copied ? $t('Copied') : $t('Copy') }}
+            </b-button>
+          </div>
+          <p class="hint">{{ $t('Sign in with the Jellyfin admin account you created in step 1.') }}</p>
+        </div>
+      </div>
     </section>
 
-    <!-- Sub 3: now playing tip -->
+    <!-- Sub 3: power-user tips (NEW) -->
     <section v-else-if="sub === 3" class="wt-body">
+      <p>{{ $t('A few settings worth flipping on once Jellyfin is up:') }}</p>
+      <ol class="steps">
+        <li>
+          <strong>{{ $t('Hardware transcoding.') }}</strong>
+          {{ $t('Dashboard → Playback → Hardware acceleration → set to "Video Acceleration API (VAAPI)". Your Pi 5 can transcode without breaking a sweat — this is what lets multiple people stream at once.') }}
+        </li>
+        <li>
+          <strong>{{ $t('Subtitle providers.') }}</strong>
+          {{ $t('Dashboard → Plugins → Catalog → install OpenSubtitles. Then Profile → Settings → Subtitles to set your preferred language.') }}
+        </li>
+        <li>
+          <strong>{{ $t('Family accounts.') }}</strong>
+          {{ $t('Dashboard → Users → +. Each person can have their own watched-list and continue-watching row.') }}
+        </li>
+      </ol>
+      <div class="callout">
+        <b-icon icon="information-outline" pack="casa" size="is-small" />
+        <span>{{ $t('Pro tip: enable "Resume from where I left off" in each user\'s profile so picking up on the TV after pausing on the phone just works.') }}</span>
+      </div>
+    </section>
+
+    <!-- Sub 4: you're ready (existing tips trimmed) -->
+    <section v-else-if="sub === 4" class="wt-body">
       <p>{{ $t('That\'s it — hit play and enjoy.') }}</p>
       <ul class="tips">
-        <li>{{ $t('You can sign in with the same KODE account on every device.') }}</li>
-        <li>{{ $t('Use Family in the Easy dashboard to add accounts for kids and partners.') }}</li>
-        <li>{{ $t('Once it\'s up, your pebble\'s OLED will show "Now playing" when anyone is streaming.') }}</li>
+        <li>{{ $t('Jellyfin scans for new files every few minutes; you don\'t have to restart anything.') }}</li>
+        <li>{{ $t('Cast from your phone to a Chromecast or Apple TV right from the player.') }}</li>
+        <li>{{ $t('Once everything is wired up, your pebble\'s OLED will show "Now playing" whenever someone is streaming.') }}</li>
       </ul>
     </section>
 
@@ -74,14 +128,22 @@
 </template>
 
 <script>
+import QrcodeVue from 'qrcode.vue'
 import copy from 'clipboard-copy'
 import { resolveAppUrl } from '@/service/kodeApps'
 
 const FALLBACK_PORT = 8096
-const SUB_TITLES = ['Open Jellyfin', 'Add your media', 'Install on your TV', 'You\'re ready to stream']
+const SUB_TITLES = [
+  'Open Jellyfin',
+  'Add your media',
+  'Install on your devices',
+  'Power-user settings',
+  'You\'re ready to stream',
+]
 
 export default {
   name: 'JellyfinWalkthrough',
+  components: { QrcodeVue },
   props: {
     host: { type: String, required: true },
     isLast: { type: Boolean, default: false },
@@ -118,4 +180,18 @@ export default {
 <style lang="scss" scoped>
 @import './_walkthrough.scss';
 .wt-icon.is-jellyfin { background: linear-gradient(135deg, #5e6ad2, #7c8af0); }
+
+.server-label {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: rgba(0, 0, 0, 0.65);
+  margin: 0.75rem 0 0.4rem;
+}
+
+.folder-note {
+  margin-left: 0.4rem;
+  font-size: 0.75rem;
+  color: rgba(0, 0, 0, 0.5);
+  font-style: italic;
+}
 </style>
