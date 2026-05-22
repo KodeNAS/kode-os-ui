@@ -8,6 +8,7 @@ import AppSection from '@/components/Apps/AppSection.vue'
 import FilePanel from '@/components/filebrowser/FilePanel.vue'
 import UpdateCompleteModal from '@/components/settings/UpdateCompleteModal.vue'
 import BeginnerDashboard from '@/views/BeginnerDashboard.vue'
+import InterfaceModePanel from '@/components/settings/InterfaceModePanel.vue'
 import { mixin } from '@/mixins/mixin'
 import events from '@/events/events'
 
@@ -228,6 +229,17 @@ export default {
       })
     },
 
+    openModePanel() {
+      this.$buefy.modal.open({
+        parent: this,
+        component: InterfaceModePanel,
+        hasModalCard: true,
+        trapFocus: true,
+        scroll: 'keep',
+        animation: 'zoom-in',
+      })
+    },
+
     // show storage settings modal
     async showStorageManagerPanelModal() {
       this.$messageBus('widget_storagemanager')
@@ -314,10 +326,34 @@ export default {
       </template>
     </b-modal>
     <!-- File Panel End -->
+
+    <!-- KODE OS: persistent mode-switch pill — works in both modes -->
+    <button type="button" class="mode-switcher has-text-white" @click="openModePanel">
+      {{ isBeginner ? $t('Switch to Advanced mode') : $t('Switch to Easy mode') }}
+    </button>
   </div>
 </template>
 
 <style lang="scss" scoped>
+.mode-switcher {
+    position: fixed;
+    bottom: 1.25rem;
+    right: 1.25rem;
+    background: rgba(0, 0, 0, 0.45);
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    border-radius: 999px;
+    padding: 8px 16px;
+    font-size: 13px;
+    cursor: pointer;
+    backdrop-filter: blur(14px);
+    transition: background 0.15s;
+    z-index: 30;
+
+    &:hover {
+        background: rgba(0, 0, 0, 0.6);
+    }
+}
+
 .out-container {
     position: relative;
     height: 100%;
