@@ -143,6 +143,10 @@ export default {
      */
     showFiles(path) {
       this.isFileActive = true
+      // Files has its own header — make sure the global top bar isn't
+      // stuck in the auto-hidden state from the desktop, and clear any
+      // pending hide timer.
+      this.cancelHideTopBar()
       this.$nextTick(() => {
         this.$refs.filePanel.init(path)
       })
@@ -236,6 +240,16 @@ export default {
     },
 
     onMouseMoveTopBar(e) {
+      // Auto-hide only applies on the desktop dashboard. The file browser
+      // has its own header / controls — letting the global top bar
+      // disappear and re-appear on hover there was distracting, so we
+      // bail early and keep the bar permanently visible while files is
+      // open. cancelHideTopBar() makes sure it isn't left hidden from
+      // a prior pass on the desktop.
+      if (this.isFileActive) {
+        this.cancelHideTopBar()
+        return
+      }
       // Show TopBar whenever the mouse is within ~80px of the top edge,
       // otherwise schedule a hide after 700ms idle.
       if (e.clientY < 80) {
