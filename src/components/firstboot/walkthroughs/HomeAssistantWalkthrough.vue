@@ -85,8 +85,9 @@
 
 <script>
 import copy from 'clipboard-copy'
+import { resolveAppUrl } from '@/service/kodeApps'
 
-const PORT = 8123
+const FALLBACK_PORT = 8123
 const SUB_TITLES = ['Open Home Assistant', 'Add your first device', 'Make a dashboard', 'Where to go next']
 
 export default {
@@ -95,11 +96,21 @@ export default {
     host: { type: String, required: true },
     isLast: { type: Boolean, default: false },
   },
-  data() { return { sub: 0, copied: false, total: SUB_TITLES.length } },
+  data() {
+    return {
+      sub: 0,
+      copied: false,
+      total: SUB_TITLES.length,
+      url: `http://${this.host}:${FALLBACK_PORT}`,
+    }
+  },
+  async created() {
+    const live = await resolveAppUrl('homeassistant', this.host)
+    if (live) this.url = live
+  },
   computed: {
     subTitle() { return this.$t(SUB_TITLES[this.sub]) },
     isFinal() { return this.sub === this.total - 1 },
-    url() { return `http://${this.host}:${PORT}` },
   },
   methods: {
     async copy(text) {

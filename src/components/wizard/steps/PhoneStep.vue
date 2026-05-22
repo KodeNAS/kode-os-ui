@@ -63,8 +63,9 @@
 <script>
 import QrcodeVue from 'qrcode.vue'
 import copy from 'clipboard-copy'
+import { resolveAppUrl } from '@/service/kodeApps'
 
-const IMMICH_PORT = 2283
+const IMMICH_FALLBACK_PORT = 2283
 
 export default {
   name: 'PhoneStep',
@@ -75,12 +76,12 @@ export default {
   data() {
     return {
       copied: false,
+      immichUrl: `http://${this.host}:${IMMICH_FALLBACK_PORT}`,
     }
   },
-  computed: {
-    immichUrl() {
-      return `http://${this.host}:${IMMICH_PORT}`
-    },
+  async created() {
+    const live = await resolveAppUrl('immich', this.host)
+    if (live) this.immichUrl = live
   },
   methods: {
     async copy(text) {

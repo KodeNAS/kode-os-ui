@@ -47,8 +47,9 @@
 
 <script>
 import copy from 'clipboard-copy'
+import { resolveAppUrl } from '@/service/kodeApps'
 
-const JELLYFIN_PORT = 8096
+const JELLYFIN_FALLBACK_PORT = 8096
 
 export default {
   name: 'TVStep',
@@ -56,12 +57,14 @@ export default {
     host: { type: String, required: true },
   },
   data() {
-    return { copied: false }
+    return {
+      copied: false,
+      jellyfinUrl: `http://${this.host}:${JELLYFIN_FALLBACK_PORT}`,
+    }
   },
-  computed: {
-    jellyfinUrl() {
-      return `http://${this.host}:${JELLYFIN_PORT}`
-    },
+  async created() {
+    const live = await resolveAppUrl('jellyfin', this.host)
+    if (live) this.jellyfinUrl = live
   },
   methods: {
     async copyServer() {

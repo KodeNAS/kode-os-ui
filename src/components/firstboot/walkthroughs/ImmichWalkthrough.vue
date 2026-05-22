@@ -93,8 +93,9 @@
 <script>
 import QrcodeVue from 'qrcode.vue'
 import copy from 'clipboard-copy'
+import { resolveAppUrl } from '@/service/kodeApps'
 
-const IMMICH_PORT = 2283
+const IMMICH_FALLBACK_PORT = 2283
 const SUB_TITLES = ['Install the app', 'Connect to your pebble', 'Turn on auto backup', 'See your photos arrive']
 
 export default {
@@ -109,12 +110,16 @@ export default {
       sub: 0,
       copied: false,
       total: SUB_TITLES.length,
+      immichUrl: `http://${this.host}:${IMMICH_FALLBACK_PORT}`,
     }
+  },
+  async created() {
+    const live = await resolveAppUrl('immich', this.host)
+    if (live) this.immichUrl = live
   },
   computed: {
     subTitle() { return this.$t(SUB_TITLES[this.sub]) },
     isFinal() { return this.sub === this.total - 1 },
-    immichUrl() { return `http://${this.host}:${IMMICH_PORT}` },
   },
   methods: {
     async copy(text) {

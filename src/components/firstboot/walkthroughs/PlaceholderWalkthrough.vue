@@ -32,10 +32,12 @@
 </template>
 
 <script>
-const PORTS = {
+import { resolveAppUrl } from '@/service/kodeApps'
+
+const FALLBACK_PORTS = {
   jellyfin: 8096,
-  filebrowser: 80, // CasaOS routes the upstream file browser via UI; no direct port needed
-  pihole: 80,      // exposed via /admin route on the pebble
+  filebrowser: null,    // file browser is the upstream UI; no separate URL needed
+  pihole: null,         // /admin/ on the pi-hole port; resolved at runtime
   homeassistant: 8123,
 }
 
@@ -73,19 +75,30 @@ export default {
     host: { type: String, required: true },
     isLast: { type: Boolean, default: false },
   },
+  data() {
+    return {
+      appUrl: this.fallbackUrl(),
+    }
+  },
+  async created() {
+    const live = await resolveAppUrl(this.appKey, this.host)
+    if (live) {
+      this.appUrl = this.appKey === 'pihole' && !live.endsWith('/admin/')
+        ? live.replace(/\/+$/, '') + '/admin/'
+        : live
+    }
+  },
   computed: {
     meta() {
       return META[this.appKey] || { icon: 'file', title: this.appKey, tagline: '', intro: '' }
     },
-    appUrl() {
-      const port = PORTS[this.appKey]
-      if (!port) return null
-      if (port === 80) {
-        // Apps routed by the CasaOS gateway live on the same origin.
-        if (this.appKey === 'pihole') return `http://${this.host}/admin/`
-        return null
-      }
-      return `http://${this.host}:${port}`
+  },
+  methods: {
+    fallbackUrl() {
+      const port = FALLBACK_PORTS[this.appKey]
+      if (port) return `http://${this.host}:${port}`
+      if (this.appKey === 'pihole') return `http://${this.host}/admin/`
+      return null
     },
   },
 }

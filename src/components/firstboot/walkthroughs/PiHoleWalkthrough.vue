@@ -75,6 +75,7 @@
 
 <script>
 import copy from 'clipboard-copy'
+import { resolveAppUrl } from '@/service/kodeApps'
 
 const SUB_TITLES = ['What it does', 'Point your router at the pebble', 'Verify it\'s working', 'Fix false positives']
 
@@ -84,11 +85,24 @@ export default {
     host: { type: String, required: true },
     isLast: { type: Boolean, default: false },
   },
-  data() { return { sub: 0, copied: false, total: SUB_TITLES.length } },
+  data() {
+    return {
+      sub: 0,
+      copied: false,
+      total: SUB_TITLES.length,
+      adminUrl: `http://${this.host}/admin/`,
+    }
+  },
+  async created() {
+    const live = await resolveAppUrl('pihole', this.host)
+    if (live) {
+      // ensure /admin/ suffix even if API returns just the root
+      this.adminUrl = live.endsWith('/admin/') ? live : live.replace(/\/+$/, '') + '/admin/'
+    }
+  },
   computed: {
     subTitle() { return this.$t(SUB_TITLES[this.sub]) },
     isFinal() { return this.sub === this.total - 1 },
-    adminUrl() { return `http://${this.host}/admin/` },
   },
   methods: {
     async copy(text) {
