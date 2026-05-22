@@ -35,7 +35,21 @@
             />
           </draggable>
           <main class="beginner-main" data-tour="apps">
-            <AppSection ref="apps" :allowed-keys="pickedApps" />
+            <AppSection ref="apps" :allowed-keys="pickedApps">
+              <template #prepend>
+                <div
+                  class="files-app-card"
+                  :title="hintModeOn ? hintFilesLabel : null"
+                  @click="openFiles"
+                >
+                  <span v-if="hintModeOn" class="kode-hint">{{ hintFilesLabel }}</span>
+                  <span class="files-app-icon">
+                    <b-icon icon="folder" pack="casa" size="is-large" />
+                  </span>
+                  <span class="files-app-name">{{ $t('Files') }}</span>
+                </div>
+              </template>
+            </AppSection>
           </main>
         </div>
       </div>
@@ -49,33 +63,41 @@ import AppSection from '@/components/Apps/AppSection.vue'
 import RecentActivityTile from '@/components/beginner/RecentActivityTile.vue'
 import FamilyTile from '@/components/beginner/FamilyTile.vue'
 import AddDeviceTile from '@/components/beginner/AddDeviceTile.vue'
-import FilesTile from '@/components/beginner/FilesTile.vue'
 import { maybeStartEasyTourOnce } from '@/service/tour'
+import { hintMode } from '@/mixins/hintMode'
 
 const ORDER_KEY = 'kode_tile_order'
-const DEFAULT_ORDER = ['files', 'recent', 'family', 'addDevice']
+// Files is rendered as an app-grid card now, not a left-rail tile.
+const DEFAULT_ORDER = ['recent', 'family', 'addDevice']
 
 export default {
   name: 'BeginnerDashboard',
+  mixins: [hintMode],
+  inject: {
+    homeShowFiles: { default: null },
+  },
   components: {
     draggable,
     AppSection,
     RecentActivityTile,
     FamilyTile,
     AddDeviceTile,
-    FilesTile,
   },
   data() {
     return {
       pickedApps: [],
       tileOrder: this.loadTileOrder(),
       tileMap: {
-        files: 'FilesTile',
         recent: 'RecentActivityTile',
         family: 'FamilyTile',
         addDevice: 'AddDeviceTile',
       },
     }
+  },
+  computed: {
+    hintFilesLabel() {
+      return this.$t('Browse everything on your pebble — opens the built-in file browser.')
+    },
   },
   created() {
     this.loadPickedApps()
@@ -122,7 +144,12 @@ export default {
       } catch (e) { /* quota / disabled storage — accept loss */ }
     },
     tourKeyFor(key) {
-      return ({ files: 'files', recent: 'recent', family: 'family', addDevice: 'adddevice' })[key]
+      return ({ recent: 'recent', family: 'family', addDevice: 'adddevice' })[key]
+    },
+    openFiles() {
+      if (typeof this.homeShowFiles === 'function') {
+        this.homeShowFiles('/DATA')
+      }
     },
   },
 }
@@ -194,6 +221,85 @@ export default {
   background: rgba(45, 95, 78, 0.10);
   border-radius: 20px;
   border: 2px dashed rgba(45, 95, 78, 0.45);
+}
+
+/* Files card — sits as the first item inside AppSection's grid via the
+   #prepend slot so it appears alongside Immich/Jellyfin/etc, sized and
+   styled to match an upstream AppCard (1:1 aspect, liquid-glass). */
+.files-app-card {
+  position: relative;
+  aspect-ratio: 1 / 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 1rem;
+  background: rgba(255, 255, 255, 0.55);
+  backdrop-filter: blur(24px) saturate(180%);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  border-radius: 18px;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.7),
+    0 8px 28px rgba(0, 0, 0, 0.18);
+  cursor: pointer;
+  transition: transform 0.18s ease, box-shadow 0.18s ease;
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.85),
+      0 14px 36px rgba(0, 0, 0, 0.22);
+  }
+}
+
+.files-app-icon {
+  width: 64px;
+  height: 64px;
+  border-radius: 16px;
+  background: linear-gradient(135deg, #2d5f4e, #3f7a66);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 6px 14px rgba(45, 95, 78, 0.32);
+}
+
+.files-app-name {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #1f2937;
+  text-align: center;
+}
+
+/* CSS-only hint bubble — shown on hover only when the host element is in
+   hint-mode (gated by the v-if on the consumer). Sits above the tile, no
+   browser-tooltip delay. */
+.kode-hint {
+  position: absolute;
+  top: -10px;
+  left: 50%;
+  transform: translate(-50%, -100%);
+  background: rgba(15, 25, 30, 0.92);
+  color: #fff;
+  padding: 6px 12px;
+  border-radius: 8px;
+  font-size: 0.75rem;
+  line-height: 1.4;
+  max-width: 260px;
+  white-space: normal;
+  text-align: center;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.15s ease;
+  z-index: 50;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.25);
+}
+
+.files-app-card:hover .kode-hint,
+.kode-tile:hover .kode-hint {
+  opacity: 1;
 }
 
 /* Override the upstream AppSection grid: force 3 columns in Easy mode and

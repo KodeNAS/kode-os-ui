@@ -39,6 +39,12 @@
 			@end="onSortEnd"
 			@start="drag = true"
 		>
+			<!-- KODE OS: parents can drop non-draggable cards (e.g. a
+			     synthetic Files card backed by the built-in file panel)
+			     into the head of the grid via this slot. -->
+			<template #header>
+				<slot name="prepend"></slot>
+			</template>
 			<!-- App Icon Card Start -->
 			<template v-if="!isLoading">
 				<div v-for="item in visibleAppList" :id="'app-' + item.name" :key="'app-' + item.name" class="handle">

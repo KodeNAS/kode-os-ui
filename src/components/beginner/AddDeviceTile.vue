@@ -2,9 +2,9 @@
   <button
     type="button"
     class="kode-tile add-device-tile"
-    :title="hintModeOn ? hintLabel : null"
     @click="open"
   >
+    <span v-if="hintModeOn" class="kode-hint">{{ hintLabel }}</span>
     <span class="add-device-icon">
       <b-icon icon="plus-outline" pack="casa" size="is-medium" />
     </span>
@@ -44,6 +44,7 @@ export default {
 
 <style lang="scss" scoped>
 .kode-tile {
+  position: relative;
   width: 100%;
   display: flex;
   align-items: center;
@@ -67,6 +68,31 @@ export default {
       inset 0 1px 0 rgba(255, 255, 255, 0.85),
       0 14px 36px rgba(0, 0, 0, 0.22);
   }
+}
+
+.kode-hint {
+  position: absolute;
+  top: -10px;
+  left: 50%;
+  transform: translate(-50%, -100%);
+  background: rgba(15, 25, 30, 0.92);
+  color: #fff;
+  padding: 6px 12px;
+  border-radius: 8px;
+  font-size: 0.75rem;
+  line-height: 1.4;
+  max-width: 260px;
+  white-space: normal;
+  text-align: center;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.15s ease;
+  z-index: 50;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.25);
+}
+
+.kode-tile:hover .kode-hint {
+  opacity: 1;
 }
 
 .add-device-icon {

@@ -1,8 +1,6 @@
 <template>
-  <div
-    class="kode-tile family-tile"
-    :title="hintModeOn ? hintLabel : null"
-  >
+  <div class="kode-tile family-tile">
+    <span v-if="hintModeOn" class="kode-hint">{{ hintLabel }}</span>
     <header class="tile-header">
       <h2 class="tile-title">{{ $t('On your pebble') }}</h2>
       <button
@@ -123,6 +121,7 @@ export default {
 <style lang="scss" scoped>
 /* Liquid glass — match RecentActivityTile. */
 .kode-tile {
+  position: relative;
   background: rgba(255, 255, 255, 0.55);
   backdrop-filter: blur(24px) saturate(180%);
   -webkit-backdrop-filter: blur(24px) saturate(180%);
@@ -132,6 +131,31 @@ export default {
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.7),
     0 8px 28px rgba(0, 0, 0, 0.18);
+}
+
+.kode-hint {
+  position: absolute;
+  top: -10px;
+  left: 50%;
+  transform: translate(-50%, -100%);
+  background: rgba(15, 25, 30, 0.92);
+  color: #fff;
+  padding: 6px 12px;
+  border-radius: 8px;
+  font-size: 0.75rem;
+  line-height: 1.4;
+  max-width: 260px;
+  white-space: normal;
+  text-align: center;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.15s ease;
+  z-index: 50;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.25);
+}
+
+.kode-tile:hover .kode-hint {
+  opacity: 1;
 }
 
 .tile-header {
