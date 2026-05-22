@@ -19,6 +19,11 @@ per Apache 2.0 best practice (§4.1 of the project brief).
 - `scripts/deploy-to-pi.sh` — builds the UI and rsyncs it into
   `/var/lib/casaos/www/` on the pebble, then restarts `casaos-gateway` and
   `casaos`. Host overridable via `PI_HOST` env var.
+- `scripts/setup-pi-sudoers.sh` — one-time bootstrap that installs a narrow
+  `/etc/sudoers.d/kode-os-deploy` entry on the pebble so the deploy user can
+  run the specific `rsync` and `systemctl restart` commands needed by
+  `deploy-to-pi.sh` without a password prompt. Re-runnable; uses `visudo -c`
+  to validate syntax before installing.
 
 ### Changed
 - All user-visible CasaOS strings rebranded to KODE OS across 31 i18n files,
