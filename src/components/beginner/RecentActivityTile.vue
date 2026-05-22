@@ -17,15 +17,12 @@
         class="tile-row"
         @click="open(item)"
       >
-        <b-icon
-          :icon="item.is_dir ? 'folder' : 'file'"
-          pack="casa"
-          size="is-medium"
-          class="tile-row-icon"
-        />
+        <div class="tile-row-icon" :class="iconClass(item)">
+          <b-icon :icon="iconName(item)" pack="casa" size="is-medium" />
+        </div>
         <div class="tile-row-text">
           <div class="tile-row-name">{{ item.name }}</div>
-          <div class="tile-row-time">{{ item.date | dateFmt }}</div>
+          <div class="tile-row-time">{{ relativeTime(item.date) }}</div>
         </div>
       </li>
     </ul>
@@ -33,14 +30,8 @@
 </template>
 
 <script>
-import { mixin } from '@/mixins/mixin'
-
-const HOME_PATH = '/DATA'
-const MAX_ITEMS = 6
-
 export default {
   name: 'RecentActivityTile',
-  mixins: [mixin],
   inject: {
     homeShowFiles: { default: null },
   },
@@ -48,6 +39,7 @@ export default {
     return {
       isLoading: true,
       items: [],
+      HOME_PATH: '/DATA',
     }
   },
   created() {
@@ -56,13 +48,12 @@ export default {
   methods: {
     async load() {
       try {
-        const res = await this.$api.folder.getList(HOME_PATH)
+        const res = await this.$api.folder.getList(this.HOME_PATH)
         const content = (res && res.data && res.data.data && res.data.data.content) || []
-        const sorted = [...content]
+        this.items = [...content]
           .filter(i => i.name && !i.name.startsWith('.'))
           .sort((a, b) => new Date(b.date) - new Date(a.date))
-          .slice(0, MAX_ITEMS)
-        this.items = sorted
+          .slice(0, 6)
       } catch (e) {
         this.items = []
       } finally {
@@ -71,31 +62,73 @@ export default {
     },
     open(item) {
       if (typeof this.homeShowFiles === 'function') {
-        this.homeShowFiles(item.is_dir ? item.path : HOME_PATH)
+        this.homeShowFiles(item.is_dir ? item.path : this.HOME_PATH)
       }
+    },
+    iconName(item) {
+      if (item.is_dir) return 'folder'
+      const ext = (item.name.split('.').pop() || '').toLowerCase()
+      if (['jpg', 'jpeg', 'png', 'gif', 'webp', 'heic'].includes(ext)) return 'image'
+      if (['mp4', 'mov', 'mkv', 'avi'].includes(ext)) return 'video'
+      if (['mp3', 'flac', 'wav', 'm4a'].includes(ext)) return 'music'
+      if (['pdf'].includes(ext)) return 'pdf'
+      if (['doc', 'docx', 'txt', 'md'].includes(ext)) return 'document'
+      return 'file'
+    },
+    iconClass(item) {
+      if (item.is_dir) return 'is-folder'
+      const ext = (item.name.split('.').pop() || '').toLowerCase()
+      if (['jpg', 'jpeg', 'png', 'gif', 'webp', 'heic'].includes(ext)) return 'is-image'
+      if (['mp4', 'mov', 'mkv', 'avi'].includes(ext)) return 'is-video'
+      if (['mp3', 'flac', 'wav', 'm4a'].includes(ext)) return 'is-audio'
+      return 'is-file'
+    },
+    relativeTime(value) {
+      if (!value) return ''
+      const date = new Date(value)
+      if (isNaN(date.getTime())) return ''
+      const seconds = Math.floor((Date.now() - date.getTime()) / 1000)
+      if (seconds < 60) return this.$t('Just now')
+      const minutes = Math.floor(seconds / 60)
+      if (minutes < 60) return this.$t('{n}m ago', { n: minutes })
+      const hours = Math.floor(minutes / 60)
+      if (hours < 24) return this.$t('{n}h ago', { n: hours })
+      const days = Math.floor(hours / 24)
+      if (days < 7) return this.$t('{n}d ago', { n: days })
+      const locale = (window.localStorage.getItem('lang') || navigator.language || 'en').replace('_', '-')
+      return new Intl.DateTimeFormat(locale, { month: 'short', day: 'numeric' }).format(date)
     },
   },
 }
 </script>
 
 <style lang="scss" scoped>
+/* Liquid glass — frosted white panel with saturation boost, subtle highlight
+   inset, soft drop shadow. Sits over the dark scrim so dark text reads. */
 .kode-tile {
-  background: rgba(255, 255, 255, 0.92);
-  backdrop-filter: blur(14px);
-  border-radius: 16px;
-  padding: 1.25rem 1.5rem;
-  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.12);
+  background: rgba(255, 255, 255, 0.55);
+  backdrop-filter: blur(24px) saturate(180%);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  border-radius: 20px;
+  padding: 1.1rem 1.25rem;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.7),
+    0 8px 28px rgba(0, 0, 0, 0.18);
 }
 
 .tile-header {
-  margin-bottom: 0.75rem;
+  margin-bottom: 0.5rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
 }
 
 .tile-title {
-  font-size: 1rem;
+  font-size: 0.9375rem;
   font-weight: 500;
-  letter-spacing: -0.01em;
-  color: #1f2937;
+  letter-spacing: 0.01em;
+  text-transform: uppercase;
+  color: rgba(31, 41, 55, 0.7);
 }
 
 .tile-empty {
@@ -108,28 +141,39 @@ export default {
   list-style: none;
   padding: 0;
   margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
 }
 
 .tile-row {
   display: flex;
   align-items: center;
   gap: 0.75rem;
-  padding: 0.5rem 0.25rem;
-  border-radius: 8px;
+  padding: 0.5rem;
+  border-radius: 10px;
   cursor: pointer;
   transition: background 0.15s;
 
   &:hover {
-    background: rgba(45, 95, 78, 0.08);
-  }
-
-  + .tile-row {
-    border-top: 1px solid rgba(0, 0, 0, 0.06);
+    background: rgba(45, 95, 78, 0.10);
   }
 }
 
 .tile-row-icon {
-  color: #2d5f4e;
+  flex: 0 0 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10px;
+  color: #fff;
+
+  &.is-folder { background: linear-gradient(135deg, #2d5f4e, #3f7a66); }
+  &.is-image  { background: linear-gradient(135deg, #b45f6d, #d97e8c); }
+  &.is-video  { background: linear-gradient(135deg, #5e6ad2, #7c8af0); }
+  &.is-audio  { background: linear-gradient(135deg, #c47f00, #e6a02a); }
+  &.is-file   { background: linear-gradient(135deg, #4b5563, #6b7280); }
 }
 
 .tile-row-text {
@@ -140,6 +184,7 @@ export default {
 .tile-row-name {
   font-size: 0.9375rem;
   color: #1f2937;
+  font-weight: 500;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -148,5 +193,6 @@ export default {
 .tile-row-time {
   font-size: 0.75rem;
   color: rgba(0, 0, 0, 0.55);
+  margin-top: 1px;
 }
 </style>

@@ -11,18 +11,15 @@
           </p>
         </header>
 
-        <section class="beginner-apps">
-          <AppSection ref="apps" />
-        </section>
-
-        <section class="beginner-tiles columns is-variable is-4 is-multiline">
-          <div class="column is-two-thirds-tablet is-full-mobile">
+        <div class="beginner-grid">
+          <aside class="beginner-side">
             <RecentActivityTile />
-          </div>
-          <div class="column is-one-third-tablet is-full-mobile">
             <FamilyTile />
-          </div>
-        </section>
+          </aside>
+          <main class="beginner-main">
+            <AppSection ref="apps" />
+          </main>
+        </div>
       </div>
     </div>
   </div>
@@ -60,10 +57,9 @@ export default {
 }
 
 .beginner-hero {
-  max-width: 760px;
+  max-width: 1180px;
   margin: 0 auto 2.5rem;
-  padding: 0 1.5rem;
-  text-align: center;
+  padding: 0 2rem;
 
   .title,
   .subtitle {
@@ -75,15 +71,72 @@ export default {
   }
 }
 
-.beginner-apps {
-  max-width: 1100px;
+/* Two-column layout: narrow side rail on the left, app grid on the right. */
+.beginner-grid {
+  max-width: 1180px;
   margin: 0 auto;
-  padding: 0 1.5rem;
+  padding: 0 2rem;
+  display: grid;
+  gap: 1.5rem;
+  grid-template-columns: minmax(260px, 320px) 1fr;
+  align-items: start;
+
+  @media (max-width: 900px) {
+    grid-template-columns: 1fr;
+  }
 }
 
-.beginner-tiles {
-  max-width: 1100px;
-  margin: 2rem auto 0;
-  padding: 0 1.5rem;
+.beginner-side {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  position: sticky;
+  top: 1rem;
+
+  @media (max-width: 900px) {
+    position: static;
+  }
+}
+
+/* Override the upstream AppSection grid: force 3 columns in Easy mode and
+   give each app card the same liquid-glass treatment as the side tiles. */
+.beginner-main {
+  ::v-deep .home-section {
+    /* Hide the upstream "Drag icons to sort." title row — Beginner doesn't
+       need the editorial chrome. The + dropdown stays but the title bar
+       collapses. */
+    > .is-flex:first-child {
+      display: none;
+    }
+  }
+
+  ::v-deep .app-list {
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    gap: 1rem;
+
+    @media (max-width: 600px) {
+      grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    }
+  }
+
+  ::v-deep .common-card,
+  ::v-deep .app-card {
+    background: rgba(255, 255, 255, 0.55) !important;
+    backdrop-filter: blur(24px) saturate(180%);
+    -webkit-backdrop-filter: blur(24px) saturate(180%);
+    border: 1px solid rgba(255, 255, 255, 0.4);
+    border-radius: 18px;
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.7),
+      0 8px 28px rgba(0, 0, 0, 0.18);
+    transition: transform 0.18s ease, box-shadow 0.18s ease;
+
+    &:hover {
+      transform: translateY(-2px);
+      box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.85),
+        0 14px 36px rgba(0, 0, 0, 0.22);
+    }
+  }
 }
 </style>

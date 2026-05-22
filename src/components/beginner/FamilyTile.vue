@@ -54,23 +54,31 @@ export default {
 </script>
 
 <style lang="scss" scoped>
+/* Liquid glass — match RecentActivityTile. */
 .kode-tile {
-  background: rgba(255, 255, 255, 0.92);
-  backdrop-filter: blur(14px);
-  border-radius: 16px;
-  padding: 1.25rem 1.5rem;
-  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.12);
+  background: rgba(255, 255, 255, 0.55);
+  backdrop-filter: blur(24px) saturate(180%);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  border-radius: 20px;
+  padding: 1.1rem 1.25rem;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.7),
+    0 8px 28px rgba(0, 0, 0, 0.18);
 }
 
 .tile-header {
-  margin-bottom: 0.75rem;
+  margin-bottom: 0.5rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
 }
 
 .tile-title {
-  font-size: 1rem;
+  font-size: 0.9375rem;
   font-weight: 500;
-  letter-spacing: -0.01em;
-  color: #1f2937;
+  letter-spacing: 0.01em;
+  text-transform: uppercase;
+  color: rgba(31, 41, 55, 0.7);
 }
 
 .tile-empty {
