@@ -196,6 +196,10 @@ export default {
 		exsitingAppsShow () {
 			return this.$store.state.existingAppsSwitch
 		},
+		// KODE OS — true when an Easy-mode picked-apps filter is in effect.
+		isFiltered () {
+			return Array.isArray(this.allowedKeys) && this.allowedKeys.length > 0
+		},
 		// KODE OS — filtered view of appList using the allowedKeys prop.
 		// Fuzzy-match: an app is shown if any allowed key (e.g. "immich")
 		// appears as a substring of the container name (e.g.
@@ -650,5 +654,12 @@ export default {
 	@include fullhd {
 		grid-template-columns: repeat(5, minmax(0, 1fr));
 	}
+}
+
+/* KODE OS — when the picked-apps filter is on, the second (legacy
+   container) list should flow inline with the first instead of
+   starting a new visual section. */
+.app-list.is-merged {
+	margin-top: 1rem;
 }
 </style>
