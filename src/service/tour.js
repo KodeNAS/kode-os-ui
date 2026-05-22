@@ -44,6 +44,14 @@ function easySteps() {
       },
     },
     {
+      element: '[data-tour="files"]',
+      popover: {
+        title: 'Files',
+        description: 'Built-in file browser for everything on your pebble. Click to open.',
+        side: 'right',
+      },
+    },
+    {
       element: '[data-tour="recent"]',
       popover: {
         title: 'Recent activity',
