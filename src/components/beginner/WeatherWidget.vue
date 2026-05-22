@@ -19,7 +19,7 @@
       :title="expanded ? $t('Hide details') : $t('Show details')"
       @click="toggleExpanded"
     >
-      <b-icon :icon="expanded ? 'arrow-up' : 'arrow-down'" pack="casa" size="is-small" />
+      <b-icon :icon="expanded ? 'up-outline' : 'down-outline'" pack="casa" size="is-small" />
     </button>
     <header class="weather-header">
       <h2 class="tile-title">{{ $t('Weather') }}</h2>

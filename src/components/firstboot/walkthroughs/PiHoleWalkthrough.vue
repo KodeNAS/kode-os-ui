@@ -2,7 +2,7 @@
   <div class="walkthrough">
     <div class="wt-header">
       <span class="wt-icon is-pihole">
-        <b-icon icon="shield-outline" pack="casa" size="is-medium" />
+        <b-icon icon="protection-outline" pack="casa" size="is-medium" />
       </span>
       <div>
         <h3 class="wt-title">Pi-hole</h3>

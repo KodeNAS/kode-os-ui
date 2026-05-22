@@ -38,6 +38,9 @@ export default {
       user_id: localStorage.getItem('user_id') ? localStorage.getItem('user_id') : 1,
       isFileActive: false,
       topbarHidden: false,
+      // When true, the auto-hide is paused — used by the dashboard
+      // tour so it can keep the top bar visible while explaining it.
+      topbarLocked: false,
       _topbarHideTimer: null,
       barData: {},
       topBarAni: {
@@ -68,6 +71,10 @@ export default {
   mounted() {
     window.addEventListener('resize', this.onResize)
     window.addEventListener('mousemove', this.onMouseMoveTopBar)
+    // The dashboard tour dispatches these events around its top-bar
+    // step so the bar stays visible while the popover points at it.
+    window.addEventListener('kode:reveal-topbar', this.lockTopBarVisible)
+    window.addEventListener('kode:release-topbar', this.unlockTopBar)
     this.onResize()
     if (localStorage.getItem('is_update') === 'true') {
       this.showUpdateCompleteModal()
@@ -89,6 +96,8 @@ export default {
   beforeUnmount() {
     window.removeEventListener('resize', this.onResize)
     window.removeEventListener('mousemove', this.onMouseMoveTopBar)
+    window.removeEventListener('kode:reveal-topbar', this.lockTopBarVisible)
+    window.removeEventListener('kode:release-topbar', this.unlockTopBar)
     if (this._topbarHideTimer) clearTimeout(this._topbarHideTimer)
     this.$EventBus.$off('casaUI:openStorageManager')
   },
@@ -244,6 +253,9 @@ export default {
     },
 
     onMouseMoveTopBar(e) {
+      // Tour locks the bar visible so it can be pointed at — bail out
+      // and don't react to cursor position while that's the case.
+      if (this.topbarLocked) return
       // Top bar is desktop-only. While files (or any other full-screen
       // view) is up, ignore hover entirely so the bar stays hidden no
       // matter where the cursor goes — that view has its own header.
@@ -273,12 +285,27 @@ export default {
     },
     scheduleHideTopBar() {
       if (this._topbarHideTimer) return
+      if (this.topbarLocked) return
       this._topbarHideTimer = setTimeout(() => {
+        if (this.topbarLocked) { this._topbarHideTimer = null; return }
         // Don't hide if any Buefy dropdown inside the TopBar is open.
         const openDropdown = this.$el && this.$el.querySelector('.topbar-shell .dropdown.is-active')
         if (!openDropdown) this.topbarHidden = true
         this._topbarHideTimer = null
       }, 700)
+    },
+    lockTopBarVisible() {
+      // Tour callback: pin the bar visible until the corresponding
+      // release event fires. Clears any pending hide timer too.
+      this.topbarLocked = true
+      if (this._topbarHideTimer) {
+        clearTimeout(this._topbarHideTimer)
+        this._topbarHideTimer = null
+      }
+      this.topbarHidden = false
+    },
+    unlockTopBar() {
+      this.topbarLocked = false
     },
 
     openModePanel() {
@@ -318,6 +345,7 @@ export default {
          the viewport, when any TopBar dropdown is open, or briefly on load. -->
     <div
       class="topbar-shell"
+      data-tour="topbar"
       @mouseenter="cancelHideTopBar"
       @mouseleave="scheduleHideTopBar"
     >
@@ -396,7 +424,7 @@ export default {
       @click="openModePanel"
     >
       <b-icon
-        :icon="isBeginner ? 'control-outline' : 'home-outline'"
+        :icon="isBeginner ? 'control-outline' : 'view-dashboard-outline'"
         pack="casa"
         size="is-small"
         class="mode-switcher-icon"

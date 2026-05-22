@@ -43,25 +43,25 @@ const FALLBACK_PORTS = {
 
 const META = {
   jellyfin: {
-    icon: 'video',
+    icon: 'media-outline',
     title: 'Jellyfin',
     tagline: 'Stream movies, shows, and music',
     intro: 'Open Jellyfin in your browser to set up libraries (point each at /DATA/Videos, /DATA/Music, etc). On step 3 you\'ll see how to install the Jellyfin app on your TV.',
   },
   filebrowser: {
-    icon: 'folder',
+    icon: 'folder-outline',
     title: 'File Browser',
     tagline: 'Manage your pebble\'s files from any browser',
     intro: 'File Browser lets you upload, download, share, and organize files in /DATA from any web browser. After setup you\'ll find it in your app dock.',
   },
   pihole: {
-    icon: 'shield-outline',
+    icon: 'protection-outline',
     title: 'Pi-hole',
     tagline: 'Block ads on every device in your home',
     intro: 'Open the Pi-hole admin to set your router\'s DNS to your pebble\'s IP. Once that\'s done, every device on your network gets ads blocked automatically.',
   },
   homeassistant: {
-    icon: 'home-outline',
+    icon: 'view-dashboard-outline',
     title: 'Home Assistant',
     tagline: 'Control lights, sensors, and smart-home devices',
     intro: 'Open Home Assistant to create your owner account and start adding integrations. This one is advanced — set aside some time to explore.',

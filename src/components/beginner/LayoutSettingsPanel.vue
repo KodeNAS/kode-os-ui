@@ -6,7 +6,7 @@
         <button type="button" class="settings-chip">
           <b-icon icon="control-outline" pack="casa" size="is-small" />
           <span>{{ columnCount }} {{ $t('columns') }}</span>
-          <b-icon icon="arrow-down" pack="casa" size="is-small" class="chip-caret" />
+          <b-icon icon="down-outline" pack="casa" size="is-small" class="chip-caret" />
         </button>
       </template>
       <b-dropdown-item
@@ -34,7 +34,7 @@
         <button type="button" class="settings-chip">
           <b-icon icon="wallpaper-outline" pack="casa" size="is-small" />
           <span>{{ $t('Layouts') }}</span>
-          <b-icon icon="arrow-down" pack="casa" size="is-small" class="chip-caret" />
+          <b-icon icon="down-outline" pack="casa" size="is-small" class="chip-caret" />
         </button>
       </template>
 

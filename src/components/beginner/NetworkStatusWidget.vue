@@ -45,13 +45,13 @@
       <div class="net-stats">
         <div class="net-stat">
           <span class="net-stat-label">
-            <b-icon icon="arrow-down" pack="casa" size="is-small" /> {{ $t('Down') }}
+            <b-icon icon="down-outline" pack="casa" size="is-small" /> {{ $t('Down') }}
           </span>
           <span class="net-stat-value">{{ rxRate }}/s</span>
         </div>
         <div class="net-stat">
           <span class="net-stat-label">
-            <b-icon icon="arrow-up" pack="casa" size="is-small" /> {{ $t('Up') }}
+            <b-icon icon="up-outline" pack="casa" size="is-small" /> {{ $t('Up') }}
           </span>
           <span class="net-stat-value">{{ txRate }}/s</span>
         </div>

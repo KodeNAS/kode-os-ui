@@ -52,7 +52,7 @@ export default {
       options: [
         {
           key: 'beginner',
-          icon: 'home-outline',
+          icon: 'view-dashboard-outline',
           label: this.$t('Beginner'),
           desc: this.$t("I'm new to all this. Walk me through everything and default to Easy mode."),
         },

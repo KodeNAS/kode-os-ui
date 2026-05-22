@@ -24,19 +24,19 @@
          already know what's in the box. -->
     <ul v-if="!isReplay" class="welcome-pills" aria-hidden="true">
       <li class="welcome-pill">
-        <b-icon icon="image" pack="casa" size="is-small" />
+        <b-icon icon="gallery-outline" pack="casa" size="is-small" />
         <span>{{ $t('Your photos') }}</span>
       </li>
       <li class="welcome-pill">
-        <b-icon icon="folder" pack="casa" size="is-small" />
+        <b-icon icon="folder-outline" pack="casa" size="is-small" />
         <span>{{ $t('Your files') }}</span>
       </li>
       <li class="welcome-pill">
-        <b-icon icon="video" pack="casa" size="is-small" />
+        <b-icon icon="media-outline" pack="casa" size="is-small" />
         <span>{{ $t('Your media') }}</span>
       </li>
       <li class="welcome-pill">
-        <b-icon icon="shield-outline" pack="casa" size="is-small" />
+        <b-icon icon="protection-outline" pack="casa" size="is-small" />
         <span>{{ $t('Private') }}</span>
       </li>
     </ul>
@@ -48,7 +48,7 @@
         @click="$emit('next')"
       >
         <span>{{ isReplay ? $t("Let's go") : $t("Let's get started") }}</span>
-        <b-icon icon="arrow-right" pack="casa" size="is-small" />
+        <b-icon icon="right-outline" pack="casa" size="is-small" />
       </button>
     </div>
   </div>

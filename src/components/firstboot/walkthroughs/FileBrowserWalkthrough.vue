@@ -2,7 +2,7 @@
   <div class="walkthrough">
     <div class="wt-header">
       <span class="wt-icon is-filebrowser">
-        <b-icon icon="folder" pack="casa" size="is-medium" />
+        <b-icon icon="folder-outline" pack="casa" size="is-medium" />
       </span>
       <div>
         <h3 class="wt-title">{{ $t('File Browser') }}</h3>

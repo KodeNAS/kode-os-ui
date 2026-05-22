@@ -19,7 +19,7 @@
 
     <div class="potd-overlay">
       <div class="potd-eyebrow">
-        <b-icon icon="image" pack="casa" size="is-small" />
+        <b-icon icon="gallery-outline" pack="casa" size="is-small" />
         <span>{{ $t('Photo of the day') }}</span>
       </div>
       <div v-if="caption" class="potd-caption">{{ caption }}</div>

@@ -7,7 +7,7 @@
   >
     <span v-if="hintModeOn" class="kode-hint">{{ hintLabel }}</span>
     <span class="files-icon">
-      <b-icon icon="folder" pack="casa" size="is-medium" />
+      <b-icon icon="folder-outline" pack="casa" size="is-medium" />
     </span>
     <span class="files-text">
       <span class="files-title">{{ $t('Files') }}</span>

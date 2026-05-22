@@ -2,7 +2,7 @@
   <div class="walkthrough">
     <div class="wt-header">
       <span class="wt-icon is-jellyfin">
-        <b-icon icon="video" pack="casa" size="is-medium" />
+        <b-icon icon="media-outline" pack="casa" size="is-medium" />
       </span>
       <div>
         <h3 class="wt-title">Jellyfin</h3>

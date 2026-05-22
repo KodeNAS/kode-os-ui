@@ -18,11 +18,11 @@
       </div>
       <div v-if="primaryRx" class="net-stats">
         <span class="net-stat">
-          <b-icon icon="arrow-down" pack="casa" size="is-small" />
+          <b-icon icon="down-outline" pack="casa" size="is-small" />
           {{ primaryRx }}
         </span>
         <span class="net-stat">
-          <b-icon icon="arrow-up" pack="casa" size="is-small" />
+          <b-icon icon="up-outline" pack="casa" size="is-small" />
           {{ primaryTx }}
         </span>
       </div>

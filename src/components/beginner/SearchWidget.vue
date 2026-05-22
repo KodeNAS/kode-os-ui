@@ -12,7 +12,7 @@
         spellcheck="false"
       />
       <button type="submit" class="search-submit" :disabled="!query.trim()">
-        <b-icon icon="arrow-right" pack="casa" size="is-small" />
+        <b-icon icon="right-outline" pack="casa" size="is-small" />
       </button>
     </form>
   </div>

@@ -2,7 +2,7 @@
   <div class="walkthrough">
     <div class="wt-header">
       <span class="wt-icon is-homeassistant">
-        <b-icon icon="home-outline" pack="casa" size="is-medium" />
+        <b-icon icon="view-dashboard-outline" pack="casa" size="is-medium" />
       </span>
       <div>
         <h3 class="wt-title">{{ $t('Home Assistant') }}</h3>

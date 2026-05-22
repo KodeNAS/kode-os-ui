@@ -10,7 +10,7 @@
             @click="toggleEditMode"
           >
             <b-icon
-              :icon="editMode ? 'check' : 'control-outline'"
+              :icon="editMode ? 'check-outline' : 'control-outline'"
               pack="casa"
               size="is-small"
             />
@@ -998,7 +998,29 @@ export default {
       this.saveLayout()
     },
     tourKeyFor(key) {
-      return ({ files: 'files', recent: 'recent', family: 'family', addDevice: 'adddevice', apps: 'apps' })[key]
+      // Maps a widget type to the [data-tour] attribute value the tour
+      // service uses. Keys here MUST stay in sync with the step list in
+      // service/tour.js — and any new widget the user might tour
+      // through needs its own entry. The tour filters out steps whose
+      // selector doesn't match anything, so widgets without an entry
+      // just get a silent skip (rather than a broken popover).
+      const map = {
+        files: 'files',
+        recent: 'recent',
+        family: 'family',
+        addDevice: 'adddevice',
+        apps: 'apps',
+        clock: 'clock',
+        weather: 'weather',
+        search: 'search',
+        sysInfo: 'sysinfo',
+        network: 'network',
+        storage: 'storage',
+        appsRunning: 'appsrunning',
+        tips: 'tips',
+        photoOfTheDay: 'photooftheday',
+      }
+      return map[key]
     },
     widgetType(key) {
       return widgetTypeOf(key)

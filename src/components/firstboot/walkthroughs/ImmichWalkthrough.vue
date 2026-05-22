@@ -2,7 +2,7 @@
   <div class="walkthrough immich-walkthrough">
     <div class="wt-header">
       <span class="wt-icon is-immich">
-        <b-icon icon="image" pack="casa" size="is-medium" />
+        <b-icon icon="gallery-outline" pack="casa" size="is-medium" />
       </span>
       <div>
         <h3 class="wt-title">Immich</h3>
@@ -16,11 +16,11 @@
       <p>{{ $t('Immich runs in two places: on your pebble (already done) and on your phone, which sends photos to the pebble in the background.') }}</p>
       <div class="store-row">
         <a class="store-button" href="https://apps.apple.com/app/immich/id1613945652" target="_blank" rel="noopener noreferrer">
-          <b-icon icon="apple-outline" pack="casa" size="is-medium" />
+          <b-icon icon="ios" pack="casa" size="is-medium" />
           <span>{{ $t('App Store') }}</span>
         </a>
         <a class="store-button" href="https://play.google.com/store/apps/details?id=app.alextran.immich" target="_blank" rel="noopener noreferrer">
-          <b-icon icon="android-outline" pack="casa" size="is-medium" />
+          <b-icon icon="android" pack="casa" size="is-medium" />
           <span>{{ $t('Google Play') }}</span>
         </a>
       </div>

@@ -4,10 +4,10 @@
     <header class="tile-header">
       <h2 class="tile-title">{{ $t('Tips & tricks') }}</h2>
       <button type="button" class="tips-nav" :aria-label="$t('Previous tip')" @click="prev">
-        <b-icon icon="arrow-back" pack="casa" size="is-small" />
+        <b-icon icon="left-outline" pack="casa" size="is-small" />
       </button>
       <button type="button" class="tips-nav" :aria-label="$t('Next tip')" @click="next">
-        <b-icon icon="arrow-right" pack="casa" size="is-small" />
+        <b-icon icon="right-outline" pack="casa" size="is-small" />
       </button>
     </header>
 
@@ -63,7 +63,7 @@ const TIPS = [
     desc: 'Settings → "Setup walkthrough" replays the first-boot wizard. Handy for visitors.',
   },
   {
-    icon: 'apps-outline',
+    icon: 'category-outline',
     title: 'Multiple shortcuts per app',
     desc: 'You can drop the same app shortcut in more than one column — useful if you want a quick-launch on each side of the screen.',
   },

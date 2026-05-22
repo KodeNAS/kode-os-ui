@@ -22,11 +22,11 @@ import { hintMode } from '@/mixins/hintMode'
 import { resolveAppUrl } from '@/service/kodeApps'
 
 const APP_META = {
-  immich:        { icon: 'image',          title: 'Immich',         tagline: 'Photos & video' },
-  jellyfin:      { icon: 'video',          title: 'Jellyfin',       tagline: 'Movies & music' },
-  filebrowser:   { icon: 'folder',         title: 'File Browser',   tagline: 'Files in browser' },
-  pihole:        { icon: 'shield-outline', title: 'Pi-hole',        tagline: 'Ad blocker' },
-  homeassistant: { icon: 'home-outline',   title: 'Home Assistant', tagline: 'Smart home' },
+  immich:        { icon: 'gallery-outline',          title: 'Immich',         tagline: 'Photos & video' },
+  jellyfin:      { icon: 'media-outline',          title: 'Jellyfin',       tagline: 'Movies & music' },
+  filebrowser:   { icon: 'folder-outline',         title: 'File Browser',   tagline: 'Files in browser' },
+  pihole:        { icon: 'protection-outline', title: 'Pi-hole',        tagline: 'Ad blocker' },
+  homeassistant: { icon: 'view-dashboard-outline',   title: 'Home Assistant', tagline: 'Smart home' },
 }
 
 const FALLBACK_PORTS = {
@@ -49,7 +49,7 @@ export default {
   },
   computed: {
     meta() {
-      return APP_META[this.appKey] || { icon: 'apps-outline', title: this.appKey, tagline: '' }
+      return APP_META[this.appKey] || { icon: 'category-outline', title: this.appKey, tagline: '' }
     },
     hintLabel() {
       return this.$t('Quick shortcut to {name}. Click to open in a new tab.', { name: this.meta.title }) || `Open ${this.meta.title} in a new tab`

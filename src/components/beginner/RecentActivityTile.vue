@@ -9,7 +9,7 @@
       :title="expanded ? $t('Hide older items') : $t('Show more')"
       @click="toggleExpanded"
     >
-      <b-icon :icon="expanded ? 'arrow-up' : 'arrow-down'" pack="casa" size="is-small" />
+      <b-icon :icon="expanded ? 'up-outline' : 'down-outline'" pack="casa" size="is-small" />
     </button>
     <header class="tile-header">
       <h2 class="tile-title">{{ $t('Recent activity') }}</h2>

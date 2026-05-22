@@ -90,7 +90,7 @@ export default {
       catalog: [
         {
           key: 'immich',
-          icon: 'image',
+          icon: 'gallery-outline',
           title: this.$t('Immich'),
           tagline: this.$t('Photo & video backup from your phone.'),
           difficulty: 2,
@@ -105,7 +105,7 @@ export default {
         },
         {
           key: 'jellyfin',
-          icon: 'video',
+          icon: 'media-outline',
           title: this.$t('Jellyfin'),
           tagline: this.$t('Stream movies and music to your TV.'),
           difficulty: 2,
@@ -120,7 +120,7 @@ export default {
         },
         {
           key: 'filebrowser',
-          icon: 'folder',
+          icon: 'folder-outline',
           title: this.$t('File Browser'),
           tagline: this.$t('Access your pebble\'s files from any browser.'),
           difficulty: 1,
@@ -135,7 +135,7 @@ export default {
         },
         {
           key: 'pihole',
-          icon: 'shield-outline',
+          icon: 'protection-outline',
           title: this.$t('Pi-hole'),
           tagline: this.$t('Block ads and trackers across your whole network.'),
           difficulty: 3,
@@ -150,7 +150,7 @@ export default {
         },
         {
           key: 'homeassistant',
-          icon: 'home-outline',
+          icon: 'view-dashboard-outline',
           title: this.$t('Home Assistant'),
           tagline: this.$t('Smart-home hub for lights, thermostats, and sensors.'),
           difficulty: 5,

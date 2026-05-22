@@ -22,14 +22,14 @@
             @click="appsOpen = !appsOpen"
           >
             <span class="widget-option-icon is-apps">
-              <b-icon icon="apps-outline" pack="casa" size="is-medium" />
+              <b-icon icon="category-outline" pack="casa" size="is-medium" />
             </span>
             <span class="widget-option-text">
               <span class="widget-option-title">{{ $t('Apps') }}</span>
               <span class="widget-option-desc">{{ $t('Shortcut tiles for each installed app, or the whole grid as one tile.') }}</span>
             </span>
             <b-icon
-              :icon="appsOpen ? 'arrow-down' : 'arrow-right'"
+              :icon="appsOpen ? 'down-outline' : 'right-outline'"
               pack="casa"
               size="is-small"
               class="widget-option-chevron"
@@ -67,7 +67,7 @@
               @click="add('apps')"
             >
               <span class="widget-option-icon is-apps-grid">
-                <b-icon icon="apps-outline" pack="casa" size="is-small" />
+                <b-icon icon="category-outline" pack="casa" size="is-small" />
               </span>
               <span class="widget-option-text">
                 <span class="widget-option-title">{{ $t('All apps (grid)') }}</span>
@@ -105,25 +105,25 @@
 <script>
 // Five recommended apps shown when the Apps group is expanded.
 const APP_OPTIONS = [
-  { key: 'immich',        icon: 'image',          title: 'Immich',         tagline: 'Photos & video backup from your phone' },
-  { key: 'jellyfin',      icon: 'video',          title: 'Jellyfin',       tagline: 'Movies & music to any screen' },
-  { key: 'filebrowser',   icon: 'folder',         title: 'File Browser',   tagline: 'Open the CasaOS file browser app' },
-  { key: 'pihole',        icon: 'shield-outline', title: 'Pi-hole',        tagline: 'Network-wide ad blocker' },
-  { key: 'homeassistant', icon: 'home-outline',   title: 'Home Assistant', tagline: 'Smart-home hub' },
+  { key: 'immich',        icon: 'gallery-outline',    title: 'Immich',         tagline: 'Photos & video backup from your phone' },
+  { key: 'jellyfin',      icon: 'media-outline',      title: 'Jellyfin',       tagline: 'Movies & music to any screen' },
+  { key: 'filebrowser',   icon: 'folder-outline',     title: 'File Browser',   tagline: 'Open the CasaOS file browser app' },
+  { key: 'pihole',        icon: 'protection-outline', title: 'Pi-hole',        tagline: 'Network-wide ad blocker' },
+  { key: 'homeassistant', icon: 'view-dashboard-outline', title: 'Home Assistant', tagline: 'Smart-home hub' },
 ]
 
 const OTHER_WIDGETS = [
   { key: 'clock',       icon: 'time-outline',        title: 'Clock',           desc: 'Local time + date.' },
   { key: 'weather',     icon: 'wallpaper-outline',   title: 'Weather',         desc: 'Current temperature + conditions, refreshed every 15 min.' },
   { key: 'search',      icon: 'show-search-outline', title: 'Web search',      desc: 'Search box that opens DuckDuckGo (or your engine) in a new tab.' },
-  { key: 'sysInfo',     icon: 'cpu-outline',         title: 'System info',     desc: 'CPU, memory, and disk usage. Updates every 10 s.' },
-  { key: 'storage',     icon: 'folder',              title: 'Storage',         desc: 'Disk usage with health indicator. Updates every 30 s.' },
-  { key: 'network',     icon: 'wifi',                title: 'Network',         desc: 'Active interface (Ethernet/Wi-Fi), local hostname, and total rx/tx. Updates every 5 s.' },
-  { key: 'appsRunning', icon: 'apps-outline',        title: 'Apps running',    desc: 'Count of apps currently running on your pebble.' },
+  { key: 'sysInfo',     icon: 'system-outline',      title: 'System info',     desc: 'CPU, memory, and disk usage. Updates every 10 s.' },
+  { key: 'storage',     icon: 'storage-outline',     title: 'Storage',         desc: 'Disk usage with health indicator. Updates every 30 s.' },
+  { key: 'network',     icon: 'wifi-outline',        title: 'Network',         desc: 'Active interface (Ethernet/Wi-Fi), local hostname, and total rx/tx. Updates every 5 s.' },
+  { key: 'appsRunning', icon: 'category-outline',    title: 'Apps running',    desc: 'Count of apps currently running on your pebble.' },
   { key: 'tips',        icon: 'information-outline', title: 'Tips & tricks',   desc: 'Cycles through quick tips for getting more out of KODE OS.' },
-  { key: 'files',       icon: 'folder',              title: 'Files',           desc: 'Tile that opens the built-in CasaOS file browser.' },
-  { key: 'recent',      icon: 'time-outline',        title: 'Recent activity', desc: 'Your six most recently changed files.' },
-  { key: 'photoOfTheDay', icon: 'image',             title: 'Photo of the day', desc: 'A nostalgic photo from your Immich library, refreshed daily.' },
+  { key: 'files',       icon: 'files-outline',       title: 'Files',           desc: 'Tile that opens the built-in CasaOS file browser.' },
+  { key: 'recent',      icon: 'history-records-outline', title: 'Recent activity', desc: 'Your six most recently changed files.' },
+  { key: 'photoOfTheDay', icon: 'gallery-outline',   title: 'Photo of the day', desc: 'A nostalgic photo from your Immich library, refreshed daily.' },
   { key: 'family',      icon: 'account-outline',     title: 'On your pebble',  desc: 'Family member accounts.' },
   { key: 'addDevice',   icon: 'plus-outline',        title: 'Add a device',    desc: 'Connect a phone, computer, or smart TV.' },
 ]
