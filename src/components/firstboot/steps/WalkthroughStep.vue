@@ -2,7 +2,7 @@
   <div class="fb-step walkthrough-step">
     <h2 class="step-title">{{ $t('Let\'s set them up') }}</h2>
     <p class="step-intro">
-      {{ $t('App {n} of {total}: {name}', { n: idx + 1, total: apps.length, name: currentAppTitle }) }}
+      {{ `${$t('App')} ${idx + 1} ${$t('of')} ${apps.length} — ${currentAppTitle}` }}
     </p>
 
     <component

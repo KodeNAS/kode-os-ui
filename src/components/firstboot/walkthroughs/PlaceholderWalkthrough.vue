@@ -22,7 +22,7 @@
         target="_blank"
         rel="noopener noreferrer"
       >
-        {{ $t('Open {name}', { name: meta.title }) }}
+        {{ `${$t('Open')} ${meta.title}` }}
       </b-button>
       <b-button rounded type="is-primary" @click="$emit('done')">
         {{ isLast ? $t('All set') : $t('Next app') }}

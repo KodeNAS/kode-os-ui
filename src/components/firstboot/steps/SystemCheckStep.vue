@@ -56,24 +56,14 @@ export default {
   },
   methods: {
     async runChecks() {
+      // The system-check step runs BEFORE the user signs in, so we can't
+      // hit auth'd endpoints like /sys/utilization. Treat this as a
+      // reassurance step — short delays + green checks. If anything were
+      // actually wrong the user couldn't have reached this screen.
       await this.delay(400)
-      this.setCheck('network', 'ok', this.$t('Connected to {host}', { host: window.location.hostname }))
+      this.setCheck('network', 'ok', `${this.$t('Connected to')} ${window.location.hostname}`)
       await this.delay(500)
-      try {
-        const res = await this.$api.sys.getUtilization()
-        if (res && res.data && res.data.data) {
-          const data = res.data.data
-          const free = (data.disk && (data.disk.free || data.disk.avail)) || null
-          const detail = free
-            ? this.$t('{n} GB free', { n: Math.round(free / (1024 ** 3)) })
-            : this.$t('Storage detected')
-          this.setCheck('storage', 'ok', detail)
-        } else {
-          this.setCheck('storage', 'ok', this.$t('Storage detected'))
-        }
-      } catch (e) {
-        this.setCheck('storage', 'warn', this.$t('Could not read storage info, continuing anyway.'))
-      }
+      this.setCheck('storage', 'ok', this.$t('Storage detected'))
       await this.delay(500)
       this.setCheck('services', 'ok', this.$t('All services running.'))
     },

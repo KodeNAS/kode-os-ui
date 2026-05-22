@@ -103,10 +103,9 @@ export default {
       try {
         await this.$api.users.deleteAllUser()
       } catch (err) {
+        const detail = (err && err.response && err.response.data && err.response.data.message) || err.message || ''
         this.$buefy.toast.open({
-          message: this.$t('Reset failed — could not delete accounts. {msg}', {
-            msg: (err && err.response && err.response.data && err.response.data.message) || err.message || '',
-          }),
+          message: `${this.$t('Reset failed — could not delete accounts.')} ${detail}`,
           type: 'is-danger',
           position: 'is-top',
           duration: 5000,

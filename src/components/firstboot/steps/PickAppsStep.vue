@@ -39,7 +39,7 @@
         :disabled="picked.length === 0"
         @click="$emit('next', { apps: picked })"
       >
-        {{ picked.length === 0 ? $t('Pick at least one') : $t('Continue with {n} apps', { n: picked.length }) }}
+        {{ picked.length === 0 ? $t('Pick at least one') : `${$t('Continue with')} ${picked.length} ${$t('apps')}` }}
       </b-button>
     </div>
   </div>

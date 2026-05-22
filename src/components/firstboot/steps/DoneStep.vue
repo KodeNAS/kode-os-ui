@@ -15,8 +15,8 @@
 
     <div class="done-summary">
       <ul>
-        <li v-if="hostname">{{ $t('Pebble name: {name}', { name: hostname }) }}</li>
-        <li v-if="apps.length > 0">{{ $t('Apps configured: {n}', { n: apps.length }) }}</li>
+        <li v-if="hostname">{{ `${$t('Pebble name')}: ${hostname}` }}</li>
+        <li v-if="apps.length > 0">{{ `${$t('Apps configured')}: ${apps.length}` }}</li>
       </ul>
     </div>
 

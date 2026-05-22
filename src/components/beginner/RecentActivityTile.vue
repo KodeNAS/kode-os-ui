@@ -90,11 +90,11 @@ export default {
       const seconds = Math.floor((Date.now() - date.getTime()) / 1000)
       if (seconds < 60) return this.$t('Just now')
       const minutes = Math.floor(seconds / 60)
-      if (minutes < 60) return this.$t('{n}m ago', { n: minutes })
+      if (minutes < 60) return `${minutes}m ago`
       const hours = Math.floor(minutes / 60)
-      if (hours < 24) return this.$t('{n}h ago', { n: hours })
+      if (hours < 24) return `${hours}h ago`
       const days = Math.floor(hours / 24)
-      if (days < 7) return this.$t('{n}d ago', { n: days })
+      if (days < 7) return `${days}d ago`
       const locale = (window.localStorage.getItem('lang') || navigator.language || 'en').replace('_', '-')
       return new Intl.DateTimeFormat(locale, { month: 'short', day: 'numeric' }).format(date)
     },
