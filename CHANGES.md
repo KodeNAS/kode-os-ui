@@ -34,3 +34,7 @@ per Apache 2.0 best practice (§4.1 of the project brief).
   explicit color.
 - Blog news feed URL in i18n strings still points to `blog.casaos.io`.
   Replace with KODE blog URL once available.
+- No dedicated About view exists in upstream CasaOS-UI, so the Apache 2.0
+  attribution lives in `BrandBar.vue` (always-visible footer). A proper
+  About modal with version, license, and acknowledgements should be built
+  in Phase 2 as part of the settings redesign.

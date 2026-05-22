@@ -3,7 +3,16 @@
 		<figure class="image _is-136x26 mb-3">
 			<img alt="logo" srcset="../assets/img/logo/logo.svg 2x, ../assets/img/logo/logo.png 1x">
 		</figure>
-		<span v-if="!rssShow || rss.length === 0" class="intro-text ml-4">Made with ❤️ by IceWhale and YOU!</span>
+		<span v-if="!rssShow || rss.length === 0" class="intro-text ml-4">
+			Made by KODE NAS · Based on
+			<a href="https://github.com/IceWhaleTech/CasaOS" target="_blank" rel="noopener noreferrer" class="intro-link">
+				CasaOS
+			</a>
+			·
+			<a href="https://www.apache.org/licenses/LICENSE-2.0" target="_blank" rel="noopener noreferrer" class="intro-link">
+				Apache 2.0
+			</a>
+		</span>
 		<span v-else class="window ml-4">
 			<ul :style="{ '--time': 5 * line + 's', '--perc': perc, '--line': line }" class="scroll">
 				<li v-for="(item, key) in rss" :key="key" class="has-text-left" @click="$messageBus('connect_news')">
@@ -102,6 +111,17 @@ export default {
 		white-space: nowrap;
 
 		vertical-align: text-bottom;
+	}
+
+	.intro-link {
+		color: rgba(255, 255, 255, 0.85);
+		text-decoration: underline;
+		text-decoration-color: rgba(255, 255, 255, 0.3);
+
+		&:hover {
+			color: #fff;
+			text-decoration-color: rgba(255, 255, 255, 0.6);
+		}
 	}
 }
 
