@@ -4,6 +4,7 @@ import TerminalPanel from './logsAndTerminal/TerminalPanel.vue'
 import PortPanel from './settings/PortPanel.vue'
 import UpdateModal from './settings/UpdateModal.vue'
 import { mixin } from '@/mixins/mixin'
+import { advancedGate } from '@/mixins/advancedGate'
 import messages from '@/assets/lang'
 
 import events from '@/events/events'
@@ -15,7 +16,7 @@ export default {
   components: {
     AccountPanel,
   },
-  mixins: [mixin],
+  mixins: [mixin, advancedGate],
   props: {
     initBarData: {
       type: Object,
@@ -383,6 +384,32 @@ export default {
       })
     },
 
+    // KODE OS — Easy-mode gate around the Terminal trigger.
+    gateTerminal() {
+      this.requireAdvanced(this.showTerminalPanel, {
+        title: this.$t('Open Terminal & Logs'),
+        message: this.$t('The terminal lets you run system commands on your pebble. It assumes some Linux familiarity. Switch to Advanced mode to continue?'),
+      })
+    },
+
+    // KODE OS — Easy-mode gate around the WebUI port change.
+    gatePort() {
+      this.requireAdvanced(this.showPortPanel, {
+        title: this.$t('Change WebUI Port'),
+        message: this.$t('Changing the WebUI port changes how your pebble is reached on the network. If you set it wrong you may lose access. Switch to Advanced mode to continue?'),
+      })
+    },
+
+    // KODE OS — Easy-mode gate around Restart / Shutdown.
+    gatePower(key) {
+      this.requireAdvanced(() => this.power(key), {
+        title: key === 'Shutdown' ? this.$t('Shut down your pebble?') : this.$t('Restart your pebble?'),
+        message: key === 'Shutdown'
+          ? this.$t('Your pebble will turn off and stop serving apps and files until you switch it back on. Continue?')
+          : this.$t('Your pebble will go offline for about 90 seconds while it restarts. Continue?'),
+      })
+    },
+
     rssConfirm() {
       if (this.rss_switch == false) {
         this.barData.rss_switch = false
@@ -609,7 +636,7 @@ export default {
               {{ port }}
             </div>
             <div class="ml-2">
-              <b-button rounded size="is-small" type="is-dark" @click="showPortPanel">
+              <b-button rounded size="is-small" type="is-dark" @click="gatePort">
                 {{ $t("Change") }}
               </b-button>
             </div>
@@ -768,14 +795,14 @@ export default {
           >
             <div
               class="mr-1 column is-half is-flex is-align-items-center is-justify-content-center hover-effect is-clickable _is-radius _is-normal"
-              @click="power('Restart')"
+              @click="gatePower('Restart')"
             >
               <b-icon class="mr-1" icon="restart-outline" pack="casa" />
               {{ $t(restart) }}
             </div>
             <div
               class="ml-1 column is-half is-flex is-align-items-center is-justify-content-center is-clickable hover-effect-attention _has-text-attention _is-radius"
-              @click="power('Shutdown')"
+              @click="gatePower('Shutdown')"
             >
               <b-icon
                 class="mr-1"
@@ -792,7 +819,7 @@ export default {
       <!-- Settings Dropmenu End -->
 
       <!-- Terminal  Start -->
-      <div class="is-flex is-align-items-center ml-3 _fixed-height" @click="showTerminalPanel">
+      <div class="is-flex is-align-items-center ml-3 _fixed-height" @click="gateTerminal">
         <b-tooltip
           :active="!$store.state.isMobile"
           :label="$t('Terminal & Logs')"
