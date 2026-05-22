@@ -28,13 +28,13 @@
       </ol>
 
       <transition name="fb-fade" mode="out-in">
-        <WelcomeStep        v-if="stepIndex === 0" key="welcome"  @next="next" />
+        <WelcomeStep        v-if="stepIndex === 0" key="welcome"  :is-replay="isReplay" @next="next" />
         <SystemCheckStep    v-else-if="stepIndex === 1" key="sys" @next="next" />
         <AdminAccountStep   v-else-if="stepIndex === 2" key="adm" @next="onAdminDone" />
         <PebbleNameStep     v-else-if="stepIndex === 3" key="nm"  @next="onPebbleNameDone" />
         <PickAppsStep       v-else-if="stepIndex === 4" key="ap"  @next="onAppsPicked" />
         <WalkthroughStep    v-else-if="stepIndex === 5" key="wt"  :apps="pickedApps" :host="host" @next="next" />
-        <DoneStep           v-else-if="stepIndex === 6" key="dn"  :hostname="hostname" :apps="pickedApps" @finish="finish" />
+        <DoneStep           v-else-if="stepIndex === 6" key="dn"  :hostname="hostname" :apps="pickedApps" :is-replay="isReplay" @finish="finish" />
       </transition>
     </div>
   </div>
@@ -85,13 +85,22 @@ export default {
       // rail items map to stepIndex 1..5
       return Math.max(0, Math.min(this.railLabels.length - 1, this.stepIndex - 1))
     },
+    isReplay() {
+      return this.$route.query.replay === '1'
+    },
   },
   mounted() {
     this.isLoading = false
   },
   methods: {
     next() {
-      if (this.stepIndex < this.lastStep) this.stepIndex += 1
+      if (this.stepIndex >= this.lastStep) return
+      // In replay mode, skip the AdminAccountStep — the account already exists.
+      if (this.isReplay && this.stepIndex === 1) {
+        this.stepIndex = 3
+        return
+      }
+      this.stepIndex += 1
     },
     onAdminDone(payload) {
       if (payload && payload.username) this.adminUsername = payload.username
@@ -107,18 +116,19 @@ export default {
       this.stepIndex = this.pickedApps.length > 0 ? 5 : 6
     },
     async finish() {
-      // Persist a flag the OS/router can read to decide whether to short-circuit
-      // /welcome on subsequent visits. The brief calls this
-      // kode_first_boot_complete.
-      try {
-        await this.$api.users.setCustomStorage('kode_first_boot', {
-          complete: true,
-          completed_at: new Date().toISOString(),
-          hostname: this.hostname,
-          apps: this.pickedApps,
-        })
-      } catch (e) { /* non-blocking */ }
-      sessionStorage.setItem('fromWelcome', true)
+      // Only persist the first-boot complete flag on initial setup; replay
+      // runs from Settings shouldn't clobber the original completed_at.
+      if (!this.isReplay) {
+        try {
+          await this.$api.users.setCustomStorage('kode_first_boot', {
+            complete: true,
+            completed_at: new Date().toISOString(),
+            hostname: this.hostname,
+            apps: this.pickedApps,
+          })
+        } catch (e) { /* non-blocking */ }
+        sessionStorage.setItem('fromWelcome', true)
+      }
       this.$router.push('/')
     },
   },

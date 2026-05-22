@@ -7,8 +7,12 @@
       />
     </div>
 
-    <h1 class="title is-2 has-text-white">{{ $t('Welcome to your pebble') }}</h1>
-    <p class="subtitle is-5 has-text-white-bis">{{ $t('Your own private cloud, ready in 5 minutes.') }}</p>
+    <h1 class="title is-2 has-text-white">
+      {{ isReplay ? $t('Walk through setup again') : $t('Welcome to your pebble') }}
+    </h1>
+    <p class="subtitle is-5 has-text-white-bis">
+      {{ isReplay ? $t('Update your pebble\'s name, apps, and walkthroughs.') : $t('Your own private cloud, ready in 5 minutes.') }}
+    </p>
 
     <div class="welcome-actions">
       <b-button
@@ -17,14 +21,19 @@
         type="is-primary"
         @click="$emit('next')"
       >
-        {{ $t("Let's get started") }}
+        {{ isReplay ? $t("Let's go") : $t("Let's get started") }}
       </b-button>
     </div>
   </div>
 </template>
 
 <script>
-export default { name: 'WelcomeStep' }
+export default {
+  name: 'WelcomeStep',
+  props: {
+    isReplay: { type: Boolean, default: false },
+  },
+}
 </script>
 
 <style lang="scss" scoped>

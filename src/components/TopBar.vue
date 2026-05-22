@@ -400,6 +400,14 @@ export default {
       })
     },
 
+    // KODE OS — re-run the first-boot setup wizard from Settings.
+    replaySetup() {
+      if (this.$refs.settingsDrop && typeof this.$refs.settingsDrop.toggle === 'function') {
+        this.$refs.settingsDrop.toggle()
+      }
+      this.$router.push({ path: '/welcome', query: { replay: '1' } })
+    },
+
     // KODE OS — Easy-mode gate around Restart / Shutdown.
     gatePower(key) {
       this.requireAdvanced(() => this.power(key), {
@@ -642,6 +650,22 @@ export default {
             </div>
           </div>
           <!-- WebUI Port End -->
+
+          <!-- KODE OS: Re-run first-boot setup -->
+          <div
+            class="is-flex is-align-items-center mb-1 _is-large _box hover-effect _is-radius pr-2 mr-4 ml-4"
+          >
+            <div class="is-flex is-align-items-center is-flex-grow-1 _is-normal">
+              <b-icon class="mr-1 ml-2" icon="restart-outline" pack="casa" size="is-20" />
+              {{ $t("Setup walkthrough") }}
+            </div>
+            <div class="ml-2">
+              <b-button rounded size="is-small" type="is-dark" @click="replaySetup">
+                {{ $t("Re-run") }}
+              </b-button>
+            </div>
+          </div>
+          <!-- KODE OS End -->
 
           <!-- Background Start -->
           <div

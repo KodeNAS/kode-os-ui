@@ -6,9 +6,11 @@
       </span>
     </div>
 
-    <h2 class="title is-3 has-text-white">{{ $t('Your pebble is ready') }}</h2>
+    <h2 class="title is-3 has-text-white">
+      {{ isReplay ? $t('All caught up') : $t('Your pebble is ready') }}
+    </h2>
     <p class="subtitle is-5 has-text-white-bis">
-      {{ $t('You\'re all set up. Welcome home.') }}
+      {{ isReplay ? $t('Changes saved.') : $t('You\'re all set up. Welcome home.') }}
     </p>
 
     <div class="done-summary">
@@ -32,6 +34,7 @@ export default {
   props: {
     hostname: { type: String, default: '' },
     apps:     { type: Array,  default: () => [] },
+    isReplay: { type: Boolean, default: false },
   },
 }
 </script>
