@@ -4,6 +4,7 @@ import TerminalPanel from './logsAndTerminal/TerminalPanel.vue'
 import PortPanel from './settings/PortPanel.vue'
 import UpdateModal from './settings/UpdateModal.vue'
 import FactoryResetModal from './settings/FactoryResetModal.vue'
+import HintButton from './Hint/HintButton.vue'
 import { mixin } from '@/mixins/mixin'
 import { advancedGate } from '@/mixins/advancedGate'
 import messages from '@/assets/lang'
@@ -16,6 +17,7 @@ export default {
   name: 'TopBar',
   components: {
     AccountPanel,
+    HintButton,
   },
   mixins: [mixin, advancedGate],
   props: {
@@ -879,6 +881,12 @@ export default {
         </b-dropdown-item>
       </b-dropdown>
       <!-- Settings Dropmenu End -->
+
+      <!-- KODE OS Hints & Help -->
+      <div class="is-flex is-align-items-center ml-3 _fixed-height">
+        <HintButton />
+      </div>
+      <!-- KODE OS Hints & Help End -->
 
       <!-- Terminal  Start -->
       <div class="is-flex is-align-items-center ml-3 _fixed-height" @click="gateTerminal">

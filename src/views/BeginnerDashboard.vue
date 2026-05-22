@@ -31,9 +31,10 @@
               v-for="key in tileOrder"
               :key="key"
               :is="tileMap[key]"
+              :data-tour="tourKeyFor(key)"
             />
           </draggable>
-          <main class="beginner-main">
+          <main class="beginner-main" data-tour="apps">
             <AppSection ref="apps" :allowed-keys="pickedApps" />
           </main>
         </div>
@@ -48,6 +49,7 @@ import AppSection from '@/components/Apps/AppSection.vue'
 import RecentActivityTile from '@/components/beginner/RecentActivityTile.vue'
 import FamilyTile from '@/components/beginner/FamilyTile.vue'
 import AddDeviceTile from '@/components/beginner/AddDeviceTile.vue'
+import { maybeStartEasyTourOnce } from '@/service/tour'
 
 const ORDER_KEY = 'kode_tile_order'
 const DEFAULT_ORDER = ['recent', 'family', 'addDevice']
@@ -74,6 +76,11 @@ export default {
   },
   created() {
     this.loadPickedApps()
+  },
+  mounted() {
+    // First visit only — fires the driver.js tour if kode_tour_seen
+    // isn't set. Tour itself marks the flag on close/finish.
+    maybeStartEasyTourOnce()
   },
   methods: {
     async loadPickedApps() {
@@ -110,6 +117,9 @@ export default {
       try {
         localStorage.setItem(ORDER_KEY, JSON.stringify(this.tileOrder))
       } catch (e) { /* quota / disabled storage — accept loss */ }
+    },
+    tourKeyFor(key) {
+      return ({ recent: 'recent', family: 'family', addDevice: 'adddevice' })[key]
     },
   },
 }

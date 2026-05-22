@@ -185,4 +185,79 @@ _____             _____ _____
 		min-height: 0;
 	}
 }
+
+/* Driver.js tour — KODE styling overrides. Unscoped so the global
+   .driver-popover.kode-tour-popover selector lands. */
+.driver-popover.kode-tour-popover {
+	background: rgba(255, 255, 255, 0.97);
+	backdrop-filter: blur(24px) saturate(180%);
+	-webkit-backdrop-filter: blur(24px) saturate(180%);
+	border: 1px solid rgba(255, 255, 255, 0.6);
+	border-radius: 18px;
+	box-shadow:
+		inset 0 1px 0 rgba(255, 255, 255, 0.85),
+		0 18px 48px rgba(0, 0, 0, 0.25);
+	color: #1f2937;
+	font-family: 'IBM Plex Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+	padding: 1.1rem 1.2rem;
+}
+
+.driver-popover.kode-tour-popover .driver-popover-title {
+	color: #1f2937;
+	font-size: 1.0625rem;
+	font-weight: 500;
+	letter-spacing: -0.01em;
+	margin-bottom: 0.4rem;
+}
+
+.driver-popover.kode-tour-popover .driver-popover-description {
+	color: rgba(0, 0, 0, 0.72);
+	font-size: 0.875rem;
+	line-height: 1.5;
+}
+
+.driver-popover.kode-tour-popover .driver-popover-footer {
+	margin-top: 0.85rem;
+}
+
+.driver-popover.kode-tour-popover .driver-popover-progress-text {
+	color: rgba(0, 0, 0, 0.55);
+	font-size: 0.75rem;
+}
+
+.driver-popover.kode-tour-popover .driver-popover-next-btn,
+.driver-popover.kode-tour-popover .driver-popover-prev-btn {
+	background: rgba(0, 0, 0, 0.06);
+	color: #1f2937;
+	border: 1px solid rgba(0, 0, 0, 0.06);
+	border-radius: 999px;
+	padding: 0.4rem 1rem;
+	font-size: 0.8125rem;
+	font-weight: 500;
+	text-shadow: none;
+	box-shadow: none;
+}
+
+.driver-popover.kode-tour-popover .driver-popover-next-btn {
+	background: #2d5f4e;
+	color: #fff;
+	border-color: #2d5f4e;
+}
+
+.driver-popover.kode-tour-popover .driver-popover-next-btn:hover {
+	background: #3f7a66;
+}
+
+.driver-popover.kode-tour-popover .driver-popover-close-btn {
+	color: rgba(0, 0, 0, 0.45);
+	font-size: 1.25rem;
+	padding: 0.25rem 0.5rem;
+}
+
+.driver-popover.kode-tour-popover .driver-popover-arrow-side-bottom.driver-popover-arrow,
+.driver-popover.kode-tour-popover .driver-popover-arrow-side-top.driver-popover-arrow,
+.driver-popover.kode-tour-popover .driver-popover-arrow-side-left.driver-popover-arrow,
+.driver-popover.kode-tour-popover .driver-popover-arrow-side-right.driver-popover-arrow {
+	border-color: rgba(255, 255, 255, 0.97);
+}
 </style>

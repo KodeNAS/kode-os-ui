@@ -329,7 +329,12 @@ export default {
     <!-- File Panel End -->
 
     <!-- KODE OS: persistent mode-switch pill — works in both modes -->
-    <button type="button" class="mode-switcher has-text-white" @click="openModePanel">
+    <button
+      type="button"
+      class="mode-switcher has-text-white"
+      data-tour="modepill"
+      @click="openModePanel"
+    >
       {{ isBeginner ? $t('Switch to Advanced mode') : $t('Switch to Easy mode') }}
     </button>
   </div>

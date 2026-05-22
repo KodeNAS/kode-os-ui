@@ -117,6 +117,9 @@ export default {
       // Step 3: Wipe KODE-controlled localStorage + auth tokens.
       const keysToKill = [
         'kode_interface_mode',
+        'kode_tile_order',
+        'kode_tour_seen',
+        'kode_hint_mode',
         'wallpaper',
         'access_token',
         'refresh_token',
