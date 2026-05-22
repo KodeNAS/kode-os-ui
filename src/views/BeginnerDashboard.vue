@@ -578,32 +578,15 @@ export default {
             cleaned[i] = { widgets: [], subCols: null }
           }
         }
-        // Add any missing default widgets so a future-added widget
-        // automatically shows up on next load (apps-shortcuts excluded).
-        const present = new Set()
-        this.collectPresentKeys(cleaned, present)
-        const missing = ALL_WIDGETS.filter(k => !present.has(k))
-        if (missing.length > 0) {
-          const target = cleaned[0]
-          if (target.subCols && target.subCols[0]) target.subCols[0].push(...missing)
-          else target.widgets.push(...missing)
-        }
+        // Intentionally do NOT auto-add any widgets that aren't already in
+        // the saved layout. New widget types are opt-in via the "Add
+        // widget" panel — silently injecting them on refresh surprised
+        // the user with extra tiles they hadn't picked.
         return cleaned
       } catch (e) {
         // eslint-disable-next-line no-console
         console.warn('loadLayout failed; falling back to defaults:', e)
         return this.expandLayoutTo(DEFAULT_LAYOUT, this.columnCount || 3)
-      }
-    },
-    collectPresentKeys(columns, set) {
-      for (const col of columns) {
-        if (col.subCols) {
-          for (const sub of col.subCols) {
-            for (const k of sub) set.add(k)
-          }
-        } else {
-          for (const k of col.widgets) set.add(k)
-        }
       }
     },
     isSubdivided(column) {
