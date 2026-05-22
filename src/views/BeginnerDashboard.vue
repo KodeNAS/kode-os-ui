@@ -64,7 +64,21 @@
                 <RecentActivityTile v-else-if="key === 'recent'" />
                 <FamilyTile         v-else-if="key === 'family'" />
                 <AddDeviceTile      v-else-if="key === 'addDevice'" />
+                <ClockWidget        v-else-if="key === 'clock'" />
+                <WeatherWidget      v-else-if="key === 'weather'" />
+                <SearchWidget       v-else-if="key === 'search'" />
+                <SystemInfoWidget   v-else-if="key === 'sysInfo'" />
                 <AppSection         v-else-if="key === 'apps'" ref="apps" :allowed-keys="pickedApps" />
+
+                <button
+                  v-if="editMode"
+                  type="button"
+                  class="widget-remove"
+                  :aria-label="$t('Remove widget')"
+                  @click.stop="removeWidget(key)"
+                >
+                  <b-icon icon="close-outline" pack="casa" size="is-small" />
+                </button>
               </div>
               <div v-if="editMode && column.length === 0" class="column-empty-hint">
                 {{ $t('Drag a widget here') }}
@@ -85,6 +99,14 @@
             </div>
           </template>
         </div>
+
+        <!-- Big "+ Add widget" button, visible only when edit mode is on. -->
+        <div v-if="editMode" class="add-widget-row">
+          <button type="button" class="add-widget-cta" @click="openAddWidget">
+            <b-icon icon="plus-outline" pack="casa" size="is-medium" />
+            <span>{{ $t('Add widget') }}</span>
+          </button>
+        </div>
       </div>
     </div>
   </div>
@@ -97,11 +119,16 @@ import RecentActivityTile from '@/components/beginner/RecentActivityTile.vue'
 import FamilyTile from '@/components/beginner/FamilyTile.vue'
 import AddDeviceTile from '@/components/beginner/AddDeviceTile.vue'
 import FilesTile from '@/components/beginner/FilesTile.vue'
+import ClockWidget from '@/components/beginner/ClockWidget.vue'
+import WeatherWidget from '@/components/beginner/WeatherWidget.vue'
+import SearchWidget from '@/components/beginner/SearchWidget.vue'
+import SystemInfoWidget from '@/components/beginner/SystemInfoWidget.vue'
+import AddWidgetPanel from '@/components/beginner/AddWidgetPanel.vue'
 import { maybeStartEasyTourOnce } from '@/service/tour'
 
 const LAYOUT_KEY = 'kode_columns_layout_v2'
 const WEIGHTS_KEY = 'kode_columns_weights_v1'
-const ALL_WIDGETS = ['files', 'recent', 'apps', 'family', 'addDevice']
+const ALL_WIDGETS = ['files', 'recent', 'apps', 'family', 'addDevice', 'clock', 'weather', 'search', 'sysInfo']
 
 // Default 3-column layout: small tiles on the sides, the apps grid in
 // the middle column where it has room to breathe.
@@ -126,6 +153,10 @@ export default {
     FamilyTile,
     AddDeviceTile,
     FilesTile,
+    ClockWidget,
+    WeatherWidget,
+    SearchWidget,
+    SystemInfoWidget,
   },
   data() {
     return {
@@ -284,6 +315,39 @@ export default {
     toggleEditMode() {
       this.editMode = !this.editMode
     },
+    placedWidgets() {
+      // Flat list of every widget key currently in any column.
+      return this.columns.reduce((acc, col) => acc.concat(col), [])
+    },
+    openAddWidget() {
+      this.$buefy.modal.open({
+        parent: this,
+        component: AddWidgetPanel,
+        hasModalCard: true,
+        trapFocus: true,
+        scroll: 'keep',
+        animation: 'zoom-in',
+        props: { placed: this.placedWidgets() },
+        events: { 'add-widget': (key) => this.addWidget(key) },
+      })
+    },
+    addWidget(key) {
+      if (this.placedWidgets().includes(key)) return
+      // Append to the column with the fewest widgets so the layout stays
+      // somewhat balanced. Ties broken in favour of column index 0.
+      const idx = this.columns.reduce((minIdx, col, i, all) => {
+        return col.length < all[minIdx].length ? i : minIdx
+      }, 0)
+      const next = this.columns.map(c => [...c])
+      next[idx] = [...next[idx], key]
+      this.columns = next
+      this.saveLayout()
+    },
+    removeWidget(key) {
+      const next = this.columns.map(col => col.filter(k => k !== key))
+      this.columns = next
+      this.saveLayout()
+    },
     tourKeyFor(key) {
       return ({ files: 'files', recent: 'recent', family: 'family', addDevice: 'adddevice', apps: 'apps' })[key]
     },
@@ -435,6 +499,7 @@ export default {
 }
 
 .widget-slot {
+  position: relative;
   /* Inherit any internal positioning from the child tile; this is just
      a draggable wrapper. */
   display: contents;
@@ -451,6 +516,65 @@ export default {
   cursor: grab;
 
   &:active { cursor: grabbing; }
+}
+
+/* Small × in the top-right of each widget while editing — one-tap remove. */
+.widget-remove {
+  display: none;
+  position: absolute;
+  top: -10px;
+  right: -10px;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: #b04a4a;
+  color: #fff;
+  border: 2px solid #fff;
+  cursor: pointer;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+  z-index: 10;
+  padding: 0;
+
+  &:hover { background: #d04a51; }
+}
+
+.beginner-grid.is-edit-mode .widget-remove {
+  display: inline-flex;
+}
+
+/* Big + Add widget CTA below the grid, visible only in edit mode. */
+.add-widget-row {
+  max-width: 1280px;
+  margin: 1.5rem auto 0;
+  padding: 0 2rem;
+  display: flex;
+  justify-content: center;
+}
+
+.add-widget-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  padding: 0.85rem 1.5rem;
+  background: rgba(255, 255, 255, 0.18);
+  border: 2px dashed rgba(255, 255, 255, 0.45);
+  border-radius: 999px;
+  color: #fff;
+  font-size: 0.9375rem;
+  font-weight: 500;
+  cursor: pointer;
+  backdrop-filter: blur(12px) saturate(160%);
+  -webkit-backdrop-filter: blur(12px) saturate(160%);
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.45);
+  transition: background 0.15s, border-color 0.15s, transform 0.15s;
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.28);
+    border-color: rgba(255, 255, 255, 0.7);
+    transform: translateY(-1px);
+  }
 }
 
 .beginner-grid.is-edit-mode .beginner-column.is-empty {
