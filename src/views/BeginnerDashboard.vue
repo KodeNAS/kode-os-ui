@@ -68,13 +68,14 @@
                 </button>
               </div>
 
-              <!-- Flat branch: column holds widgets directly. -->
+              <!-- Top: flat widgets section. Always rendered. When the
+                   column is subdivided, this becomes the "above" zone and
+                   the sub-columns render below. -->
               <draggable
-                v-if="!isSubdivided(column)"
                 v-model="column.widgets"
                 tag="div"
                 class="beginner-column"
-                :class="{ 'is-empty': column.widgets.length === 0 }"
+                :class="{ 'is-empty': column.widgets.length === 0, 'has-subcols-below': isSubdivided(column) }"
                 :group="{ name: 'kode-widgets', pull: true, put: true }"
                 :animation="200"
                 :disabled="!editMode"
@@ -117,8 +118,11 @@
                   </button>
                 </div>
 
-                <!-- Empty outer column in edit mode: subdivide picker. -->
-                <div v-if="editMode && column.widgets.length === 0" class="column-empty-hint">
+                <!-- Empty top zone in edit mode: subdivide picker + drop hint. -->
+                <div
+                  v-if="editMode && column.widgets.length === 0 && !isSubdivided(column)"
+                  class="column-empty-hint"
+                >
                   <div class="empty-text">{{ $t('Drag a widget here') }}</div>
                   <div class="empty-or">{{ $t('or split into inner columns') }}</div>
                   <div class="empty-subdivide-options">
@@ -136,9 +140,14 @@
                 </div>
               </draggable>
 
-              <!-- Nested branch: N sub-column draggables share the
-                   "kode-widgets" group so widgets drag in/out freely. -->
-              <div v-else class="beginner-subcol-grid" :style="subColGridStyle(column)">
+              <!-- Sub-column grid renders BELOW the flat widgets when the
+                   column is subdivided. Both halves accept widget drops via
+                   the shared "kode-widgets" group. -->
+              <div
+                v-if="isSubdivided(column)"
+                class="beginner-subcol-grid"
+                :style="subColGridStyle(column)"
+              >
                 <draggable
                   v-for="(sub, si) in column.subCols"
                   :key="`col-${ci}-sub-${si}`"
@@ -191,6 +200,26 @@
                     {{ $t('Drop here') }}
                   </div>
                 </draggable>
+              </div>
+
+              <!-- Add inner columns affordance when the column has widgets
+                   but isn't subdivided yet. Lets the user mix flat top +
+                   nested bottom without first having to empty the column. -->
+              <div
+                v-if="editMode && !isSubdivided(column) && column.widgets.length > 0"
+                class="add-inner-row"
+              >
+                <span class="add-inner-label">{{ $t('Add inner columns below:') }}</span>
+                <button
+                  v-for="n in [2, 3, 4]"
+                  :key="n"
+                  type="button"
+                  class="empty-subdivide-btn"
+                  @click="subdivideColumn(ci, n)"
+                >
+                  <b-icon icon="plus-outline" pack="casa" size="is-small" />
+                  <span>{{ n }}</span>
+                </button>
               </div>
             </section>
 
@@ -506,9 +535,11 @@ export default {
     subdivideColumn(ci, n) {
       const col = this.columns[ci]
       if (!col || col.subCols) return
+      // Preserve any flat widgets already in the column — they keep
+      // their place at the top, the new sub-columns sit underneath.
       const next = [...this.columns]
       next[ci] = {
-        widgets: [],
+        widgets: [...col.widgets],
         subCols: Array.from({ length: n }, () => []),
       }
       this.columns = next
@@ -1020,6 +1051,39 @@ export default {
   display: grid;
   gap: 0.75rem;
   align-items: start;
+  margin-top: 0.5rem;
+}
+
+/* Mix-mode: top column also has sub-columns below. Shrink the bottom
+   gap so the two halves visually connect rather than feeling detached. */
+.beginner-column.has-subcols-below {
+  gap: 0.5rem;
+}
+
+.beginner-column.has-subcols-below.is-empty {
+  /* When subdivided but with no top widgets, suppress the empty outline
+     since the column isn't actually empty visually — subcols carry the
+     content. */
+  outline: none !important;
+  background: none !important;
+  padding: 0 !important;
+}
+
+.add-inner-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.4rem;
+  padding: 0.4rem 0;
+}
+
+.add-inner-label {
+  font-size: 0.6875rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: rgba(255, 255, 255, 0.65);
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.45);
+  flex: 1;
 }
 
 .beginner-subcol {
