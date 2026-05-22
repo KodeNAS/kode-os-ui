@@ -31,6 +31,14 @@
           </p>
         </header>
 
+        <LayoutSettingsPanel
+          v-if="editMode"
+          :column-count="columnCount"
+          :templates="templates"
+          @column-count="setColumnCount"
+          @apply-template="applyTemplate"
+        />
+
         <div ref="grid" class="beginner-grid" :class="{ 'is-edit-mode': editMode }" :style="gridStyle">
           <!-- 3 columns separated by 2 dividers (col1 | div | col2 | div |
                col3). Vuedraggable group "kode-widgets" connects all three
@@ -126,10 +134,65 @@ import SearchWidget from '@/components/beginner/SearchWidget.vue'
 import SystemInfoWidget from '@/components/beginner/SystemInfoWidget.vue'
 import AppShortcutWidget from '@/components/beginner/AppShortcutWidget.vue'
 import AddWidgetPanel from '@/components/beginner/AddWidgetPanel.vue'
+import LayoutSettingsPanel from '@/components/beginner/LayoutSettingsPanel.vue'
 import { maybeStartEasyTourOnce } from '@/service/tour'
 
 const LAYOUT_KEY = 'kode_columns_layout_v2'
 const WEIGHTS_KEY = 'kode_columns_weights_v1'
+const COLCOUNT_KEY = 'kode_column_count_v1'
+
+const TEMPLATES = [
+  {
+    key: 'family',
+    name: 'Family essentials',
+    description: 'Files, photos, members, apps.',
+    cols: [
+      ['files', 'recent'],
+      ['apps'],
+      ['family', 'addDevice'],
+    ],
+  },
+  {
+    key: 'minimal',
+    name: 'Minimal',
+    description: 'Just files and your apps.',
+    cols: [
+      ['files', 'recent'],
+      ['apps'],
+    ],
+  },
+  {
+    key: 'glance',
+    name: 'At a glance',
+    description: 'Clock, weather, search, then apps.',
+    cols: [
+      ['clock', 'weather'],
+      ['apps'],
+      ['search', 'files'],
+    ],
+  },
+  {
+    key: 'tinkerer',
+    name: 'Tinkerer',
+    description: 'System info + everything spread across four columns.',
+    cols: [
+      ['sysInfo', 'clock'],
+      ['files', 'recent'],
+      ['apps'],
+      ['weather', 'search', 'family', 'addDevice'],
+    ],
+  },
+  {
+    key: 'photographer',
+    name: 'Photographer',
+    description: 'Immich front-and-center plus your recent uploads.',
+    cols: [
+      ['recent', 'files'],
+      ['app:immich', 'app:jellyfin'],
+      ['family', 'addDevice', 'clock'],
+    ],
+  },
+]
 // Generic widget keys. Per-app shortcuts use the `app:<id>` prefix and
 // are validated separately.
 const ALL_WIDGETS = ['files', 'recent', 'apps', 'family', 'addDevice', 'clock', 'weather', 'search', 'sysInfo']
@@ -171,21 +234,29 @@ export default {
     SearchWidget,
     SystemInfoWidget,
     AppShortcutWidget,
+    LayoutSettingsPanel,
   },
   data() {
     return {
       pickedApps: [],
+      columnCount: this.loadColumnCount(),
       columns: this.loadLayout(),
       colWeights: this.loadWeights(),
       activeDivider: -1,
       editMode: false,
+      templates: TEMPLATES,
     }
   },
   computed: {
     gridStyle() {
-      const [a, b, c] = this.colWeights
+      // Build "${w0}fr 6px ${w1}fr 6px ${w2}fr ..." for any column count.
+      const parts = []
+      this.colWeights.forEach((w, i) => {
+        if (i > 0) parts.push(`${DIVIDER_PX}px`)
+        parts.push(`${w}fr`)
+      })
       return {
-        gridTemplateColumns: `${a}fr ${DIVIDER_PX}px ${b}fr ${DIVIDER_PX}px ${c}fr`,
+        gridTemplateColumns: parts.join(' '),
       }
     },
   },
@@ -210,32 +281,51 @@ export default {
       }
     },
 
+    loadColumnCount() {
+      try {
+        const raw = parseInt(localStorage.getItem(COLCOUNT_KEY), 10)
+        if ([2, 3, 4].includes(raw)) return raw
+      } catch (e) { /* ignore */ }
+      return 3
+    },
     loadLayout() {
       try {
         const raw = localStorage.getItem(LAYOUT_KEY)
-        if (!raw) return DEFAULT_LAYOUT.map(c => [...c])
+        if (!raw) return this.expandLayoutTo(DEFAULT_LAYOUT, this.columnCount || 3)
         const parsed = JSON.parse(raw)
-        if (!Array.isArray(parsed) || parsed.length !== 3) {
-          return DEFAULT_LAYOUT.map(c => [...c])
+        if (!Array.isArray(parsed) || parsed.length < 2 || parsed.length > 4) {
+          return this.expandLayoutTo(DEFAULT_LAYOUT, this.columnCount || 3)
         }
-        // Sanitise: drop unknown keys and add any default keys that
-        // are missing entirely (so a future widget addition doesn't
-        // strand existing layouts).
+        // Sanitise: drop unknown keys.
         const cleaned = parsed.map(col => {
           if (!Array.isArray(col)) return []
           return col.filter(k => isValidWidgetKey(k))
         })
-        // Add any default generic widget that's missing entirely so future
-        // additions don't strand existing layouts. App-shortcut keys are
-        // never auto-injected — they're explicit opt-in via the picker.
+        // Add missing default widgets (generic only — app shortcuts are
+        // explicit opt-in via the picker).
         const present = new Set()
         cleaned.forEach(col => col.forEach(k => present.add(k)))
         const missing = ALL_WIDGETS.filter(k => !present.has(k))
         if (missing.length > 0) cleaned[0].push(...missing)
         return cleaned
       } catch (e) {
-        return DEFAULT_LAYOUT.map(c => [...c])
+        return this.expandLayoutTo(DEFAULT_LAYOUT, this.columnCount || 3)
       }
+    },
+    expandLayoutTo(layout, targetCount) {
+      // Take an N-column layout and resize to targetCount columns.
+      const copy = layout.map(c => [...c])
+      if (copy.length === targetCount) return copy
+      if (copy.length > targetCount) {
+        // Merge extras into the last kept column.
+        const kept = copy.slice(0, targetCount)
+        const tail = copy.slice(targetCount).flat()
+        kept[targetCount - 1].push(...tail)
+        return kept
+      }
+      // Expand: add empty columns at the end.
+      while (copy.length < targetCount) copy.push([])
+      return copy
     },
     saveLayout() {
       try {
@@ -245,17 +335,19 @@ export default {
     loadWeights() {
       try {
         const raw = localStorage.getItem(WEIGHTS_KEY)
-        if (!raw) return [...DEFAULT_WEIGHTS]
-        const parsed = JSON.parse(raw)
-        if (!Array.isArray(parsed) || parsed.length !== 3) return [...DEFAULT_WEIGHTS]
-        return parsed.map(w => {
-          const n = Number(w)
-          if (!isFinite(n)) return 1
-          return Math.max(MIN_WEIGHT, Math.min(MAX_WEIGHT, n))
-        })
-      } catch (e) {
-        return [...DEFAULT_WEIGHTS]
-      }
+        if (raw) {
+          const parsed = JSON.parse(raw)
+          if (Array.isArray(parsed) && parsed.length === this.columnCount) {
+            return parsed.map(w => {
+              const n = Number(w)
+              if (!isFinite(n)) return 1
+              return Math.max(MIN_WEIGHT, Math.min(MAX_WEIGHT, n))
+            })
+          }
+        }
+      } catch (e) { /* fall through */ }
+      // Default to equal weights for whatever column count we have.
+      return Array(this.columnCount || 3).fill(1)
     },
     saveWeights() {
       try {
@@ -330,6 +422,26 @@ export default {
     },
     toggleEditMode() {
       this.editMode = !this.editMode
+    },
+    setColumnCount(n) {
+      if (![2, 3, 4].includes(n) || n === this.columnCount) return
+      this.columns = this.expandLayoutTo(this.columns, n)
+      this.colWeights = Array(n).fill(1)
+      this.columnCount = n
+      try { localStorage.setItem(COLCOUNT_KEY, String(n)) } catch (e) { /* ignore */ }
+      this.saveLayout()
+      this.saveWeights()
+    },
+    applyTemplate(key) {
+      const t = TEMPLATES.find(x => x.key === key)
+      if (!t) return
+      const next = t.cols.map(c => [...c])
+      this.columns = next
+      this.columnCount = next.length
+      this.colWeights = Array(next.length).fill(1)
+      try { localStorage.setItem(COLCOUNT_KEY, String(next.length)) } catch (e) { /* ignore */ }
+      this.saveLayout()
+      this.saveWeights()
     },
     placedWidgets() {
       // Flat list of every widget key currently in any column.
