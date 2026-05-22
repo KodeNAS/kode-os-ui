@@ -46,13 +46,12 @@
      * black, then we don't invert because the sidebar background is
      * light enough that a dark wordmark reads cleanly. */
     .kode-fb-brand-row {
-        padding-left: 0.85rem !important;
-        padding-right: 0.85rem !important;
+        padding: 1rem 0.85rem 1.4rem !important;
         gap: 0.5rem;
     }
 
     .kode-fb-brand {
-        width: 140px;
+        width: 200px;
         max-width: 100%;
         height: auto;
         display: block;
