@@ -227,10 +227,8 @@ export default {
   position: relative;
   aspect-ratio: 1 / 1;
   display: flex;
-  flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 0.5rem;
   padding: 1rem;
   background: rgba(255, 255, 255, 0.55);
   backdrop-filter: blur(24px) saturate(180%);
@@ -251,16 +249,9 @@ export default {
   }
 }
 
-/* b-tooltip wraps the inner; this keeps the inner content laid out
-   like a real AppCard regardless of the tooltip wrapper. */
-.files-app-card ::v-deep .b-tooltip {
-  width: 100%;
-  height: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
+/* Let b-tooltip stay its natural inline size so the "Open" label
+   sits right above the icon, matching the upstream AppCard hover
+   placement. The .files-app-card is the flex centerer. */
 .files-app-inner {
   display: flex;
   flex-direction: column;
