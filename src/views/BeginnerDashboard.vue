@@ -12,11 +12,27 @@
         </header>
 
         <div class="beginner-grid">
-          <aside class="beginner-side">
-            <RecentActivityTile />
-            <FamilyTile />
-            <AddDeviceTile />
-          </aside>
+          <!-- Vuedraggable distinguishes a click from a drag by movement
+               threshold (default 0px → any movement starts a drag, but a
+               clean click still fires the underlying handler). No explicit
+               handle so the whole tile is grabbable. -->
+          <draggable
+            v-model="tileOrder"
+            tag="aside"
+            class="beginner-side"
+            :animation="200"
+            :delay="80"
+            :delay-on-touch-only="true"
+            :touch-start-threshold="3"
+            ghost-class="tile-ghost"
+            @end="saveTileOrder"
+          >
+            <component
+              v-for="key in tileOrder"
+              :key="key"
+              :is="tileMap[key]"
+            />
+          </draggable>
           <main class="beginner-main">
             <AppSection ref="apps" :allowed-keys="pickedApps" />
           </main>
@@ -27,14 +43,19 @@
 </template>
 
 <script>
+import draggable from 'vuedraggable'
 import AppSection from '@/components/Apps/AppSection.vue'
 import RecentActivityTile from '@/components/beginner/RecentActivityTile.vue'
 import FamilyTile from '@/components/beginner/FamilyTile.vue'
 import AddDeviceTile from '@/components/beginner/AddDeviceTile.vue'
 
+const ORDER_KEY = 'kode_tile_order'
+const DEFAULT_ORDER = ['recent', 'family', 'addDevice']
+
 export default {
   name: 'BeginnerDashboard',
   components: {
+    draggable,
     AppSection,
     RecentActivityTile,
     FamilyTile,
@@ -43,6 +64,12 @@ export default {
   data() {
     return {
       pickedApps: [],
+      tileOrder: this.loadTileOrder(),
+      tileMap: {
+        recent: 'RecentActivityTile',
+        family: 'FamilyTile',
+        addDevice: 'AddDeviceTile',
+      },
     }
   },
   created() {
@@ -62,6 +89,27 @@ export default {
       } catch (e) {
         this.pickedApps = []
       }
+    },
+    loadTileOrder() {
+      try {
+        const raw = localStorage.getItem(ORDER_KEY)
+        if (!raw) return [...DEFAULT_ORDER]
+        const parsed = JSON.parse(raw)
+        if (!Array.isArray(parsed)) return [...DEFAULT_ORDER]
+        // Drop unknown keys + append any new defaults the saved order is
+        // missing (so adding tiles in a future release doesn't strand the
+        // user with their old layout).
+        const filtered = parsed.filter(k => DEFAULT_ORDER.includes(k))
+        const missing = DEFAULT_ORDER.filter(k => !filtered.includes(k))
+        return [...filtered, ...missing]
+      } catch (e) {
+        return [...DEFAULT_ORDER]
+      }
+    },
+    saveTileOrder() {
+      try {
+        localStorage.setItem(ORDER_KEY, JSON.stringify(this.tileOrder))
+      } catch (e) { /* quota / disabled storage — accept loss */ }
     },
   },
 }
@@ -124,6 +172,15 @@ export default {
   @media (max-width: 900px) {
     position: static;
   }
+}
+
+/* Drag-feedback: the placeholder where the tile will land. */
+.tile-ghost {
+  opacity: 0.45;
+  transform: scale(0.98);
+  background: rgba(45, 95, 78, 0.10);
+  border-radius: 20px;
+  border: 2px dashed rgba(45, 95, 78, 0.45);
 }
 
 /* Override the upstream AppSection grid: force 3 columns in Easy mode and

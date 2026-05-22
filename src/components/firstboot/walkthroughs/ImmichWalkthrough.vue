@@ -32,7 +32,7 @@
       <p>{{ $t('Open Immich on your phone. When it asks for a server, scan this code or paste the address below.') }}</p>
       <div class="qr-row">
         <div class="qr">
-          <QrcodeVue :value="immichUrl" :size="180" level="M" background="#ffffff" foreground="#2d5f4e" />
+          <QrcodeVue :value="immichUrl" :size="200" level="M" background="#ffffff" foreground="#000000" />
         </div>
         <div class="qr-side">
           <div class="server-row">
@@ -214,10 +214,10 @@ export default {
 
 .qr-row {
   display: grid;
-  grid-template-columns: 180px 1fr;
-  gap: 1rem;
+  grid-template-columns: 220px 1fr;
+  gap: 1.25rem;
   align-items: start;
-  @media (max-width: 520px) {
+  @media (max-width: 540px) {
     grid-template-columns: 1fr;
     justify-items: center;
     text-align: center;
@@ -225,11 +225,13 @@ export default {
 }
 
 .qr {
-  padding: 10px;
+  padding: 14px;
   background: #fff;
-  border-radius: 12px;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+  border-radius: 14px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
   display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .server-row {

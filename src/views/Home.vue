@@ -72,8 +72,9 @@ export default {
     }
     if (sessionStorage.getItem('fromWelcome')) {
       this.$messageBus('global_newvisit')
-      this.rssConfirm()
-      // one-off consumption
+      // KODE OS: rssConfirm() removed — was prompting the CasaOS blog
+      // news feed on every wizard finish. News-feed surface is off; see
+      // BrandBar.vue + TopBar.vue.
       sessionStorage.removeItem('fromWelcome')
     }
     this.$messageBus('global_visit')

@@ -29,10 +29,10 @@
       <div class="phone-qr">
         <QrcodeVue
           :value="immichUrl"
-          :size="180"
+          :size="200"
           level="M"
           background="#ffffff"
-          foreground="#2d5f4e"
+          foreground="#000000"
         />
       </div>
       <div class="phone-qr-help">
@@ -131,11 +131,11 @@ export default {
 
 .phone-qr-row {
   display: grid;
-  grid-template-columns: 180px 1fr;
+  grid-template-columns: 220px 1fr;
   gap: 1.25rem;
   align-items: start;
 
-  @media (max-width: 520px) {
+  @media (max-width: 540px) {
     grid-template-columns: 1fr;
     justify-items: center;
     text-align: center;
@@ -143,11 +143,13 @@ export default {
 }
 
 .phone-qr {
-  padding: 10px;
+  padding: 14px;
   background: #fff;
-  border-radius: 12px;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+  border-radius: 14px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
   display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .phone-qr-title {
