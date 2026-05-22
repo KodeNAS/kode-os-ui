@@ -49,57 +49,150 @@
                any column when edit mode is on. Dividers are click-and-drag
                only in edit mode; otherwise inert. -->
           <template v-for="(column, ci) in columns">
-            <draggable
+            <section
               :key="`col-${ci}`"
-              v-model="columns[ci]"
-              tag="section"
-              class="beginner-column"
-              :class="{ 'is-empty': column.length === 0 }"
-              :group="{ name: 'kode-widgets', pull: true, put: true }"
-              :animation="200"
-              :disabled="!editMode"
-              :delay="40"
-              :delay-on-touch-only="true"
-              :touch-start-threshold="3"
-              ghost-class="widget-ghost"
-              @end="saveLayout"
+              class="beginner-column-wrap"
+              :class="{ 'has-subcols': isSubdivided(column) }"
             >
-              <div
-                v-for="key in column"
-                :key="key"
-                class="widget-slot"
-                :class="slotClass(key)"
-                :data-tour="tourKeyFor(widgetType(key))"
-              >
-                <FilesTile          v-if="widgetType(key) === 'files'" />
-                <RecentActivityTile v-else-if="widgetType(key) === 'recent'" />
-                <FamilyTile         v-else-if="widgetType(key) === 'family'" />
-                <AddDeviceTile      v-else-if="widgetType(key) === 'addDevice'" />
-                <ClockWidget        v-else-if="widgetType(key) === 'clock'" />
-                <WeatherWidget      v-else-if="widgetType(key) === 'weather'" />
-                <SearchWidget       v-else-if="widgetType(key) === 'search'" />
-                <SystemInfoWidget   v-else-if="widgetType(key) === 'sysInfo'" />
-                <NetworkStatusWidget v-else-if="widgetType(key) === 'network'" />
-                <AppsRunningWidget  v-else-if="widgetType(key) === 'appsRunning'" />
-                <TipsTricksWidget   v-else-if="widgetType(key) === 'tips'" />
-                <StorageWidget      v-else-if="widgetType(key) === 'storage'" />
-                <AppSection         v-else-if="widgetType(key) === 'apps'" ref="apps" :allowed-keys="pickedApps" />
-                <AppShortcutWidget  v-else-if="isAppShortcut(key)" :app-key="appKeyFor(key)" />
-
+              <!-- Subdivision header (edit mode only) — shows count + flatten -->
+              <div v-if="editMode && isSubdivided(column)" class="subdivide-header">
+                <span>{{ column.subCols.length }} {{ $t('inner columns') }}</span>
                 <button
-                  v-if="editMode"
+                  v-if="canFlattenColumn(ci)"
                   type="button"
-                  class="widget-remove"
-                  :aria-label="$t('Remove widget')"
-                  @click.stop="removeWidget(key)"
+                  class="subdivide-flatten"
+                  :title="$t('Remove inner columns')"
+                  @click="flattenColumn(ci)"
                 >
                   <b-icon icon="close-outline" pack="casa" size="is-small" />
                 </button>
               </div>
-              <div v-if="editMode && column.length === 0" class="column-empty-hint">
-                {{ $t('Drag a widget here') }}
+
+              <!-- Flat branch: column holds widgets directly. -->
+              <draggable
+                v-if="!isSubdivided(column)"
+                v-model="column.widgets"
+                tag="div"
+                class="beginner-column"
+                :class="{ 'is-empty': column.widgets.length === 0 }"
+                :group="{ name: 'kode-widgets', pull: true, put: true }"
+                :animation="200"
+                :disabled="!editMode"
+                :delay="40"
+                :delay-on-touch-only="true"
+                :touch-start-threshold="3"
+                ghost-class="widget-ghost"
+                @end="saveLayout"
+              >
+                <div
+                  v-for="key in column.widgets"
+                  :key="key"
+                  class="widget-slot"
+                  :class="slotClass(key)"
+                  :data-tour="tourKeyFor(widgetType(key))"
+                >
+                  <FilesTile          v-if="widgetType(key) === 'files'" />
+                  <RecentActivityTile v-else-if="widgetType(key) === 'recent'" />
+                  <FamilyTile         v-else-if="widgetType(key) === 'family'" />
+                  <AddDeviceTile      v-else-if="widgetType(key) === 'addDevice'" />
+                  <ClockWidget        v-else-if="widgetType(key) === 'clock'" />
+                  <WeatherWidget      v-else-if="widgetType(key) === 'weather'" />
+                  <SearchWidget       v-else-if="widgetType(key) === 'search'" />
+                  <SystemInfoWidget   v-else-if="widgetType(key) === 'sysInfo'" />
+                  <NetworkStatusWidget v-else-if="widgetType(key) === 'network'" />
+                  <AppsRunningWidget  v-else-if="widgetType(key) === 'appsRunning'" />
+                  <TipsTricksWidget   v-else-if="widgetType(key) === 'tips'" />
+                  <StorageWidget      v-else-if="widgetType(key) === 'storage'" />
+                  <AppSection         v-else-if="widgetType(key) === 'apps'" ref="apps" :allowed-keys="pickedApps" />
+                  <AppShortcutWidget  v-else-if="isAppShortcut(key)" :app-key="appKeyFor(key)" />
+
+                  <button
+                    v-if="editMode"
+                    type="button"
+                    class="widget-remove"
+                    :aria-label="$t('Remove widget')"
+                    @click.stop="removeWidget(key)"
+                  >
+                    <b-icon icon="close-outline" pack="casa" size="is-small" />
+                  </button>
+                </div>
+
+                <!-- Empty outer column in edit mode: subdivide picker. -->
+                <div v-if="editMode && column.widgets.length === 0" class="column-empty-hint">
+                  <div class="empty-text">{{ $t('Drag a widget here') }}</div>
+                  <div class="empty-or">{{ $t('or split into inner columns') }}</div>
+                  <div class="empty-subdivide-options">
+                    <button
+                      v-for="n in [2, 3, 4]"
+                      :key="n"
+                      type="button"
+                      class="empty-subdivide-btn"
+                      @click="subdivideColumn(ci, n)"
+                    >
+                      <b-icon icon="plus-outline" pack="casa" size="is-small" />
+                      <span>{{ n }}</span>
+                    </button>
+                  </div>
+                </div>
+              </draggable>
+
+              <!-- Nested branch: N sub-column draggables share the
+                   "kode-widgets" group so widgets drag in/out freely. -->
+              <div v-else class="beginner-subcol-grid" :style="subColGridStyle(column)">
+                <draggable
+                  v-for="(sub, si) in column.subCols"
+                  :key="`col-${ci}-sub-${si}`"
+                  v-model="column.subCols[si]"
+                  tag="div"
+                  class="beginner-subcol"
+                  :class="{ 'is-empty': sub.length === 0 }"
+                  :group="{ name: 'kode-widgets', pull: true, put: true }"
+                  :animation="200"
+                  :disabled="!editMode"
+                  :delay="40"
+                  :delay-on-touch-only="true"
+                  :touch-start-threshold="3"
+                  ghost-class="widget-ghost"
+                  @end="saveLayout"
+                >
+                  <div
+                    v-for="key in sub"
+                    :key="key"
+                    class="widget-slot"
+                    :class="slotClass(key)"
+                  >
+                    <FilesTile          v-if="widgetType(key) === 'files'" />
+                    <RecentActivityTile v-else-if="widgetType(key) === 'recent'" />
+                    <FamilyTile         v-else-if="widgetType(key) === 'family'" />
+                    <AddDeviceTile      v-else-if="widgetType(key) === 'addDevice'" />
+                    <ClockWidget        v-else-if="widgetType(key) === 'clock'" />
+                    <WeatherWidget      v-else-if="widgetType(key) === 'weather'" />
+                    <SearchWidget       v-else-if="widgetType(key) === 'search'" />
+                    <SystemInfoWidget   v-else-if="widgetType(key) === 'sysInfo'" />
+                    <NetworkStatusWidget v-else-if="widgetType(key) === 'network'" />
+                    <AppsRunningWidget  v-else-if="widgetType(key) === 'appsRunning'" />
+                    <TipsTricksWidget   v-else-if="widgetType(key) === 'tips'" />
+                    <StorageWidget      v-else-if="widgetType(key) === 'storage'" />
+                    <AppSection         v-else-if="widgetType(key) === 'apps'" :allowed-keys="pickedApps" />
+                    <AppShortcutWidget  v-else-if="isAppShortcut(key)" :app-key="appKeyFor(key)" />
+
+                    <button
+                      v-if="editMode"
+                      type="button"
+                      class="widget-remove"
+                      :aria-label="$t('Remove widget')"
+                      @click.stop="removeWidget(key)"
+                    >
+                      <b-icon icon="close-outline" pack="casa" size="is-small" />
+                    </button>
+                  </div>
+
+                  <div v-if="editMode && sub.length === 0" class="subcol-empty-hint">
+                    {{ $t('Drop here') }}
+                  </div>
+                </draggable>
               </div>
-            </draggable>
+            </section>
 
             <div
               v-if="ci < columns.length - 1"
@@ -238,6 +331,44 @@ function normalizeWidgetKey(k) {
   return k
 }
 
+// Wrap a column shape into the canonical { widgets, subCols } form. Accepts
+// either a legacy plain string[] OR the new object shape, normalizing every
+// widget key + filtering invalid entries along the way.
+function normalizeColumn(col) {
+  // Legacy array shape — wrap.
+  if (Array.isArray(col)) {
+    const widgets = []
+    for (const k of col) {
+      if (!isValidWidgetKey(k)) continue
+      const n = normalizeWidgetKey(k)
+      if (!widgets.includes(n)) widgets.push(n)
+    }
+    return { widgets, subCols: null }
+  }
+  if (col && typeof col === 'object') {
+    const widgets = []
+    for (const k of (Array.isArray(col.widgets) ? col.widgets : [])) {
+      if (!isValidWidgetKey(k)) continue
+      const n = normalizeWidgetKey(k)
+      if (!widgets.includes(n)) widgets.push(n)
+    }
+    let subCols = null
+    if (Array.isArray(col.subCols) && col.subCols.length >= 2 && col.subCols.length <= 4) {
+      subCols = col.subCols.map(sub => {
+        const out = []
+        for (const k of (Array.isArray(sub) ? sub : [])) {
+          if (!isValidWidgetKey(k)) continue
+          const n = normalizeWidgetKey(k)
+          if (!out.includes(n)) out.push(n)
+        }
+        return out
+      })
+    }
+    return { widgets: subCols ? [] : widgets, subCols }
+  }
+  return { widgets: [], subCols: null }
+}
+
 // Default 3-column layout: small tiles on the sides, the apps grid in
 // the middle column where it has room to breathe.
 const DEFAULT_LAYOUT = [
@@ -333,42 +464,96 @@ export default {
         if (!Array.isArray(parsed) || parsed.length < 2 || parsed.length > 4) {
           return this.expandLayoutTo(DEFAULT_LAYOUT, this.columnCount || 3)
         }
-        // Sanitise: drop unknown keys.
-        const cleaned = parsed.map(col => {
-          if (!Array.isArray(col)) return []
-          // Filter invalid keys + normalize deprecated keys (e.g. ipAddress -> network).
-          const out = []
-          for (const k of col) {
-            if (!isValidWidgetKey(k)) continue
-            const normalized = normalizeWidgetKey(k)
-            if (!out.includes(normalized)) out.push(normalized)
-          }
-          return out
-        })
-        // Add missing default widgets (generic only — app shortcuts are
-        // explicit opt-in via the picker).
+        // Normalize each column into { widgets, subCols }. Handles both
+        // the legacy string[] shape and the new object shape so existing
+        // saved layouts round-trip without loss.
+        const cleaned = parsed.map(normalizeColumn)
+        // Add any default generic widget that's missing (excluding apps:
+        // shortcuts which are explicit opt-in). Drop missing into the
+        // first non-subdivided column; if column 0 is subdivided, drop
+        // into its first sub.
         const present = new Set()
-        cleaned.forEach(col => col.forEach(k => present.add(k)))
+        this.collectPresentKeys(cleaned, present)
         const missing = ALL_WIDGETS.filter(k => !present.has(k))
-        if (missing.length > 0) cleaned[0].push(...missing)
+        if (missing.length > 0) {
+          const target = cleaned[0]
+          if (target.subCols) target.subCols[0].push(...missing)
+          else target.widgets.push(...missing)
+        }
         return cleaned
       } catch (e) {
         return this.expandLayoutTo(DEFAULT_LAYOUT, this.columnCount || 3)
       }
     },
+    collectPresentKeys(columns, set) {
+      for (const col of columns) {
+        if (col.subCols) {
+          for (const sub of col.subCols) {
+            for (const k of sub) set.add(k)
+          }
+        } else {
+          for (const k of col.widgets) set.add(k)
+        }
+      }
+    },
+    isSubdivided(column) {
+      return !!(column && Array.isArray(column.subCols) && column.subCols.length >= 2)
+    },
+    subColGridStyle(column) {
+      const n = column.subCols ? column.subCols.length : 1
+      return { gridTemplateColumns: `repeat(${n}, minmax(0, 1fr))` }
+    },
+    subdivideColumn(ci, n) {
+      const col = this.columns[ci]
+      if (!col || col.subCols) return
+      const next = [...this.columns]
+      next[ci] = {
+        widgets: [],
+        subCols: Array.from({ length: n }, () => []),
+      }
+      this.columns = next
+      this.saveLayout()
+    },
+    canFlattenColumn(ci) {
+      const col = this.columns[ci]
+      if (!col || !col.subCols) return false
+      // Allow flatten if all sub-columns are empty OR show it always +
+      // gather widgets when flattening (chosen: always show, gather all).
+      return true
+    },
+    flattenColumn(ci) {
+      const col = this.columns[ci]
+      if (!col || !col.subCols) return
+      const gathered = col.subCols.reduce((acc, sub) => acc.concat(sub), [])
+      const next = [...this.columns]
+      next[ci] = { widgets: gathered, subCols: null }
+      this.columns = next
+      this.saveLayout()
+    },
     expandLayoutTo(layout, targetCount) {
-      // Take an N-column layout and resize to targetCount columns.
-      const copy = layout.map(c => [...c])
+      // Accepts either the legacy string[][] or the new { widgets, subCols }
+      // shape. Returns the new shape adjusted to targetCount outer columns.
+      const copy = layout.map(normalizeColumn)
       if (copy.length === targetCount) return copy
       if (copy.length > targetCount) {
-        // Merge extras into the last kept column.
+        // Merge extras into the last kept column. Tail widgets gathered
+        // from both flat columns and sub-columns.
         const kept = copy.slice(0, targetCount)
-        const tail = copy.slice(targetCount).flat()
-        kept[targetCount - 1].push(...tail)
+        const tail = []
+        for (const col of copy.slice(targetCount)) {
+          if (col.subCols) {
+            for (const sub of col.subCols) tail.push(...sub)
+          } else {
+            tail.push(...col.widgets)
+          }
+        }
+        const lastKept = kept[targetCount - 1]
+        if (lastKept.subCols) lastKept.subCols[0].push(...tail)
+        else lastKept.widgets.push(...tail)
         return kept
       }
       // Expand: add empty columns at the end.
-      while (copy.length < targetCount) copy.push([])
+      while (copy.length < targetCount) copy.push({ widgets: [], subCols: null })
       return copy
     },
     saveLayout() {
@@ -479,7 +664,9 @@ export default {
     applyTemplate(key) {
       const t = TEMPLATES.find(x => x.key === key) || this.userTemplates.find(x => x.key === key)
       if (!t) return
-      const next = t.cols.map(c => [...c])
+      // Normalize template columns through normalizeColumn so old-style
+      // string[][] templates and new-style object templates both work.
+      const next = t.cols.map(normalizeColumn)
       this.columns = next
       this.columnCount = next.length
       this.colWeights = Array.isArray(t.weights) && t.weights.length === next.length
@@ -544,8 +731,17 @@ export default {
       this.saveUserTemplates()
     },
     placedWidgets() {
-      // Flat list of every widget key currently in any column.
-      return this.columns.reduce((acc, col) => acc.concat(col), [])
+      // Flat list of every widget key currently in any column, including
+      // those nested inside sub-columns.
+      const acc = []
+      for (const col of this.columns) {
+        if (col.subCols) {
+          for (const sub of col.subCols) acc.push(...sub)
+        } else {
+          acc.push(...col.widgets)
+        }
+      }
+      return acc
     },
     openAddWidget() {
       this.$buefy.modal.open({
@@ -562,9 +758,6 @@ export default {
     addWidget(key) {
       const placed = this.placedWidgets()
       let toInsert = key
-      // Per-app shortcuts can repeat: if the user adds the same app twice
-      // we generate a unique #N suffix so each instance keeps a stable
-      // identity in the columns array. Generic widgets stay unique.
       if (this.isAppShortcut(key)) {
         let n = 1
         while (placed.includes(toInsert)) {
@@ -573,18 +766,47 @@ export default {
       } else if (placed.includes(key)) {
         return
       }
-      // Append to the column with the fewest widgets so the layout stays
-      // somewhat balanced. Ties broken in favour of column index 0.
-      const idx = this.columns.reduce((minIdx, col, i, all) => {
-        return col.length < all[minIdx].length ? i : minIdx
-      }, 0)
-      const next = this.columns.map(c => [...c])
-      next[idx] = [...next[idx], toInsert]
+      // Pick the smallest target across outer + sub columns. If the
+      // smallest target is a subdivided column's sub, drop the widget
+      // into that sub-column directly.
+      let bestIdx = 0
+      let bestSubIdx = -1
+      let bestSize = Infinity
+      this.columns.forEach((col, ci) => {
+        if (col.subCols) {
+          col.subCols.forEach((sub, si) => {
+            if (sub.length < bestSize) {
+              bestSize = sub.length
+              bestIdx = ci
+              bestSubIdx = si
+            }
+          })
+        } else {
+          if (col.widgets.length < bestSize) {
+            bestSize = col.widgets.length
+            bestIdx = ci
+            bestSubIdx = -1
+          }
+        }
+      })
+      const next = this.columns.map(c => ({
+        widgets: [...c.widgets],
+        subCols: c.subCols ? c.subCols.map(s => [...s]) : null,
+      }))
+      const target = next[bestIdx]
+      if (bestSubIdx >= 0 && target.subCols) {
+        target.subCols[bestSubIdx] = [...target.subCols[bestSubIdx], toInsert]
+      } else {
+        target.widgets = [...target.widgets, toInsert]
+      }
       this.columns = next
       this.saveLayout()
     },
     removeWidget(key) {
-      const next = this.columns.map(col => col.filter(k => k !== key))
+      const next = this.columns.map(col => ({
+        widgets: col.widgets.filter(k => k !== key),
+        subCols: col.subCols ? col.subCols.map(sub => sub.filter(k => k !== key)) : null,
+      }))
       this.columns = next
       this.saveLayout()
     },
@@ -746,11 +968,128 @@ export default {
   }
 }
 
+.beginner-column-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  min-height: 120px;
+}
+
 .beginner-column {
   display: flex;
   flex-direction: column;
   gap: 1rem;
   min-height: 120px;
+}
+
+/* Header bar above a subdivided column. Only visible in edit mode. */
+.subdivide-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: rgba(255, 255, 255, 0.78);
+  padding: 0 0.25rem;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.45);
+}
+
+.subdivide-flatten {
+  background: rgba(0, 0, 0, 0.25);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  border-radius: 999px;
+  color: rgba(255, 255, 255, 0.85);
+  width: 22px;
+  height: 22px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+
+  &:hover {
+    background: rgba(176, 74, 74, 0.45);
+    border-color: rgba(176, 74, 74, 0.6);
+  }
+}
+
+/* The inner grid that holds 2–4 sub-columns. */
+.beginner-subcol-grid {
+  display: grid;
+  gap: 0.75rem;
+  align-items: start;
+}
+
+.beginner-subcol {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  min-height: 80px;
+}
+
+.beginner-grid.is-edit-mode .beginner-subcol.is-empty {
+  outline: 2px dashed rgba(255, 255, 255, 0.28);
+  outline-offset: -1px;
+  border-radius: 14px;
+  padding: 0.85rem 0.5rem;
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.subcol-empty-hint {
+  font-size: 0.75rem;
+  color: rgba(255, 255, 255, 0.65);
+  text-align: center;
+  padding: 0.5rem 0;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.45);
+}
+
+/* Subdivide picker shown inside an empty outer column in edit mode. */
+.empty-subdivide-options {
+  display: flex;
+  justify-content: center;
+  gap: 0.4rem;
+  margin-top: 0.6rem;
+}
+
+.empty-subdivide-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  padding: 5px 12px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.14);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  color: #fff;
+  font-size: 0.75rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, transform 0.15s;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.45);
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.26);
+    border-color: rgba(255, 255, 255, 0.55);
+    transform: translateY(-1px);
+  }
+}
+
+.empty-text {
+  font-size: 0.8125rem;
+  color: rgba(255, 255, 255, 0.85);
+  text-align: center;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.45);
+}
+
+.empty-or {
+  font-size: 0.6875rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: rgba(255, 255, 255, 0.55);
+  text-align: center;
+  margin-top: 0.5rem;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.45);
 }
 
 .widget-slot {
@@ -841,10 +1180,7 @@ export default {
 }
 
 .column-empty-hint {
-  font-size: 0.8125rem;
-  color: rgba(255, 255, 255, 0.7);
-  text-align: center;
-  padding: 1rem 0;
+  padding: 0.5rem 0;
   text-shadow: 0 1px 3px rgba(0, 0, 0, 0.45);
 }
 
