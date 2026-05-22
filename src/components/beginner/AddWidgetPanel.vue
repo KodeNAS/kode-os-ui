@@ -123,6 +123,7 @@ const OTHER_WIDGETS = [
   { key: 'tips',        icon: 'information-outline', title: 'Tips & tricks',   desc: 'Cycles through quick tips for getting more out of KODE OS.' },
   { key: 'files',       icon: 'folder',              title: 'Files',           desc: 'Tile that opens the built-in CasaOS file browser.' },
   { key: 'recent',      icon: 'time-outline',        title: 'Recent activity', desc: 'Your six most recently changed files.' },
+  { key: 'photoOfTheDay', icon: 'image',             title: 'Photo of the day', desc: 'A nostalgic photo from your Immich library, refreshed daily.' },
   { key: 'family',      icon: 'account-outline',     title: 'On your pebble',  desc: 'Family member accounts.' },
   { key: 'addDevice',   icon: 'plus-outline',        title: 'Add a device',    desc: 'Connect a phone, computer, or smart TV.' },
 ]

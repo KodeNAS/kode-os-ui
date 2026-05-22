@@ -106,6 +106,7 @@
                   <AppsRunningWidget  v-else-if="widgetType(key) === 'appsRunning'" />
                   <TipsTricksWidget   v-else-if="widgetType(key) === 'tips'" />
                   <StorageWidget      v-else-if="widgetType(key) === 'storage'" />
+                  <PhotoOfTheDayWidget v-else-if="widgetType(key) === 'photoOfTheDay'" :edit-mode="editMode" />
                   <AppSection         v-else-if="widgetType(key) === 'apps'" ref="apps" :allowed-keys="pickedApps" />
                   <AppShortcutWidget  v-else-if="isAppShortcut(key)" :app-key="appKeyFor(key)" />
 
@@ -184,6 +185,7 @@
                     <AppsRunningWidget  v-else-if="widgetType(key) === 'appsRunning'" />
                     <TipsTricksWidget   v-else-if="widgetType(key) === 'tips'" />
                     <StorageWidget      v-else-if="widgetType(key) === 'storage'" />
+                    <PhotoOfTheDayWidget v-else-if="widgetType(key) === 'photoOfTheDay'" :edit-mode="editMode" />
                     <AppSection         v-else-if="widgetType(key) === 'apps'" :allowed-keys="pickedApps" />
                     <AppShortcutWidget  v-else-if="isAppShortcut(key)" :app-key="appKeyFor(key)" />
 
@@ -268,6 +270,7 @@ import NetworkStatusWidget from '@/components/beginner/NetworkStatusWidget.vue'
 import AppsRunningWidget from '@/components/beginner/AppsRunningWidget.vue'
 import TipsTricksWidget from '@/components/beginner/TipsTricksWidget.vue'
 import StorageWidget from '@/components/beginner/StorageWidget.vue'
+import PhotoOfTheDayWidget from '@/components/beginner/PhotoOfTheDayWidget.vue'
 import AddWidgetPanel from '@/components/beginner/AddWidgetPanel.vue'
 import LayoutSettingsPanel from '@/components/beginner/LayoutSettingsPanel.vue'
 import { maybeStartEasyTourOnce } from '@/service/tour'
@@ -360,7 +363,7 @@ const ALL_WIDGETS = [
   // tile. Legacy 'ipAddress' / 'network' keys are still accepted by the
   // loader and silently mapped to 'network' so existing saved layouts
   // round-trip.
-  'network', 'appsRunning', 'tips', 'storage',
+  'network', 'appsRunning', 'tips', 'storage', 'photoOfTheDay',
 ]
 const KNOWN_APP_KEYS = ['immich', 'jellyfin', 'filebrowser', 'pihole', 'homeassistant']
 
@@ -470,6 +473,7 @@ export default {
     AppsRunningWidget,
     TipsTricksWidget,
     StorageWidget,
+    PhotoOfTheDayWidget,
     LayoutSettingsPanel,
   },
   data() {
@@ -1152,11 +1156,22 @@ export default {
   }
 }
 
+/* `min-width: 0` is the workaround for two browser defaults that
+   conspire here:
+   1. Grid items default to min-width: min-content — so a column auto-
+      grows to fit its widest child (a 14-day forecast strip can push
+      the column to 800px+ even if the fr-tracks say 1fr).
+   2. Flex items default to min-width: auto for the same reason inside
+      a flex column.
+   Both rules above this point apply: the wrap is the grid item, the
+   column is the flex container. With min-width: 0 set on both, content
+   like overflow-x: auto inside a child actually clips properly. */
 .beginner-column-wrap {
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
   min-height: 120px;
+  min-width: 0;
 }
 
 .beginner-column {
@@ -1164,6 +1179,7 @@ export default {
   flex-direction: column;
   gap: 1rem;
   min-height: 120px;
+  min-width: 0;
 }
 
 /* Header bar above a subdivided column. Only visible in edit mode. */
