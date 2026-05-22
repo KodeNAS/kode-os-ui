@@ -21,9 +21,13 @@
             {{ $t('Welcome to your pebble') }}
           </h1>
           <p class="subtitle is-5 has-text-white">
-            {{ editMode
-              ? $t('Drag any widget to any column.')
-              : $t('Your own private cloud, ready when you are.') }}
+            <template v-if="editMode">
+              {{ $t('Drag any widget to any column.') }}
+              <span class="subtitle-hint">{{ $t('Hold Shift while resizing to snap.') }}</span>
+            </template>
+            <template v-else>
+              {{ $t('Your own private cloud, ready when you are.') }}
+            </template>
           </p>
         </header>
 
@@ -111,6 +115,7 @@ const DEFAULT_WEIGHTS = [1, 1.2, 1]  // middle column gets a touch more by defau
 const MIN_WEIGHT = 0.35
 const MAX_WEIGHT = 2.5
 const DIVIDER_PX = 6
+const SNAP_STEP = 0.25  // Shift-held: round each affected weight to this fr step
 
 export default {
   name: 'BeginnerDashboard',
@@ -242,8 +247,17 @@ export default {
       const deltaFr = (deltaPx / this._gridUsableWidth) * this._totalWeight
 
       const i = this.activeDivider
-      const left = this._dragStartWeights[i] + deltaFr
-      const right = this._dragStartWeights[i + 1] - deltaFr
+      let left = this._dragStartWeights[i] + deltaFr
+      let right = this._dragStartWeights[i + 1] - deltaFr
+
+      // Shift held: snap the dragged divider to nearest SNAP_STEP fr
+      // multiple. Preserve the affected pair's total weight so the third
+      // column stays put.
+      if (e.shiftKey) {
+        const pairTotal = this._dragStartWeights[i] + this._dragStartWeights[i + 1]
+        left = Math.round(left / SNAP_STEP) * SNAP_STEP
+        right = pairTotal - left
+      }
 
       // Clamp both sides; if either would breach a limit, refuse the
       // change so the total weight stays conserved and the layout
@@ -305,6 +319,16 @@ export default {
   .subtitle {
     opacity: 0.92;
   }
+}
+
+.subtitle-hint {
+  display: inline-block;
+  margin-left: 0.5rem;
+  font-size: 0.8125rem;
+  opacity: 0.72;
+  padding: 1px 8px;
+  background: rgba(255, 255, 255, 0.12);
+  border-radius: 999px;
 }
 
 .edit-layout-toggle {
