@@ -176,6 +176,7 @@ export default {
           skipped: true,
         })
       } catch (e) { /* non-blocking */ }
+      this.resetDashboardLayoutForFirstBoot()
       sessionStorage.setItem('fromWelcome', true)
       this.$router.push('/')
     },
@@ -230,9 +231,26 @@ export default {
         if (this.userType === 'normal') {
           this.$store.commit('SET_INTERFACE_MODE', 'advanced')
         }
+        this.resetDashboardLayoutForFirstBoot()
         sessionStorage.setItem('fromWelcome', true)
       }
       this.$router.push('/')
+    },
+    resetDashboardLayoutForFirstBoot() {
+      // After a factory reset / fresh install, the user expects to land
+      // on the Default layout — but localStorage from a prior install
+      // can persist past the backend reset, leaving the old saved
+      // layout in place. Clearing the layout-related keys here forces
+      // the dashboard's loadLayout to fall back to DEFAULT_LAYOUT, which
+      // already mirrors the "Default" template. User-saved templates
+      // (kode_user_templates_v1) are kept so anything they intentionally
+      // bookmarked survives the wizard.
+      try {
+        localStorage.removeItem('kode_columns_layout_v2')
+        localStorage.removeItem('kode_columns_weights_v1')
+        localStorage.removeItem('kode_column_count_v1')
+        localStorage.removeItem('kode_tile_order')
+      } catch (e) { /* ignore */ }
     },
   },
 }
@@ -250,14 +268,18 @@ export default {
   width: 560px;
   max-width: 100%;
   /* Global wallpaper scrim in App.vue handles base darkening. Shell adds
-     a touch more so the card pops off the wallpaper evenly. */
-  background: rgba(15, 25, 30, 0.30);
-  backdrop-filter: blur(16px) saturate(160%);
-  -webkit-backdrop-filter: blur(16px) saturate(160%);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 22px;
-  padding: 2rem;
-  box-shadow: 0 18px 48px rgba(0, 0, 0, 0.35);
+     a touch more so the card pops off the wallpaper evenly. The inset
+     highlight + slightly larger radius give the wizard a softer, more
+     "panel"-feeling silhouette that matches the dashboard tiles. */
+  background: rgba(15, 25, 30, 0.32);
+  backdrop-filter: blur(22px) saturate(180%);
+  -webkit-backdrop-filter: blur(22px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 28px;
+  padding: 2.25rem;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.10),
+    0 24px 60px rgba(0, 0, 0, 0.38);
 }
 
 .fb-rail {
