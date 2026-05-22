@@ -277,49 +277,75 @@ const WEIGHTS_KEY = 'kode_columns_weights_v1'
 const COLCOUNT_KEY = 'kode_column_count_v1'
 const USER_TEMPLATES_KEY = 'kode_user_templates_v1'
 
-// Built-in templates. Names match the four the user requested
-// (Essential 1, Minimalist 1, Simple 1, Full 1) — designed to span a
-// useful range from "barely there" to "everything".
+// Built-in templates. These match the layouts the user designed in
+// their own browser and asked to ship as the canonical pre-made set.
+// Each `cols` entry may be either a legacy string[] (flat column) or
+// the new { widgets, subCols } shape — normalizeColumn handles both.
 const TEMPLATES = [
   {
-    key: 'essential-1',
+    key: 'builtin-default',
+    name: 'Default',
+    description: 'Clock + weather, apps in the middle, family on the side.',
+    cols: [
+      { widgets: ['clock', 'weather'], subCols: null },
+      { widgets: ['apps', 'search', 'addDevice'], subCols: null },
+      { widgets: ['tips', 'family', 'files'], subCols: null },
+    ],
+    weights: [0.75, 1.75, 0.7],
+  },
+  {
+    key: 'builtin-essential-1',
     name: 'Essential 1',
-    description: 'Files, recent activity, apps, and family.',
+    description: 'Clock + recent on the left, search and apps in the middle.',
     cols: [
-      ['files', 'recent'],
-      ['apps'],
-      ['family', 'addDevice'],
+      ['clock', 'recent'],
+      ['search', 'apps', 'sysInfo'],
+      ['weather', 'files', 'family', 'addDevice'],
     ],
+    weights: [0.75, 1.63, 0.62],
   },
   {
-    key: 'minimalist-1',
+    key: 'builtin-minimalist-1',
     name: 'Minimalist 1',
-    description: 'Just a clock and your apps.',
+    description: 'Two-column setup with the essentials only.',
     cols: [
-      ['clock'],
-      ['apps'],
+      ['search', 'clock', 'weather', 'addDevice'],
+      ['apps', 'files', 'family'],
     ],
+    weights: [1, 1],
   },
   {
-    key: 'simple-1',
+    key: 'builtin-simple-1',
     name: 'Simple 1',
-    description: 'Clock + weather alongside apps and files.',
+    description: 'Search + apps on the left, time + weather on the right.',
+    cols: [
+      ['search', 'apps'],
+      ['clock', 'weather'],
+    ],
+    weights: [1, 1],
+  },
+  {
+    key: 'builtin-full-1',
+    name: 'Full 1',
+    description: 'Clock + weather, the search/family stack, and an app shortcuts column.',
     cols: [
       ['clock', 'weather'],
-      ['apps'],
-      ['files', 'recent'],
+      ['search', 'family', 'addDevice', 'files'],
+      ['app:immich', 'app:jellyfin', 'app:filebrowser', 'app:homeassistant', 'app:pihole'],
     ],
+    weights: [1, 1, 1],
   },
   {
-    key: 'full-1',
-    name: 'Full 1',
-    description: 'Everything turned on across four columns.',
+    key: 'builtin-full-2',
+    name: 'Full 2',
+    description: 'Four-column dashboard — everything turned on.',
     cols: [
-      ['clock', 'weather', 'sysInfo'],
-      ['files', 'recent', 'network'],
-      ['apps'],
-      ['storage', 'appsRunning', 'family', 'addDevice', 'tips'],
+      { widgets: ['clock', 'weather', 'sysInfo'], subCols: null },
+      { widgets: ['recent', 'family'], subCols: null },
+      { widgets: ['search', 'apps', 'tips'], subCols: null },
+      { widgets: ['appsRunning', 'files', 'addDevice', 'storage', 'network'], subCols: null },
     ],
+    weights: [1, 1, 1, 1],
   },
 ]
 // Generic widget keys. Per-app shortcuts use the `app:<id>` prefix and
@@ -408,15 +434,19 @@ function normalizeColumn(col) {
   return { widgets: [], subCols: null }
 }
 
-// Default 3-column layout: small tiles on the sides, the apps grid in
-// the middle column where it has room to breathe.
+// First-boot seed — matches the user's "Default" saved layout. Picked
+// because it's the one explicitly named Default among their templates
+// and balances utility (apps + search + addDevice in the middle) with
+// quick-glance info (clock + weather on the left).
 const DEFAULT_LAYOUT = [
-  ['files', 'recent'],
-  ['apps'],
-  ['family', 'addDevice'],
+  { widgets: ['clock', 'weather'], subCols: null },
+  { widgets: ['apps', 'search', 'addDevice'], subCols: null },
+  { widgets: ['tips', 'family', 'files'], subCols: null },
 ]
 
-const DEFAULT_WEIGHTS = [1, 1.2, 1]  // middle column gets a touch more by default
+// Matches the weights from the user's Default layout so the first-boot
+// proportions look the same as the saved template.
+const DEFAULT_WEIGHTS = [0.75, 1.75, 0.7]
 const MIN_WEIGHT = 0.35
 const MAX_WEIGHT = 2.5
 const DIVIDER_PX = 6
