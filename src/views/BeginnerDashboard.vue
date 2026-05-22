@@ -18,7 +18,7 @@
             <AddDeviceTile />
           </aside>
           <main class="beginner-main">
-            <AppSection ref="apps" />
+            <AppSection ref="apps" :allowed-keys="pickedApps" />
           </main>
         </div>
       </div>
@@ -39,6 +39,30 @@ export default {
     RecentActivityTile,
     FamilyTile,
     AddDeviceTile,
+  },
+  data() {
+    return {
+      pickedApps: [],
+    }
+  },
+  created() {
+    this.loadPickedApps()
+  },
+  methods: {
+    async loadPickedApps() {
+      // kode_first_boot was written by the wizard's finish handler. If it
+      // doesn't exist, leave pickedApps empty so the dock falls back to
+      // showing every installed app (Advanced-style behaviour).
+      try {
+        const res = await this.$api.users.getCustomStorage('kode_first_boot')
+        const data = res && res.data && res.data.data
+        if (data && Array.isArray(data.apps) && data.apps.length > 0) {
+          this.pickedApps = data.apps
+        }
+      } catch (e) {
+        this.pickedApps = []
+      }
+    },
   },
 }
 </script>

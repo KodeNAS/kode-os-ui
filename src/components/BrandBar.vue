@@ -35,11 +35,13 @@ export default {
 	components: {},
 	computed: {
 		rssShow() {
-			let which = this.$store.state.rssSwitch
-			if (which) {
-				this.parseFeed()
-			}
-			return which
+			// KODE OS: news feed forced off — Settings toggle hidden too.
+			// To re-enable, replace the next line with the original logic
+			// (commented out below) so the store-backed toggle drives it.
+			return false
+			// const which = this.$store.state.rssSwitch
+			// if (which) this.parseFeed()
+			// return which
 		},
 		line() {
 			return this.rss.length

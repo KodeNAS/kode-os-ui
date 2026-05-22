@@ -11,8 +11,8 @@
 <template>
   <div id="kode-firstboot" class="is-flex is-justify-content-center is-align-items-center">
     <div v-if="!isLoading" class="firstboot-shell">
-      <!-- Compact step rail (skipped on the welcome screen for max impact) -->
-      <ol v-if="stepIndex > 0 && stepIndex < lastStep" class="fb-rail">
+      <!-- Compact step rail (skipped on welcome / user-type / done screens) -->
+      <ol v-if="showRail" class="fb-rail">
         <li
           v-for="(label, i) in railLabels"
           :key="i"
@@ -28,13 +28,14 @@
       </ol>
 
       <transition name="fb-fade" mode="out-in">
-        <WelcomeStep        v-if="stepIndex === 0" key="welcome"  :is-replay="isReplay" @next="next" />
-        <SystemCheckStep    v-else-if="stepIndex === 1" key="sys" @next="next"            @back="back" />
-        <AdminAccountStep   v-else-if="stepIndex === 2" key="adm" @next="onAdminDone"     @back="back" />
-        <PebbleNameStep     v-else-if="stepIndex === 3" key="nm"  @next="onPebbleNameDone" @back="back" />
-        <PickAppsStep       v-else-if="stepIndex === 4" key="ap"  @next="onAppsPicked"    @back="back" />
-        <WalkthroughStep    v-else-if="stepIndex === 5" key="wt"  :apps="pickedApps" :host="host" @next="next" @back="back" @restart="restart" />
-        <DoneStep           v-else-if="stepIndex === 6" key="dn"  :hostname="hostname" :apps="pickedApps" :is-replay="isReplay" @finish="finish" />
+        <WelcomeStep   v-if="stepIndex === 0" key="welcome"      :is-replay="isReplay" @next="next" />
+        <UserTypeStep  v-else-if="stepIndex === 1" key="usertype" @next="onUserType" />
+        <SystemCheckStep    v-else-if="stepIndex === 2" key="sys" @next="next"            @back="back" />
+        <AdminAccountStep   v-else-if="stepIndex === 3" key="adm" @next="onAdminDone"     @back="back" />
+        <PebbleNameStep     v-else-if="stepIndex === 4" key="nm"  @next="onPebbleNameDone" @back="back" />
+        <PickAppsStep       v-else-if="stepIndex === 5" key="ap"  @next="onAppsPicked"    @back="back" />
+        <WalkthroughStep    v-else-if="stepIndex === 6" key="wt"  :apps="pickedApps" :host="host" @next="next" @back="back" @restart="restart" />
+        <DoneStep           v-else-if="stepIndex === 7" key="dn"  :hostname="hostname" :apps="pickedApps" :is-replay="isReplay" @finish="finish" />
       </transition>
     </div>
   </div>
@@ -42,6 +43,7 @@
 
 <script>
 import WelcomeStep      from '@/components/firstboot/steps/WelcomeStep.vue'
+import UserTypeStep     from '@/components/firstboot/steps/UserTypeStep.vue'
 import SystemCheckStep  from '@/components/firstboot/steps/SystemCheckStep.vue'
 import AdminAccountStep from '@/components/firstboot/steps/AdminAccountStep.vue'
 import PebbleNameStep   from '@/components/firstboot/steps/PebbleNameStep.vue'
@@ -53,6 +55,7 @@ export default {
   name: 'welcome-page',
   components: {
     WelcomeStep,
+    UserTypeStep,
     SystemCheckStep,
     AdminAccountStep,
     PebbleNameStep,
@@ -64,9 +67,10 @@ export default {
     return {
       isLoading: true,
       stepIndex: 0,
-      lastStep: 6,
+      lastStep: 7,
       adminCreated: false,
-      // Compact rail labels for steps 1..5 (welcome + done are hidden).
+      userType: '', // 'beginner' | 'normal' | 'developer' — chosen at step 1
+      // Compact rail labels for steps 2..6 (welcome + usertype + done are hidden).
       railLabels: [
         this.$t('Check'),
         this.$t('Account'),
@@ -83,8 +87,11 @@ export default {
   },
   computed: {
     railIndex() {
-      // rail items map to stepIndex 1..5
-      return Math.max(0, Math.min(this.railLabels.length - 1, this.stepIndex - 1))
+      // rail items map to stepIndex 2..6 (SystemCheck through Walkthrough)
+      return Math.max(0, Math.min(this.railLabels.length - 1, this.stepIndex - 2))
+    },
+    showRail() {
+      return this.stepIndex >= 2 && this.stepIndex < this.lastStep
     },
     isReplay() {
       return this.$route.query.replay === '1'
@@ -97,8 +104,8 @@ export default {
     next() {
       if (this.stepIndex >= this.lastStep) return
       // In replay mode, skip the AdminAccountStep — the account already exists.
-      if (this.isReplay && this.stepIndex === 1) {
-        this.stepIndex = 3
+      if (this.isReplay && this.stepIndex === 2) {
+        this.stepIndex = 4
         return
       }
       this.stepIndex += 1
@@ -108,11 +115,35 @@ export default {
       // Always skip backward past AdminAccountStep — once an account exists
       // (either created this run or pre-existing in replay) revisiting it
       // would try to re-register on top and fail confusingly.
-      if (this.stepIndex === 3 && (this.adminCreated || this.isReplay)) {
-        this.stepIndex = 1
+      if (this.stepIndex === 4 && (this.adminCreated || this.isReplay)) {
+        this.stepIndex = 2
         return
       }
       this.stepIndex -= 1
+    },
+    onUserType(payload) {
+      const type = (payload && payload.userType) || 'beginner'
+      this.userType = type
+      // Developer skips the rest of the wizard entirely.
+      if (type === 'developer') {
+        this.finishDeveloper()
+        return
+      }
+      this.next()
+    },
+    async finishDeveloper() {
+      // Mark wizard complete with developer profile + Advanced mode default.
+      this.$store.commit('SET_INTERFACE_MODE', 'advanced')
+      try {
+        await this.$api.users.setCustomStorage('kode_first_boot', {
+          complete: true,
+          completed_at: new Date().toISOString(),
+          user_type: 'developer',
+          skipped: true,
+        })
+      } catch (e) { /* non-blocking */ }
+      sessionStorage.setItem('fromWelcome', true)
+      this.$router.push('/')
     },
     restart() {
       // Reset all collected data and jump back to the welcome screen. Admin
@@ -146,8 +177,14 @@ export default {
             completed_at: new Date().toISOString(),
             hostname: this.hostname,
             apps: this.pickedApps,
+            user_type: this.userType || 'beginner',
           })
         } catch (e) { /* non-blocking */ }
+
+        // Normal-mode users default to Advanced interface; Beginner defaults to Easy.
+        if (this.userType === 'normal') {
+          this.$store.commit('SET_INTERFACE_MODE', 'advanced')
+        }
         sessionStorage.setItem('fromWelcome', true)
       }
       this.$router.push('/')

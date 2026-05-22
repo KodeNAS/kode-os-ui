@@ -722,27 +722,31 @@ export default {
           </div>
           <!--  Show other Docker container app(s) Switch End  -->
 
-          <!--  Show other Docker container app(s) Switch Start  -->
-          <div
-            class="is-flex is-align-items-center mb-1 _is-large _box hover-effect _is-radius pr-2 mr-4 ml-4"
-          >
-            <div class="is-flex is-align-items-center is-flex-grow-1 _is-normal">
-              <b-icon class="mr-1 ml-2" icon="news-outline" pack="casa" size="is-20" />
-              {{ $t("Show news feed from CasaOS Blog") }}
+          <!-- KODE OS: news-feed Settings toggle hidden. Re-enable by
+               unwrapping this <template v-if="false"> block. The
+               BrandBar scrolling feed (driven by store.state.rssSwitch)
+               is hidden in parallel — see BrandBar.vue. -->
+          <template v-if="false">
+            <div
+              class="is-flex is-align-items-center mb-1 _is-large _box hover-effect _is-radius pr-2 mr-4 ml-4"
+            >
+              <div class="is-flex is-align-items-center is-flex-grow-1 _is-normal">
+                <b-icon class="mr-1 ml-2" icon="news-outline" pack="casa" size="is-20" />
+                {{ $t("Show news feed from CasaOS Blog") }}
+              </div>
+              <div>
+                <b-field>
+                  <b-switch
+                    v-model="rss_switch"
+                    :native-value="barData.rss_switch"
+                    class="is-flex-direction-row-reverse mr-0 _small"
+                    type="is-dark"
+                    @input="rssConfirm"
+                  />
+                </b-field>
+              </div>
             </div>
-            <div>
-              <b-field>
-                <b-switch
-                  v-model="rss_switch"
-                  :native-value="barData.rss_switch"
-                  class="is-flex-direction-row-reverse mr-0 _small"
-                  type="is-dark"
-                  @input="rssConfirm"
-                />
-              </b-field>
-            </div>
-          </div>
-          <!--  Show other Docker container app(s) Switch End  -->
+          </template>
           <!--  Recommended modules Switch Start  -->
           <div
             class="is-flex is-align-items-center mb-1 _is-large _box hover-effect _is-radius pr-2 mr-4 ml-4"

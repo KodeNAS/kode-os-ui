@@ -41,7 +41,7 @@
 		>
 			<!-- App Icon Card Start -->
 			<template v-if="!isLoading">
-				<div v-for="item in appList" :id="'app-' + item.name" :key="'app-' + item.name" class="handle">
+				<div v-for="item in visibleAppList" :id="'app-' + item.name" :key="'app-' + item.name" class="handle">
 					<app-card
 						:item="item"
 						@configApp="showConfigPanel"
@@ -76,7 +76,7 @@
 			<!-- App List Start -->
 			<div class="app-list contextmenu-canvas">
 				<!-- Application not imported Start -->
-				<div v-for="item in oldAppList" :id="'app-' + item.name" :key="'app-' + item.name" class="handle">
+				<div v-for="item in visibleOldAppList" :id="'app-' + item.name" :key="'app-' + item.name" class="handle">
 					<app-card
 						:isCasa="false"
 						:item="item"
@@ -140,6 +140,18 @@ const orderConfig = 'app_order'
 
 export default {
 	mixins: [business_ShowNewAppTag, business_LinkApp, advancedGate],
+	props: {
+		// KODE OS — when set to a non-empty array of app keys (e.g.
+		// ['immich', 'jellyfin']), AppSection only renders containers whose
+		// name fuzzy-matches one of the keys. Used by BeginnerDashboard so
+		// Easy mode shows only the apps the user picked in the first-boot
+		// wizard — not every container that was already installed.
+		// Left as null/empty in Advanced mode = show everything.
+		allowedKeys: {
+			type: Array,
+			default: null,
+		},
+	},
 	data () {
 		return {
 			user_id: localStorage.getItem('user_id'),
@@ -183,6 +195,30 @@ export default {
 		},
 		exsitingAppsShow () {
 			return this.$store.state.existingAppsSwitch
+		},
+		// KODE OS — filtered view of appList using the allowedKeys prop.
+		// Fuzzy-match: an app is shown if any allowed key (e.g. "immich")
+		// appears as a substring of the container name (e.g.
+		// "immich-server", "big-bear-immich"). Empty/null keys list = all.
+		visibleAppList () {
+			if (!Array.isArray(this.allowedKeys) || this.allowedKeys.length === 0) {
+				return this.appList
+			}
+			const keys = this.allowedKeys.map(k => String(k).toLowerCase())
+			return this.appList.filter(item => {
+				const name = String(item.name || '').toLowerCase()
+				return keys.some(k => name.includes(k) || name.replace(/[-_]/g, '').includes(k))
+			})
+		},
+		visibleOldAppList () {
+			if (!Array.isArray(this.allowedKeys) || this.allowedKeys.length === 0) {
+				return this.oldAppList
+			}
+			const keys = this.allowedKeys.map(k => String(k).toLowerCase())
+			return this.oldAppList.filter(item => {
+				const name = String(item.name || '').toLowerCase()
+				return keys.some(k => name.includes(k) || name.replace(/[-_]/g, '').includes(k))
+			})
 		}
 	},
 	created () {
