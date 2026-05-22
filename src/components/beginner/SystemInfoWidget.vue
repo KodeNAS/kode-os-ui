@@ -73,13 +73,16 @@ export default {
       try {
         const res = await this.$api.sys.getUtilization()
         const data = (res && res.data && res.data.data) || {}
-        // The CasaOS utilization response shape uses {cpu: {percent}, memory: {usedPercent or percent},
-        // disk: {free, used, total}}. Be defensive about the keys.
+        // Verified shape against live pebble:
+        //   data.cpu.percent      — CPU usage %
+        //   data.mem.usedPercent  — memory usage %
+        //   data.sys_disk.{avail,used,size} — disk usage in bytes
         const cpu = (data.cpu && (data.cpu.percent || data.cpu.usedPercent)) || 0
-        const ram = (data.memory && (data.memory.usedPercent || data.memory.percent)) || 0
-        const disk = data.disk || {}
-        const free = disk.free || disk.avail || 0
-        const total = disk.total || (disk.used + free) || 0
+        const mem = data.mem || data.memory || {}
+        const ram = mem.usedPercent || mem.percent || 0
+        const disk = data.sys_disk || data.disk || {}
+        const free = Number(disk.avail || disk.free || 0)
+        const total = Number(disk.size || disk.total || (Number(disk.used) + free)) || 0
         this.cpu = Math.round(cpu)
         this.ram = Math.round(ram)
         if (total > 0) {

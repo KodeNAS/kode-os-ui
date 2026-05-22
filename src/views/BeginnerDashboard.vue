@@ -79,8 +79,7 @@
                 <WeatherWidget      v-else-if="widgetType(key) === 'weather'" />
                 <SearchWidget       v-else-if="widgetType(key) === 'search'" />
                 <SystemInfoWidget   v-else-if="widgetType(key) === 'sysInfo'" />
-                <IPAddressWidget    v-else-if="widgetType(key) === 'ipAddress'" />
-                <NetworkInfoWidget  v-else-if="widgetType(key) === 'network'" />
+                <NetworkStatusWidget v-else-if="widgetType(key) === 'network'" />
                 <AppsRunningWidget  v-else-if="widgetType(key) === 'appsRunning'" />
                 <TipsTricksWidget   v-else-if="widgetType(key) === 'tips'" />
                 <StorageWidget      v-else-if="widgetType(key) === 'storage'" />
@@ -141,8 +140,7 @@ import WeatherWidget from '@/components/beginner/WeatherWidget.vue'
 import SearchWidget from '@/components/beginner/SearchWidget.vue'
 import SystemInfoWidget from '@/components/beginner/SystemInfoWidget.vue'
 import AppShortcutWidget from '@/components/beginner/AppShortcutWidget.vue'
-import IPAddressWidget from '@/components/beginner/IPAddressWidget.vue'
-import NetworkInfoWidget from '@/components/beginner/NetworkInfoWidget.vue'
+import NetworkStatusWidget from '@/components/beginner/NetworkStatusWidget.vue'
 import AppsRunningWidget from '@/components/beginner/AppsRunningWidget.vue'
 import TipsTricksWidget from '@/components/beginner/TipsTricksWidget.vue'
 import StorageWidget from '@/components/beginner/StorageWidget.vue'
@@ -194,9 +192,9 @@ const TEMPLATES = [
     description: 'Everything turned on across four columns.',
     cols: [
       ['clock', 'weather', 'sysInfo'],
-      ['files', 'recent', 'ipAddress'],
+      ['files', 'recent', 'network'],
       ['apps'],
-      ['network', 'storage', 'appsRunning', 'family', 'addDevice', 'tips'],
+      ['storage', 'appsRunning', 'family', 'addDevice', 'tips'],
     ],
   },
 ]
@@ -208,7 +206,11 @@ const TEMPLATES = [
 const ALL_WIDGETS = [
   'files', 'recent', 'apps', 'family', 'addDevice',
   'clock', 'weather', 'search', 'sysInfo',
-  'ipAddress', 'network', 'appsRunning', 'tips', 'storage',
+  // Network now combines what was 'network' + 'ipAddress' into a single
+  // tile. Legacy 'ipAddress' / 'network' keys are still accepted by the
+  // loader and silently mapped to 'network' so existing saved layouts
+  // round-trip.
+  'network', 'appsRunning', 'tips', 'storage',
 ]
 const KNOWN_APP_KEYS = ['immich', 'jellyfin', 'filebrowser', 'pihole', 'homeassistant']
 
@@ -220,10 +222,20 @@ function widgetTypeOf(k) {
 function isValidWidgetKey(k) {
   const type = widgetTypeOf(k)
   if (ALL_WIDGETS.includes(type)) return true
+  // Legacy keys from prior versions, silently accepted (loader migrates).
+  if (type === 'ipAddress') return true
   if (type.startsWith('app:')) {
     return KNOWN_APP_KEYS.includes(type.slice(4))
   }
   return false
+}
+
+function normalizeWidgetKey(k) {
+  // Map deprecated keys to their current equivalents so saved layouts
+  // keep working after consolidation.
+  const t = widgetTypeOf(k)
+  if (t === 'ipAddress') return 'network'
+  return k
 }
 
 // Default 3-column layout: small tiles on the sides, the apps grid in
@@ -254,8 +266,7 @@ export default {
     SearchWidget,
     SystemInfoWidget,
     AppShortcutWidget,
-    IPAddressWidget,
-    NetworkInfoWidget,
+    NetworkStatusWidget,
     AppsRunningWidget,
     TipsTricksWidget,
     StorageWidget,
@@ -325,7 +336,14 @@ export default {
         // Sanitise: drop unknown keys.
         const cleaned = parsed.map(col => {
           if (!Array.isArray(col)) return []
-          return col.filter(k => isValidWidgetKey(k))
+          // Filter invalid keys + normalize deprecated keys (e.g. ipAddress -> network).
+          const out = []
+          for (const k of col) {
+            if (!isValidWidgetKey(k)) continue
+            const normalized = normalizeWidgetKey(k)
+            if (!out.includes(normalized)) out.push(normalized)
+          }
+          return out
         })
         // Add missing default widgets (generic only — app shortcuts are
         // explicit opt-in via the picker).

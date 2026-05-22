@@ -118,8 +118,7 @@ const OTHER_WIDGETS = [
   { key: 'search',      icon: 'show-search-outline', title: 'Web search',      desc: 'Search box that opens DuckDuckGo (or your engine) in a new tab.' },
   { key: 'sysInfo',     icon: 'cpu-outline',         title: 'System info',     desc: 'CPU, memory, and disk usage. Updates every 10 s.' },
   { key: 'storage',     icon: 'folder',              title: 'Storage',         desc: 'Disk usage with health indicator. Updates every 30 s.' },
-  { key: 'network',     icon: 'wifi',                title: 'Network',         desc: 'Active interface (Ethernet/Wi-Fi) + current rx/tx. Updates every 5 s.' },
-  { key: 'ipAddress',   icon: 'computer-outline',    title: 'IP address',      desc: 'Your pebble’s local IP and hostname.' },
+  { key: 'network',     icon: 'wifi',                title: 'Network',         desc: 'Active interface (Ethernet/Wi-Fi), local hostname, and total rx/tx. Updates every 5 s.' },
   { key: 'appsRunning', icon: 'apps-outline',        title: 'Apps running',    desc: 'Count of apps currently running on your pebble.' },
   { key: 'tips',        icon: 'information-outline', title: 'Tips & tricks',   desc: 'Cycles through quick tips for getting more out of KODE OS.' },
   { key: 'files',       icon: 'folder',              title: 'Files',           desc: 'Tile that opens the built-in CasaOS file browser.' },
@@ -263,7 +262,6 @@ export default {
   &.is-sysInfo     { background: linear-gradient(135deg, #a83239, #d04a51); }
   &.is-storage     { background: linear-gradient(135deg, #4b5563, #6b7280); }
   &.is-network     { background: linear-gradient(135deg, #2d5f4e, #3f7a66); }
-  &.is-ipAddress   { background: linear-gradient(135deg, #1e4a72, #2d6aa6); }
   &.is-appsRunning { background: linear-gradient(135deg, #2d5f4e, #3f7a66); }
   &.is-tips        { background: linear-gradient(135deg, #c47f00, #e6a02a); }
   &.is-files       { background: linear-gradient(135deg, #2d5f4e, #3f7a66); }

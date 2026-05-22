@@ -43,6 +43,7 @@ export default {
       total: 0,
       used: 0,
       free: 0,
+      health: true,
       pollId: null,
     }
   },
@@ -59,12 +60,13 @@ export default {
       return 'is-ok'
     },
     healthLabel() {
+      if (!this.health) return this.$t('Check disk')
       if (this.usedPct >= 90) return this.$t('Full')
       if (this.usedPct >= 70) return this.$t('Filling')
       return this.$t('Healthy')
     },
     healthClass() {
-      if (this.usedPct >= 90) return 'is-danger'
+      if (!this.health || this.usedPct >= 90) return 'is-danger'
       if (this.usedPct >= 70) return 'is-warning'
       return 'is-ok'
     },
@@ -80,10 +82,14 @@ export default {
     async fetch() {
       try {
         const res = await this.$api.sys.getUtilization()
-        const disk = (res && res.data && res.data.data && res.data.data.disk) || {}
-        this.free = disk.free || disk.avail || 0
-        this.used = disk.used || 0
-        this.total = disk.total || (this.used + this.free)
+        const data = (res && res.data && res.data.data) || {}
+        // Verified shape against the live pebble: data.sys_disk has
+        // { avail, used, size, health }. The "total" is `size`.
+        const disk = data.sys_disk || data.disk || {}
+        this.free = Number(disk.avail || disk.free || 0)
+        this.used = Number(disk.used || 0)
+        this.total = Number(disk.size || disk.total || (this.used + this.free))
+        this.health = disk.health !== false  // true unless explicitly false
       } catch (e) {
         /* keep prior */
       } finally {
