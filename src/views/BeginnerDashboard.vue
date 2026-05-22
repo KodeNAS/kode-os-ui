@@ -57,7 +57,7 @@
                 v-for="key in column"
                 :key="key"
                 class="widget-slot"
-                :class="`is-${key}`"
+                :class="slotClass(key)"
                 :data-tour="tourKeyFor(key)"
               >
                 <FilesTile          v-if="key === 'files'" />
@@ -69,6 +69,7 @@
                 <SearchWidget       v-else-if="key === 'search'" />
                 <SystemInfoWidget   v-else-if="key === 'sysInfo'" />
                 <AppSection         v-else-if="key === 'apps'" ref="apps" :allowed-keys="pickedApps" />
+                <AppShortcutWidget  v-else-if="isAppShortcut(key)" :app-key="appKeyFor(key)" />
 
                 <button
                   v-if="editMode"
@@ -123,12 +124,24 @@ import ClockWidget from '@/components/beginner/ClockWidget.vue'
 import WeatherWidget from '@/components/beginner/WeatherWidget.vue'
 import SearchWidget from '@/components/beginner/SearchWidget.vue'
 import SystemInfoWidget from '@/components/beginner/SystemInfoWidget.vue'
+import AppShortcutWidget from '@/components/beginner/AppShortcutWidget.vue'
 import AddWidgetPanel from '@/components/beginner/AddWidgetPanel.vue'
 import { maybeStartEasyTourOnce } from '@/service/tour'
 
 const LAYOUT_KEY = 'kode_columns_layout_v2'
 const WEIGHTS_KEY = 'kode_columns_weights_v1'
+// Generic widget keys. Per-app shortcuts use the `app:<id>` prefix and
+// are validated separately.
 const ALL_WIDGETS = ['files', 'recent', 'apps', 'family', 'addDevice', 'clock', 'weather', 'search', 'sysInfo']
+const KNOWN_APP_KEYS = ['immich', 'jellyfin', 'filebrowser', 'pihole', 'homeassistant']
+
+function isValidWidgetKey(k) {
+  if (ALL_WIDGETS.includes(k)) return true
+  if (typeof k === 'string' && k.startsWith('app:')) {
+    return KNOWN_APP_KEYS.includes(k.slice(4))
+  }
+  return false
+}
 
 // Default 3-column layout: small tiles on the sides, the apps grid in
 // the middle column where it has room to breathe.
@@ -157,6 +170,7 @@ export default {
     WeatherWidget,
     SearchWidget,
     SystemInfoWidget,
+    AppShortcutWidget,
   },
   data() {
     return {
@@ -209,12 +223,14 @@ export default {
         // strand existing layouts).
         const cleaned = parsed.map(col => {
           if (!Array.isArray(col)) return []
-          return col.filter(k => ALL_WIDGETS.includes(k))
+          return col.filter(k => isValidWidgetKey(k))
         })
+        // Add any default generic widget that's missing entirely so future
+        // additions don't strand existing layouts. App-shortcut keys are
+        // never auto-injected — they're explicit opt-in via the picker.
         const present = new Set()
         cleaned.forEach(col => col.forEach(k => present.add(k)))
         const missing = ALL_WIDGETS.filter(k => !present.has(k))
-        // Drop missing widgets into the first column as a safe fallback.
         if (missing.length > 0) cleaned[0].push(...missing)
         return cleaned
       } catch (e) {
@@ -350,6 +366,17 @@ export default {
     },
     tourKeyFor(key) {
       return ({ files: 'files', recent: 'recent', family: 'family', addDevice: 'adddevice', apps: 'apps' })[key]
+    },
+    isAppShortcut(key) {
+      return typeof key === 'string' && key.startsWith('app:')
+    },
+    appKeyFor(key) {
+      return this.isAppShortcut(key) ? key.slice(4) : ''
+    },
+    slotClass(key) {
+      // Convert "app:immich" into "is-app-immich" so scoped CSS rules can
+      // target either generic widgets or specific app shortcuts.
+      return this.isAppShortcut(key) ? `is-app-${this.appKeyFor(key)}` : `is-${key}`
     },
   },
 }

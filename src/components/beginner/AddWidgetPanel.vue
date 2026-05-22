@@ -14,8 +14,71 @@
       <p class="intro">{{ $t('Pick a widget to add to your dashboard. Already-placed widgets are dimmed.') }}</p>
 
       <div class="widget-grid">
+        <!-- Apps parent entry — expandable into individual app shortcuts -->
+        <div class="widget-option is-group" :class="{ 'is-open': appsOpen }">
+          <button
+            type="button"
+            class="widget-option-row"
+            @click="appsOpen = !appsOpen"
+          >
+            <span class="widget-option-icon is-apps">
+              <b-icon icon="apps-outline" pack="casa" size="is-medium" />
+            </span>
+            <span class="widget-option-text">
+              <span class="widget-option-title">{{ $t('Apps') }}</span>
+              <span class="widget-option-desc">{{ $t('Shortcut tiles for each installed app, or the whole grid as one tile.') }}</span>
+            </span>
+            <b-icon
+              :icon="appsOpen ? 'arrow-down' : 'arrow-right'"
+              pack="casa"
+              size="is-small"
+              class="widget-option-chevron"
+            />
+          </button>
+
+          <div v-show="appsOpen" class="widget-option-children">
+            <button
+              v-for="app in APP_OPTIONS"
+              :key="app.key"
+              type="button"
+              class="widget-option child"
+              :class="{ 'is-placed': placedSet.has(`app:${app.key}`) }"
+              :disabled="placedSet.has(`app:${app.key}`)"
+              @click="add(`app:${app.key}`)"
+            >
+              <span class="widget-option-icon" :class="`is-${app.key}`">
+                <b-icon :icon="app.icon" pack="casa" size="is-small" />
+              </span>
+              <span class="widget-option-text">
+                <span class="widget-option-title">{{ app.title }}</span>
+                <span class="widget-option-desc">{{ app.tagline }}</span>
+              </span>
+              <span v-if="placedSet.has(`app:${app.key}`)" class="widget-option-pill">{{ $t('On dashboard') }}</span>
+            </button>
+
+            <!-- Whole-grid option lives under the same parent for discoverability -->
+            <button
+              type="button"
+              class="widget-option child"
+              :class="{ 'is-placed': placedSet.has('apps') }"
+              :disabled="placedSet.has('apps')"
+              @click="add('apps')"
+            >
+              <span class="widget-option-icon is-apps-grid">
+                <b-icon icon="apps-outline" pack="casa" size="is-small" />
+              </span>
+              <span class="widget-option-text">
+                <span class="widget-option-title">{{ $t('All apps (grid)') }}</span>
+                <span class="widget-option-desc">{{ $t('A single tile that shows every installed app. Best in a wide column.') }}</span>
+              </span>
+              <span v-if="placedSet.has('apps')" class="widget-option-pill">{{ $t('On dashboard') }}</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Flat (non-grouped) widget options -->
         <button
-          v-for="w in catalog"
+          v-for="w in OTHER_WIDGETS"
           :key="w.key"
           type="button"
           class="widget-option"
@@ -30,7 +93,7 @@
             <span class="widget-option-title">{{ w.title }}</span>
             <span class="widget-option-desc">{{ w.desc }}</span>
           </span>
-          <span v-if="placedSet.has(w.key)" class="widget-option-pill">{{ $t('Already on dashboard') }}</span>
+          <span v-if="placedSet.has(w.key)" class="widget-option-pill">{{ $t('On dashboard') }}</span>
         </button>
       </div>
     </section>
@@ -38,61 +101,24 @@
 </template>
 
 <script>
-const CATALOG = [
-  {
-    key: 'clock',
-    icon: 'time-outline',
-    title: 'Clock',
-    desc: 'Local time + date. Updates every second.',
-  },
-  {
-    key: 'weather',
-    icon: 'wallpaper-outline',
-    title: 'Weather',
-    desc: 'Current temperature and conditions, refreshed every 15 min.',
-  },
-  {
-    key: 'search',
-    icon: 'show-search-outline',
-    title: 'Web search',
-    desc: 'Search bar that opens DuckDuckGo (or your chosen engine) in a new tab.',
-  },
-  {
-    key: 'sysInfo',
-    icon: 'cpu-outline',
-    title: 'System info',
-    desc: 'CPU, memory, and disk usage on your pebble. Updates every 10 s.',
-  },
-  {
-    key: 'files',
-    icon: 'folder',
-    title: 'Files',
-    desc: 'Open the built-in file browser.',
-  },
-  {
-    key: 'recent',
-    icon: 'time-outline',
-    title: 'Recent activity',
-    desc: 'Your six most recently changed files.',
-  },
-  {
-    key: 'family',
-    icon: 'account-outline',
-    title: 'On your pebble',
-    desc: 'Family member accounts.',
-  },
-  {
-    key: 'addDevice',
-    icon: 'plus-outline',
-    title: 'Add a device',
-    desc: 'Connect a phone, computer, or smart TV.',
-  },
-  {
-    key: 'apps',
-    icon: 'apps-outline',
-    title: 'Apps',
-    desc: 'Grid of installed apps. Big — best in a wide column.',
-  },
+// Five recommended apps shown when the Apps group is expanded.
+const APP_OPTIONS = [
+  { key: 'immich',        icon: 'image',          title: 'Immich',         tagline: 'Photos & video backup from your phone' },
+  { key: 'jellyfin',      icon: 'video',          title: 'Jellyfin',       tagline: 'Movies & music to any screen' },
+  { key: 'filebrowser',   icon: 'folder',         title: 'File Browser',   tagline: 'Open the CasaOS file browser app' },
+  { key: 'pihole',        icon: 'shield-outline', title: 'Pi-hole',        tagline: 'Network-wide ad blocker' },
+  { key: 'homeassistant', icon: 'home-outline',   title: 'Home Assistant', tagline: 'Smart-home hub' },
+]
+
+const OTHER_WIDGETS = [
+  { key: 'clock',     icon: 'time-outline',        title: 'Clock',           desc: 'Local time + date.' },
+  { key: 'weather',   icon: 'wallpaper-outline',   title: 'Weather',         desc: 'Current temperature + conditions, refreshed every 15 min.' },
+  { key: 'search',    icon: 'show-search-outline', title: 'Web search',      desc: 'Search box that opens DuckDuckGo (or your engine) in a new tab.' },
+  { key: 'sysInfo',   icon: 'cpu-outline',         title: 'System info',     desc: 'CPU, memory, and disk usage. Updates every 10 s.' },
+  { key: 'files',     icon: 'folder',              title: 'Files',           desc: 'Tile that opens the built-in CasaOS file browser.' },
+  { key: 'recent',    icon: 'time-outline',        title: 'Recent activity', desc: 'Your six most recently changed files.' },
+  { key: 'family',    icon: 'account-outline',     title: 'On your pebble',  desc: 'Family member accounts.' },
+  { key: 'addDevice', icon: 'plus-outline',        title: 'Add a device',    desc: 'Connect a phone, computer, or smart TV.' },
 ]
 
 export default {
@@ -101,7 +127,11 @@ export default {
     placed: { type: Array, default: () => [] },
   },
   data() {
-    return { catalog: CATALOG }
+    return {
+      APP_OPTIONS,
+      OTHER_WIDGETS,
+      appsOpen: true,  // start expanded so the recommended apps are visible
+    }
   },
   computed: {
     placedSet() {
@@ -118,7 +148,7 @@ export default {
 </script>
 
 <style lang="scss" scoped>
-.add-widget-modal { width: 560px; max-width: 95vw; }
+.add-widget-modal { width: 580px; max-width: 95vw; }
 
 .intro {
   font-size: 0.9375rem;
@@ -128,23 +158,23 @@ export default {
 
 .widget-grid {
   display: grid;
-  gap: 0.6rem;
+  gap: 0.55rem;
   grid-template-columns: 1fr;
 }
 
 .widget-option {
   position: relative;
   display: grid;
-  grid-template-columns: 44px 1fr;
+  grid-template-columns: 44px 1fr auto;
   align-items: center;
-  gap: 0.9rem;
-  padding: 0.85rem 1rem;
+  gap: 0.85rem;
+  padding: 0.75rem 1rem;
   text-align: left;
   background: rgba(255, 255, 255, 0.92);
   border: 2px solid rgba(0, 0, 0, 0.06);
   border-radius: 12px;
   cursor: pointer;
-  transition: border-color 0.15s, transform 0.15s;
+  transition: border-color 0.15s, transform 0.15s, background 0.15s;
 
   &:hover:not(:disabled) {
     border-color: rgba(45, 95, 78, 0.55);
@@ -156,6 +186,50 @@ export default {
     cursor: not-allowed;
     opacity: 0.65;
   }
+
+  &.is-group {
+    cursor: default;
+    background: rgba(45, 95, 78, 0.06);
+    border-color: rgba(45, 95, 78, 0.18);
+
+    &.is-open {
+      background: rgba(45, 95, 78, 0.08);
+    }
+  }
+
+  &.child {
+    grid-template-columns: 32px 1fr auto;
+    padding: 0.6rem 0.85rem;
+    background: rgba(255, 255, 255, 0.7);
+
+    .widget-option-icon {
+      width: 32px;
+      height: 32px;
+      border-radius: 9px;
+    }
+  }
+}
+
+.widget-option-row {
+  display: contents;  // pass grid layout through to children
+  background: none;
+  border: none;
+  cursor: pointer;
+  text-align: left;
+}
+
+.widget-option-chevron {
+  color: rgba(0, 0, 0, 0.45);
+}
+
+.widget-option-children {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  margin-top: 0.5rem;
+  padding-left: 0.75rem;
+  border-left: 2px solid rgba(45, 95, 78, 0.18);
 }
 
 .widget-option-icon {
@@ -175,7 +249,14 @@ export default {
   &.is-recent    { background: linear-gradient(135deg, #b45f6d, #d97e8c); }
   &.is-family    { background: linear-gradient(135deg, #c47f00, #e6a02a); }
   &.is-addDevice { background: linear-gradient(135deg, #2d5f4e, #3f7a66); }
-  &.is-apps      { background: linear-gradient(135deg, #1f2937, #4b5563); }
+  &.is-apps,
+  &.is-apps-grid { background: linear-gradient(135deg, #1f2937, #4b5563); }
+  // App-specific colors (mirror AppShortcutWidget)
+  &.is-immich        { background: linear-gradient(135deg, #b45f6d, #d97e8c); }
+  &.is-jellyfin      { background: linear-gradient(135deg, #5e6ad2, #7c8af0); }
+  &.is-filebrowser   { background: linear-gradient(135deg, #2d5f4e, #3f7a66); }
+  &.is-pihole        { background: linear-gradient(135deg, #a83239, #d04a51); }
+  &.is-homeassistant { background: linear-gradient(135deg, #1e4a72, #2d6aa6); }
 }
 
 .widget-option-text {
@@ -198,9 +279,6 @@ export default {
 }
 
 .widget-option-pill {
-  position: absolute;
-  top: 0.5rem;
-  right: 0.5rem;
   font-size: 0.6875rem;
   text-transform: uppercase;
   letter-spacing: 0.04em;
