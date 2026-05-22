@@ -49,10 +49,11 @@ import AppSection from '@/components/Apps/AppSection.vue'
 import RecentActivityTile from '@/components/beginner/RecentActivityTile.vue'
 import FamilyTile from '@/components/beginner/FamilyTile.vue'
 import AddDeviceTile from '@/components/beginner/AddDeviceTile.vue'
+import FilesTile from '@/components/beginner/FilesTile.vue'
 import { maybeStartEasyTourOnce } from '@/service/tour'
 
 const ORDER_KEY = 'kode_tile_order'
-const DEFAULT_ORDER = ['recent', 'family', 'addDevice']
+const DEFAULT_ORDER = ['files', 'recent', 'family', 'addDevice']
 
 export default {
   name: 'BeginnerDashboard',
@@ -62,12 +63,14 @@ export default {
     RecentActivityTile,
     FamilyTile,
     AddDeviceTile,
+    FilesTile,
   },
   data() {
     return {
       pickedApps: [],
       tileOrder: this.loadTileOrder(),
       tileMap: {
+        files: 'FilesTile',
         recent: 'RecentActivityTile',
         family: 'FamilyTile',
         addDevice: 'AddDeviceTile',
@@ -119,7 +122,7 @@ export default {
       } catch (e) { /* quota / disabled storage — accept loss */ }
     },
     tourKeyFor(key) {
-      return ({ recent: 'recent', family: 'family', addDevice: 'adddevice' })[key]
+      return ({ files: 'files', recent: 'recent', family: 'family', addDevice: 'adddevice' })[key]
     },
   },
 }

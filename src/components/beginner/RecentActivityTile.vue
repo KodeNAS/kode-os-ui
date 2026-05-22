@@ -1,5 +1,8 @@
 <template>
-  <div class="kode-tile recent-activity-tile">
+  <div
+    class="kode-tile recent-activity-tile"
+    :title="hintModeOn ? hintLabel : null"
+  >
     <header class="tile-header">
       <h2 class="tile-title">{{ $t('Recent activity') }}</h2>
     </header>
@@ -30,8 +33,11 @@
 </template>
 
 <script>
+import { hintMode } from '@/mixins/hintMode'
+
 export default {
   name: 'RecentActivityTile',
+  mixins: [hintMode],
   inject: {
     homeShowFiles: { default: null },
   },
@@ -41,6 +47,11 @@ export default {
       items: [],
       HOME_PATH: '/DATA',
     }
+  },
+  computed: {
+    hintLabel() {
+      return this.$t('Your latest files and folders in /DATA. Click any row to open it in the file browser.')
+    },
   },
   created() {
     this.load()

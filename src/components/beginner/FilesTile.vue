@@ -1,42 +1,40 @@
 <template>
   <button
     type="button"
-    class="kode-tile add-device-tile"
+    class="kode-tile files-tile"
     :title="hintModeOn ? hintLabel : null"
+    :aria-label="$t('Open Files')"
     @click="open"
   >
-    <span class="add-device-icon">
-      <b-icon icon="plus-outline" pack="casa" size="is-medium" />
+    <span class="files-icon">
+      <b-icon icon="folder" pack="casa" size="is-medium" />
     </span>
-    <span class="add-device-text">
-      <span class="add-device-title">{{ $t('Add a device') }}</span>
-      <span class="add-device-desc">{{ $t('Phone, computer, or smart TV') }}</span>
+    <span class="files-text">
+      <span class="files-title">{{ $t('Files') }}</span>
+      <span class="files-desc">{{ $t('Browse everything on your pebble') }}</span>
     </span>
   </button>
 </template>
 
 <script>
-import AddDeviceWizard from '@/components/wizard/AddDeviceWizard.vue'
 import { hintMode } from '@/mixins/hintMode'
 
 export default {
-  name: 'AddDeviceTile',
+  name: 'FilesTile',
   mixins: [hintMode],
+  inject: {
+    homeShowFiles: { default: null },
+  },
   computed: {
     hintLabel() {
-      return this.$t('Three-step wizard to connect a new device: phone (Immich photo backup QR), computer (file shares), or smart TV (Jellyfin).')
+      return this.$t('Built into your pebble. Opens the file browser with everything in /DATA.')
     },
   },
   methods: {
     open() {
-      this.$buefy.modal.open({
-        parent: this,
-        component: AddDeviceWizard,
-        hasModalCard: true,
-        trapFocus: true,
-        scroll: 'keep',
-        animation: 'zoom-in',
-      })
+      if (typeof this.homeShowFiles === 'function') {
+        this.homeShowFiles('/DATA')
+      }
     },
   },
 }
@@ -69,7 +67,7 @@ export default {
   }
 }
 
-.add-device-icon {
+.files-icon {
   flex: 0 0 44px;
   height: 44px;
   border-radius: 12px;
@@ -80,19 +78,19 @@ export default {
   justify-content: center;
 }
 
-.add-device-text {
+.files-text {
   display: flex;
   flex-direction: column;
   min-width: 0;
 }
 
-.add-device-title {
+.files-title {
   font-size: 1rem;
   font-weight: 500;
   color: #1f2937;
 }
 
-.add-device-desc {
+.files-desc {
   font-size: 0.8125rem;
   color: rgba(0, 0, 0, 0.6);
   margin-top: 1px;

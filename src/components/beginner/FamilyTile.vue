@@ -1,5 +1,8 @@
 <template>
-  <div class="kode-tile family-tile">
+  <div
+    class="kode-tile family-tile"
+    :title="hintModeOn ? hintLabel : null"
+  >
     <header class="tile-header">
       <h2 class="tile-title">{{ $t('On your pebble') }}</h2>
       <button
@@ -38,11 +41,18 @@
 
 <script>
 import AddUserModal from './AddUserModal.vue'
+import { hintMode } from '@/mixins/hintMode'
 
 const ROLES_KEY = 'kode_user_roles'
 
 export default {
   name: 'FamilyTile',
+  mixins: [hintMode],
+  computed: {
+    hintLabel() {
+      return this.$t('Family accounts on your pebble. Root admin = full control; viewers see files and apps but don\'t change settings. + adds more (coming soon).')
+    },
+  },
   data() {
     return {
       isLoading: true,
