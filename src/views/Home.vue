@@ -7,6 +7,7 @@ import CoreService from '@/components/CoreService.vue'
 import AppSection from '@/components/Apps/AppSection.vue'
 import FilePanel from '@/components/filebrowser/FilePanel.vue'
 import UpdateCompleteModal from '@/components/settings/UpdateCompleteModal.vue'
+import BeginnerDashboard from '@/views/BeginnerDashboard.vue'
 import { mixin } from '@/mixins/mixin'
 import events from '@/events/events'
 
@@ -21,6 +22,7 @@ export default {
     TopBar,
     CoreService,
     FilePanel,
+    BeginnerDashboard,
   },
   mixins: [mixin],
   provide() {
@@ -48,6 +50,9 @@ export default {
     },
     searchbarShow() {
       return this.$store.state.searchEngineSwitch
+    },
+    isBeginner() {
+      return this.$store.getters.isBeginner
     },
   },
   created() {
@@ -249,8 +254,11 @@ export default {
     <TopBar v-animate-css="topBarAni" :init-bar-data="barData" @showSideBar="showSideBar" />
     <!-- NavBar End -->
 
+    <!-- Beginner Dashboard (KODE OS) — replaces the dense Advanced layout below -->
+    <BeginnerDashboard v-if="isBeginner" />
+
     <!-- Content Start -->
-    <div class="contents  pt-55 contextmenu-canvas" @contextmenu.prevent="openHomeContaxtMenu">
+    <div v-else class="contents  pt-55 contextmenu-canvas" @contextmenu.prevent="openHomeContaxtMenu">
       <div class="container">
         <div class="columns is-variable is-2">
           <div class="column is-one-quarter slider-content">
