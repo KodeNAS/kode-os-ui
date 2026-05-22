@@ -52,10 +52,11 @@ export default {
   padding-top: 55px;
 }
 
-/* Brief §7 — dark scrim so white text reads on the misty wallpaper. */
+/* The global wallpaper scrim in App.vue already darkens the background
+   uniformly; this overlay is now a transparent wrapper that just holds
+   layout padding. Kept as a hook in case we want a per-mode tint later. */
 .beginner-overlay {
   min-height: 100%;
-  background: linear-gradient(180deg, rgba(15, 25, 30, 0.30), rgba(15, 25, 30, 0.55));
   padding: 2.5rem 0 6rem;
 }
 

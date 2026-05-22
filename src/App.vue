@@ -3,6 +3,10 @@
 		<template v-if="$route.meta.showBackground">
 			<!-- Background Layer Start -->
 			<casa-wallpaper :animate="isWelcome?initAni:noneAni"></casa-wallpaper>
+			<!-- KODE OS: uniform dark scrim over the wallpaper. Sits above the
+			     image layer and below all UI so darkening is consistent across
+			     every route that shows the wallpaper. -->
+			<div class="kode-wallpaper-scrim"></div>
 			<!-- Background Layer End -->
 
 			<div class="base-bar is-flex"
@@ -160,6 +164,14 @@ _____             _____ _____
 		position: fixed;
 		bottom: 0;
 		z-index: 10;
+	}
+
+	.kode-wallpaper-scrim {
+		position: fixed;
+		inset: 0;
+		background: rgba(15, 25, 30, 0.45);
+		pointer-events: none;
+		z-index: 1;
 	}
 }
 </style>

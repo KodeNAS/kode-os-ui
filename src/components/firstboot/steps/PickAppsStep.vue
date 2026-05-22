@@ -44,20 +44,23 @@
           </span>
         </button>
 
-        <!-- Hover/focus detail popover -->
-        <div class="app-detail">
-          <p class="detail-description">{{ app.description }}</p>
+        <!-- Inline expanding detail panel — pushes following cards down
+             with a smooth max-height + slide-in transition. -->
+        <div class="app-detail-wrap">
+          <div class="app-detail">
+            <p class="detail-description">{{ app.description }}</p>
 
-          <div class="detail-block">
-            <h4 class="detail-heading">{{ $t('Setup') }}</h4>
-            <p class="detail-body">{{ app.setup }}</p>
-          </div>
+            <div class="detail-block">
+              <h4 class="detail-heading">{{ $t('Setup') }}</h4>
+              <p class="detail-body">{{ app.setup }}</p>
+            </div>
 
-          <div class="detail-block">
-            <h4 class="detail-heading">{{ $t('Use it for') }}</h4>
-            <ul class="detail-list">
-              <li v-for="use in app.usedFor" :key="use">{{ use }}</li>
-            </ul>
+            <div class="detail-block">
+              <h4 class="detail-heading">{{ $t('Use it for') }}</h4>
+              <ul class="detail-list">
+                <li v-for="use in app.usedFor" :key="use">{{ use }}</li>
+              </ul>
+            </div>
           </div>
         </div>
       </div>
@@ -196,17 +199,16 @@ export default {
   margin-bottom: 1.5rem;
 }
 
-/* Wrap allows the absolute-positioned detail popover to anchor to the card. */
 .app-option-wrap {
   position: relative;
 
-  &:hover,
-  &:focus-within {
-    z-index: 5;
+  &:hover .app-detail-wrap,
+  &:focus-within .app-detail-wrap {
+    grid-template-rows: 1fr;
+    margin-top: 0.4rem;
 
     .app-detail {
       opacity: 1;
-      pointer-events: auto;
       transform: translateY(0);
     }
   }
@@ -220,16 +222,22 @@ export default {
   gap: 0.85rem;
   padding: 0.85rem 1rem;
   text-align: left;
-  background: rgba(255, 255, 255, 0.7);
-  border: 2px solid rgba(0, 0, 0, 0.08);
+  background: rgba(255, 255, 255, 0.92);
+  border: 2px solid rgba(255, 255, 255, 0.5);
   border-radius: 12px;
   cursor: pointer;
-  transition: border-color 0.15s, background 0.15s;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.85),
+    0 4px 16px rgba(0, 0, 0, 0.15);
+  transition: border-color 0.15s, background 0.15s, transform 0.15s;
 
-  &:hover { border-color: rgba(45, 95, 78, 0.4); }
+  &:hover {
+    border-color: rgba(45, 95, 78, 0.55);
+    transform: translateY(-1px);
+  }
   &.is-selected {
     border-color: #2d5f4e;
-    background: rgba(45, 95, 78, 0.10);
+    background: rgba(225, 240, 234, 0.95);
   }
 }
 
@@ -290,26 +298,38 @@ export default {
   .is-selected & { opacity: 1; }
 }
 
-/* Detail popover — sits below the card, drops above following cards. */
+/* Inline expanding detail — collapsed via a CSS grid row-template
+   transition so the natural height of the content drives the animation.
+   The transform on .app-detail layers a slide-down on top of that. */
+.app-detail-wrap {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+              margin-top 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  margin-top: 0;
+}
+
 .app-detail {
-  position: absolute;
-  top: calc(100% + 6px);
-  left: 0;
-  right: 0;
-  z-index: 10;
-  padding: 1rem 1.1rem;
+  overflow: hidden;
+  min-height: 0;
+  padding: 0 1.1rem;
   background: rgba(255, 255, 255, 0.96);
   backdrop-filter: blur(24px) saturate(180%);
   -webkit-backdrop-filter: blur(24px) saturate(180%);
-  border: 1px solid rgba(255, 255, 255, 0.6);
   border-radius: 14px;
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.85),
-    0 14px 36px rgba(0, 0, 0, 0.22);
+    0 8px 24px rgba(0, 0, 0, 0.18);
   opacity: 0;
-  pointer-events: none;
-  transform: translateY(-4px);
-  transition: opacity 0.18s ease, transform 0.18s ease;
+  transform: translateY(-6px);
+  transition: opacity 0.22s ease 0.05s,
+              transform 0.3s cubic-bezier(0.4, 0, 0.2, 1) 0.05s,
+              padding 0.3s ease;
+}
+
+.app-option-wrap:hover .app-detail,
+.app-option-wrap:focus-within .app-detail {
+  padding: 1rem 1.1rem;
 }
 
 .detail-description {

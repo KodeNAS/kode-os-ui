@@ -146,9 +146,12 @@ export default {
 .firstboot-shell {
   width: 560px;
   max-width: 100%;
-  background: linear-gradient(180deg, rgba(15, 25, 30, 0.30), rgba(15, 25, 30, 0.55));
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
+  /* Global wallpaper scrim in App.vue handles base darkening. Shell adds
+     a touch more so the card pops off the wallpaper evenly. */
+  background: rgba(15, 25, 30, 0.30);
+  backdrop-filter: blur(16px) saturate(160%);
+  -webkit-backdrop-filter: blur(16px) saturate(160%);
+  border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 22px;
   padding: 2rem;
   box-shadow: 0 18px 48px rgba(0, 0, 0, 0.35);
