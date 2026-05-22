@@ -442,11 +442,20 @@ export default {
     LayoutSettingsPanel,
   },
   data() {
+    // Compute sequentially so each helper sees the previous values via the
+    // local consts. Earlier this used `this.columnCount` inside loadWeights
+    // — but inside data(), `this` doesn't yet have those reactive props,
+    // so loadWeights silently fell back to a 3-length array even when 4
+    // columns were saved. That mismatch is what caused the "broken 3
+    // column" jump on hard refresh in 4-column mode.
+    const columns = this.loadLayout()
+    const columnCount = columns.length
+    const colWeights = this.loadWeights(columnCount)
     return {
       pickedApps: [],
-      columnCount: this.loadColumnCount(),
-      columns: this.loadLayout(),
-      colWeights: this.loadWeights(),
+      columnCount,
+      columns,
+      colWeights,
       activeDivider: -1,
       editMode: false,
       templates: TEMPLATES,
@@ -625,12 +634,16 @@ export default {
         localStorage.setItem(LAYOUT_KEY, JSON.stringify(clean))
       } catch (e) { /* ignore quota / disabled storage */ }
     },
-    loadWeights() {
+    loadWeights(targetCount) {
+      // Explicit targetCount param — caller passes the actual columns
+      // length so we don't depend on this.columnCount (which may not be
+      // assigned yet during data() initialization).
+      const count = targetCount || this.columnCount || 3
       try {
         const raw = localStorage.getItem(WEIGHTS_KEY)
         if (raw) {
           const parsed = JSON.parse(raw)
-          if (Array.isArray(parsed) && parsed.length === this.columnCount) {
+          if (Array.isArray(parsed) && parsed.length === count) {
             return parsed.map(w => {
               const n = Number(w)
               if (!isFinite(n)) return 1
@@ -639,8 +652,7 @@ export default {
           }
         }
       } catch (e) { /* fall through */ }
-      // Default to equal weights for whatever column count we have.
-      return Array(this.columnCount || 3).fill(1)
+      return Array(count).fill(1)
     },
     saveWeights() {
       try {
@@ -1008,8 +1020,8 @@ export default {
   }
 }
 
-/* Three fr-weighted columns plus two divider tracks. gridStyle (inline)
-   sets the actual fr values per session. */
+/* Multi-column grid with 2/3/4 fr-weighted columns + N-1 divider tracks.
+   gridStyle (inline) sets the actual fr values per session. */
 .beginner-grid {
   max-width: 1480px;
   margin: 0 auto;
@@ -1018,11 +1030,12 @@ export default {
   gap: 1rem;
   align-items: start;
 
+  /* At narrower viewports the 7-track 4-column grid (or even 5-track 3-col)
+     doesn't fit. Switch to a vertical stack via flex column so columns
+     simply pile up — the inline gridTemplateColumns is overridden. */
   @media (max-width: 1024px) {
-    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
-  }
-  @media (max-width: 700px) {
-    grid-template-columns: 1fr !important;
+    display: flex !important;
+    flex-direction: column;
   }
 }
 
