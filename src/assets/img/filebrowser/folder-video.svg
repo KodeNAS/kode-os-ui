@@ -1,13 +1,12 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
   <defs>
-    <linearGradient id="bg" x1="32" y1="14" x2="32" y2="58" gradientUnits="userSpaceOnUse">
+    <linearGradient id="bg" x1="32" y1="20" x2="32" y2="54" gradientUnits="userSpaceOnUse">
       <stop offset="0%" stop-color="#7c8af0"/>
       <stop offset="100%" stop-color="#4651a8"/>
     </linearGradient>
   </defs>
-  <path d="M 10 14 Q 10 10 14 10 H 28 Q 31 10 32 13 L 34 17 H 10 Z" fill="#4651a8"/>
-  <rect x="6" y="16" width="52" height="42" rx="7" ry="7" fill="url(#bg)"/>
-  <path d="M 13 18 H 51 Q 56 18 56 23 V 22 Q 56 19 53 19 H 11 Q 8 19 8 22 V 23 Q 8 18 13 18 Z" fill="rgba(255,255,255,0.18)"/>
-  <!-- Play triangle -->
-  <path d="M 28 30 L 42 39 L 28 48 Z" fill="#fff"/>
+  <path d="M 16 20 Q 16 16 20 16 H 30 Q 32 16 33 18 L 35 22 H 16 Z" fill="#4651a8"/>
+  <rect x="12" y="22" width="40" height="30" rx="5" ry="5" fill="url(#bg)"/>
+  <rect x="14" y="24" width="36" height="1.8" rx="0.9" fill="rgba(255,255,255,0.22)"/>
+  <path d="M 28 32 L 40 38.5 L 28 45 Z" fill="#fff"/>
 </svg>

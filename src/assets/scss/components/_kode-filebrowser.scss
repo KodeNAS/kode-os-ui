@@ -189,8 +189,8 @@
         /* Cover area — bigger, no harsh borders. Upstream sized the
          * inner .folder-cover at 116x96 (rectangular) which was tuned
          * for the old manila-tab icons. We force it square so the new
-         * icon set renders flush, with generous horizontal padding so
-         * the folder glyph has breathing room on the sides. */
+         * icon set renders flush. The icon itself carries its own
+         * breathing room via the SVG viewBox padding. */
         .cover {
             border-radius: 10px;
             margin: 4px 4px 0;
@@ -201,7 +201,6 @@
             justify-content: center;
             position: relative;
             overflow: hidden;
-            padding: 8% 18%;
 
             .folder-cover,
             .file-cover {
@@ -222,9 +221,7 @@
                 filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.18));
             }
 
-            /* Lazy-loaded image thumbnails should still fill the cover
-             * (no inner padding) — the padding above is for the icon
-             * set only. */
+            /* Lazy-loaded image thumbnails fill the whole tile. */
             > img {
                 position: absolute;
                 inset: 0;
