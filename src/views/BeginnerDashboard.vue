@@ -491,26 +491,34 @@ export default {
         if (!raw) return this.expandLayoutTo(DEFAULT_LAYOUT, this.columnCount || 3)
         const parsed = JSON.parse(raw)
         if (!Array.isArray(parsed) || parsed.length < 2 || parsed.length > 4) {
+          // Corrupt or truncated — fall back to defaults.
           return this.expandLayoutTo(DEFAULT_LAYOUT, this.columnCount || 3)
         }
-        // Normalize each column into { widgets, subCols }. Handles both
-        // the legacy string[] shape and the new object shape so existing
-        // saved layouts round-trip without loss.
+        // Normalize each column into { widgets, subCols }. Defensive against
+        // mixed legacy + new shapes, missing fields, and corrupt entries.
         const cleaned = parsed.map(normalizeColumn)
-        // Add any default generic widget that's missing (excluding apps:
-        // shortcuts which are explicit opt-in). Drop missing into the
-        // first non-subdivided column; if column 0 is subdivided, drop
-        // into its first sub.
+        // Ensure every cleaned column has a usable shape — guard against
+        // normalizeColumn returning something unexpected.
+        for (let i = 0; i < cleaned.length; i++) {
+          const c = cleaned[i]
+          if (!c || (!Array.isArray(c.widgets) && !Array.isArray(c.subCols))) {
+            cleaned[i] = { widgets: [], subCols: null }
+          }
+        }
+        // Add any missing default widgets so a future-added widget
+        // automatically shows up on next load (apps-shortcuts excluded).
         const present = new Set()
         this.collectPresentKeys(cleaned, present)
         const missing = ALL_WIDGETS.filter(k => !present.has(k))
         if (missing.length > 0) {
           const target = cleaned[0]
-          if (target.subCols) target.subCols[0].push(...missing)
+          if (target.subCols && target.subCols[0]) target.subCols[0].push(...missing)
           else target.widgets.push(...missing)
         }
         return cleaned
       } catch (e) {
+        // eslint-disable-next-line no-console
+        console.warn('loadLayout failed; falling back to defaults:', e)
         return this.expandLayoutTo(DEFAULT_LAYOUT, this.columnCount || 3)
       }
     },
@@ -589,7 +597,14 @@ export default {
     },
     saveLayout() {
       try {
-        localStorage.setItem(LAYOUT_KEY, JSON.stringify(this.columns))
+        // Persist a sanitized clone — guards against any in-memory shape
+        // drift (e.g. reactive observers wrapping primitives that don't
+        // JSON-serialize cleanly).
+        const clean = this.columns.map(c => ({
+          widgets: Array.isArray(c.widgets) ? [...c.widgets] : [],
+          subCols: Array.isArray(c.subCols) ? c.subCols.map(sub => [...sub]) : null,
+        }))
+        localStorage.setItem(LAYOUT_KEY, JSON.stringify(clean))
       } catch (e) { /* ignore quota / disabled storage */ }
     },
     loadWeights() {
@@ -732,28 +747,46 @@ export default {
         confirmText: this.$t('Save'),
         cancelText: this.$t('Cancel'),
         onConfirm: (name) => {
-          const trimmed = String(name || '').trim()
-          if (!trimmed) return
-          // Unique key. Slug + short id keeps it stable across reloads.
-          const slug = trimmed.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '').slice(0, 24) || 'layout'
-          const key = `user-${slug}-${Date.now().toString(36).slice(-4)}`
-          this.userTemplates = [
-            ...this.userTemplates,
-            {
-              key,
-              name: trimmed,
-              description: '',
-              cols: this.columns.map(c => [...c]),
-              weights: [...this.colWeights],
-            },
-          ]
-          this.saveUserTemplates()
-          this.$buefy.toast.open({
-            message: `${this.$t('Saved')} "${trimmed}"`,
-            type: 'is-success',
-            position: 'is-top',
-            duration: 2500,
-          })
+          try {
+            const trimmed = String(name || '').trim()
+            if (!trimmed) return
+            const slug = trimmed.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '').slice(0, 24) || 'layout'
+            const key = `user-${slug}-${Date.now().toString(36).slice(-4)}`
+            // Deep clone the current columns in the NEW shape ({widgets, subCols}).
+            // Previously this used [...c] which spreads object properties — that
+            // either threw (non-iterable) or saved garbage when the column was a
+            // {widgets, subCols} object instead of a legacy string[].
+            const clonedCols = this.columns.map(c => ({
+              widgets: Array.isArray(c.widgets) ? [...c.widgets] : [],
+              subCols: Array.isArray(c.subCols) ? c.subCols.map(sub => [...sub]) : null,
+            }))
+            this.userTemplates = [
+              ...this.userTemplates,
+              {
+                key,
+                name: trimmed,
+                description: '',
+                cols: clonedCols,
+                weights: [...this.colWeights],
+              },
+            ]
+            this.saveUserTemplates()
+            this.$buefy.toast.open({
+              message: `${this.$t('Saved')} "${trimmed}"`,
+              type: 'is-success',
+              position: 'is-top',
+              duration: 2500,
+            })
+          } catch (err) {
+            this.$buefy.toast.open({
+              message: this.$t('Couldn\'t save layout. Try again.'),
+              type: 'is-danger',
+              position: 'is-top',
+              duration: 4000,
+            })
+            // eslint-disable-next-line no-console
+            console.error('saveCurrentAsTemplate failed:', err)
+          }
         },
       })
     },
