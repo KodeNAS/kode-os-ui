@@ -4,9 +4,14 @@
  * @LastEditors: Jerryk jerry@icewhale.org
  * @LastEditTime: 2022-06-02 19:49:18
  * @FilePath: \CasaOS-UI\src\store\getter.js
- * @Description: 
- * 
- * Copyright (c) 2022 by IceWhale, All Rights Reserved. 
+ * @Description:
+ *
+ * Copyright (c) 2022 by IceWhale, All Rights Reserved.
+ *
+ * KODE OS additions © KODE NAS, licensed separately.
  */
-const getters = {}
+const getters = {
+  isBeginner: state => state.interfaceMode !== 'advanced',
+  isAdvanced: state => state.interfaceMode === 'advanced',
+}
 export default getters
