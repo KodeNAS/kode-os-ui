@@ -73,7 +73,7 @@
         rounded
         type="is-primary"
         :disabled="picked.length === 0"
-        @click="$emit('next', { apps: picked })"
+        @click="onContinue"
       >
         {{ picked.length === 0 ? $t('Pick at least one') : `${$t('Continue with')} ${picked.length} ${$t('apps')}` }}
       </b-button>
@@ -87,9 +87,14 @@ export default {
   data() {
     return {
       picked: ['immich', 'jellyfin', 'filebrowser'],
+      // `appstoreId` is the id used by CasaOS's app store (POST/DELETE
+      // /v2/app_management/compose/<id>). `builtin: true` means the app
+      // is part of CasaOS itself and never installs/uninstalls (the
+      // sync step skips those entries).
       catalog: [
         {
           key: 'immich',
+          appstoreId: 'immich',
           icon: 'gallery-outline',
           title: this.$t('Immich'),
           tagline: this.$t('Photo & video backup from your phone.'),
@@ -105,6 +110,7 @@ export default {
         },
         {
           key: 'jellyfin',
+          appstoreId: 'jellyfin',
           icon: 'media-outline',
           title: this.$t('Jellyfin'),
           tagline: this.$t('Stream movies and music to your TV.'),
@@ -120,6 +126,8 @@ export default {
         },
         {
           key: 'filebrowser',
+          appstoreId: null,
+          builtin: true,
           icon: 'folder-outline',
           title: this.$t('File Browser'),
           tagline: this.$t('Access your pebble\'s files from any browser.'),
@@ -135,6 +143,7 @@ export default {
         },
         {
           key: 'pihole',
+          appstoreId: 'pihole',
           icon: 'protection-outline',
           title: this.$t('Pi-hole'),
           tagline: this.$t('Block ads and trackers across your whole network.'),
@@ -150,6 +159,7 @@ export default {
         },
         {
           key: 'homeassistant',
+          appstoreId: 'big-bear-home-assistant',
           icon: 'view-dashboard-outline',
           title: this.$t('Home Assistant'),
           tagline: this.$t('Smart-home hub for lights, thermostats, and sensors.'),
@@ -174,6 +184,18 @@ export default {
       const i = this.picked.indexOf(key)
       if (i >= 0) this.picked.splice(i, 1)
       else this.picked.push(key)
+    },
+    onContinue() {
+      if (this.picked.length === 0) return
+      // Compute the appstore-id set so downstream wizard steps (the
+      // install/sync step in particular) don't need the catalog.
+      // Builtins are filtered out — they don't have an appstore id
+      // and never install/uninstall.
+      const targetIds = this.picked
+        .map(k => this.catalog.find(a => a.key === k))
+        .filter(a => a && !a.builtin && a.appstoreId)
+        .map(a => a.appstoreId)
+      this.$emit('next', { apps: this.picked, targetIds })
     },
   },
 }

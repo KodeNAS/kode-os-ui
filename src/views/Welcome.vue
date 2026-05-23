@@ -35,8 +35,9 @@
         <PebbleNameStep     v-else-if="stepIndex === 4" key="nm"  @next="onPebbleNameDone" @back="back" />
         <PickAppsStep       v-else-if="stepIndex === 5" key="ap"  @next="onAppsPicked"    @back="back" />
         <LayoutChooserStep  v-else-if="stepIndex === 6" key="lc"  @next="onLayoutPicked"  @back="back" />
-        <WalkthroughStep    v-else-if="stepIndex === 7" key="wt"  :apps="pickedApps" :host="host" @next="next" @back="back" @restart="restart" />
-        <DoneStep           v-else-if="stepIndex === 8" key="dn"  :hostname="hostname" :apps="pickedApps" :is-replay="isReplay" @finish="finish" />
+        <InstallAppsStep    v-else-if="stepIndex === 7" key="ia"  :target-ids="targetAppstoreIds" @next="onInstallDone" @back="back" />
+        <WalkthroughStep    v-else-if="stepIndex === 8" key="wt"  :apps="pickedApps" :host="host" @next="next" @back="back" @restart="restart" />
+        <DoneStep           v-else-if="stepIndex === 9" key="dn"  :hostname="hostname" :apps="pickedApps" :is-replay="isReplay" @finish="finish" />
       </transition>
     </div>
   </div>
@@ -50,6 +51,7 @@ import AdminAccountStep from '@/components/firstboot/steps/AdminAccountStep.vue'
 import PebbleNameStep   from '@/components/firstboot/steps/PebbleNameStep.vue'
 import PickAppsStep     from '@/components/firstboot/steps/PickAppsStep.vue'
 import LayoutChooserStep from '@/components/firstboot/steps/LayoutChooserStep.vue'
+import InstallAppsStep  from '@/components/firstboot/steps/InstallAppsStep.vue'
 import WalkthroughStep  from '@/components/firstboot/steps/WalkthroughStep.vue'
 import DoneStep         from '@/components/firstboot/steps/DoneStep.vue'
 import { TEMPLATES } from '@/service/dashboardTemplates'
@@ -64,6 +66,7 @@ export default {
     PebbleNameStep,
     PickAppsStep,
     LayoutChooserStep,
+    InstallAppsStep,
     WalkthroughStep,
     DoneStep,
   },
@@ -71,22 +74,27 @@ export default {
     return {
       isLoading: true,
       stepIndex: 0,
-      lastStep: 8,
+      lastStep: 9,
       adminCreated: false,
       userType: '', // 'beginner' | 'normal' | 'developer' — chosen at step 1
-      // Compact rail labels for steps 2..7 (welcome + usertype + done are hidden).
+      // Compact rail labels for steps 2..8 (welcome + usertype + done are hidden).
       railLabels: [
         this.$t('Check'),
         this.$t('Account'),
         this.$t('Name'),
         this.$t('Apps'),
         this.$t('Layout'),
+        this.$t('Install'),
         this.$t('Set up'),
       ],
       // Collected wizard data
       adminUsername: '',
       hostname: 'pebble',
       pickedApps: [],
+      // Appstore ids derived from pickedApps. PickAppsStep emits this
+      // alongside the picker keys so InstallAppsStep doesn't have to
+      // re-derive the mapping.
+      targetAppstoreIds: [],
       // Default to the user's "Default" template if they don't visit
       // the layout chooser (e.g. developer fast-path).
       chosenLayoutKey: 'builtin-default',
@@ -217,17 +225,24 @@ export default {
     },
     onAppsPicked(payload) {
       if (payload && Array.isArray(payload.apps)) this.pickedApps = payload.apps
+      if (payload && Array.isArray(payload.targetIds)) this.targetAppstoreIds = payload.targetIds
       // Always advance to LayoutChooser (step 6) — whether or not any
       // apps were picked. From there the user can choose their starting
-      // dashboard layout, and the walkthrough step is conditional on
-      // whether any apps were picked.
+      // dashboard layout, then we run the install/sync step, then the
+      // walkthroughs (conditional on having any apps).
       this.stepIndex = 6
     },
     onLayoutPicked(payload) {
       if (payload && payload.templateKey) this.chosenLayoutKey = payload.templateKey
-      // Skip the walkthrough step entirely if the user picked zero
-      // apps — there's nothing to walk them through.
-      this.stepIndex = this.pickedApps.length > 0 ? 7 : 8
+      // After Layout: always run InstallApps (step 7), even with zero
+      // apps — that step's diff will be a no-op but it still confirms
+      // the install state matches the picks.
+      this.stepIndex = 7
+    },
+    onInstallDone() {
+      // After install/sync: walkthroughs (step 8) only if the user
+      // picked at least one app, otherwise jump straight to Done (9).
+      this.stepIndex = this.pickedApps.length > 0 ? 8 : 9
     },
     async finish() {
       // Only persist the first-boot complete flag on initial setup; replay

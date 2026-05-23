@@ -1,0 +1,265 @@
+<template>
+  <div class="fb-step install-apps-step has-text-white">
+    <div class="kicker">{{ $t('Setting up') }}</div>
+    <h1 class="title is-3 has-text-white">{{ $t('Installing your apps') }}</h1>
+    <p class="subtitle is-6 has-text-white-bis">
+      <span v-if="phase === 'idle' || phase === 'starting'">
+        {{ $t('We\'ll install the apps you picked and remove the ones you didn\'t. This takes about a minute per app.') }}
+      </span>
+      <span v-else-if="phase === 'running'">
+        {{ $t('Hang tight — Docker is pulling and starting your apps.') }}
+      </span>
+      <span v-else-if="phase === 'done' && errorCount === 0">
+        {{ $t('All done. Continue to the walkthroughs.') }}
+      </span>
+      <span v-else-if="phase === 'done' && errorCount > 0">
+        {{ $t('Finished with a few errors. You can continue and retry from Settings → Re-run setup later.') }}
+      </span>
+    </p>
+
+    <ul v-if="rows.length > 0" class="install-list">
+      <li
+        v-for="row in rows"
+        :key="`${row.action}-${row.id}`"
+        class="install-row"
+        :class="`is-${row.state}`"
+      >
+        <span class="install-icon">
+          <b-icon v-if="row.state === 'pending'" icon="time-outline" pack="casa" size="is-small" />
+          <span v-else-if="row.state === 'running'" class="spinner"></span>
+          <b-icon v-else-if="row.state === 'done'" icon="check-outline" pack="casa" size="is-small" />
+          <b-icon v-else icon="alert" pack="casa" size="is-small" />
+        </span>
+        <div class="install-text">
+          <div class="install-name">
+            {{ row.action === 'uninstall' ? $t('Removing') : $t('Installing') }}
+            <strong>{{ row.id }}</strong>
+          </div>
+          <div v-if="row.state === 'error' && row.error" class="install-error">{{ row.error }}</div>
+        </div>
+        <span class="install-status">{{ statusLabel(row.state) }}</span>
+      </li>
+    </ul>
+
+    <div v-else-if="phase === 'done'" class="install-empty">
+      {{ $t('Nothing to change — your app selection already matches what\'s installed.') }}
+    </div>
+
+    <div class="install-actions">
+      <b-button rounded :disabled="phase === 'running'" @click="$emit('back')">
+        {{ $t('Back') }}
+      </b-button>
+      <div class="is-flex-grow-1"></div>
+      <b-button
+        rounded
+        type="is-primary"
+        :loading="phase === 'running'"
+        :disabled="phase === 'idle' || phase === 'starting'"
+        @click="$emit('next')"
+      >
+        {{ phase === 'running' ? $t('Installing…') : $t('Continue') }}
+      </b-button>
+    </div>
+  </div>
+</template>
+
+<script>
+/*
+ * First-boot wizard step that reconciles the user's picked apps with
+ * what's actually installed on the pebble. Runs syncApps from
+ * @/service/appSync on mount, streams per-app progress into the list,
+ * and unlocks Continue when everything has finished (success or
+ * error). Replay-safe: re-running the wizard with the same picks is a
+ * no-op since syncApps's diff returns an empty install/uninstall set.
+ */
+import { syncApps } from '@/service/appSync'
+
+export default {
+  name: 'InstallAppsStep',
+  props: {
+    // Appstore ids the user wants installed (NOT picker keys; the
+    // mapping is done one step up in PickAppsStep before emit).
+    targetIds: { type: Array, default: () => [] },
+  },
+  data() {
+    return {
+      phase: 'idle',       // idle | starting | running | done
+      rows: [],            // [{ id, action, state, error? }]
+    }
+  },
+  computed: {
+    errorCount() { return this.rows.filter(r => r.state === 'error').length },
+  },
+  async mounted() {
+    await this.$nextTick()
+    this.runSync()
+  },
+  methods: {
+    statusLabel(state) {
+      switch (state) {
+        case 'pending':   return this.$t('Pending')
+        case 'running':   return this.$t('Working…')
+        case 'done':      return this.$t('Done')
+        case 'error':     return this.$t('Failed')
+        default:          return ''
+      }
+    },
+    async runSync() {
+      this.phase = 'starting'
+      this.rows = []
+      try {
+        await syncApps(
+          this.$openAPI,
+          this.targetIds,
+          (entry) => {
+            // The progress callback fires before AND after each op,
+            // so we either upsert by (id, action) or append on first
+            // sight, then update the state on subsequent reports.
+            const existing = this.rows.find(r => r.id === entry.id && r.action === entry.action)
+            if (existing) {
+              existing.state = entry.state
+              if (entry.error) existing.error = entry.error
+            } else {
+              this.rows.push({ ...entry })
+            }
+            if (this.phase === 'starting') this.phase = 'running'
+          },
+        )
+      } finally {
+        this.phase = 'done'
+      }
+    },
+  },
+}
+</script>
+
+<style lang="scss" scoped>
+.fb-step { animation: ias-fade 0.4s ease both; }
+@keyframes ias-fade {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.kicker {
+  font-size: 0.6875rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: rgba(255, 255, 255, 0.7);
+  margin-bottom: 0.35rem;
+}
+
+.title { margin-bottom: 0.25rem !important; }
+.subtitle { margin-bottom: 1.25rem !important; opacity: 0.85; min-height: 2.5em; }
+
+.install-list {
+  list-style: none;
+  margin: 0 0 1.25rem 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+.install-row {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  padding: 0.6rem 0.85rem;
+  background: rgba(255, 255, 255, 0.10);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 12px;
+  transition: background 0.2s, border-color 0.2s;
+
+  &.is-running {
+    background: rgba(45, 95, 78, 0.32);
+    border-color: rgba(45, 95, 78, 0.85);
+  }
+  &.is-done {
+    background: rgba(45, 95, 78, 0.20);
+    border-color: rgba(45, 95, 78, 0.4);
+  }
+  &.is-error {
+    background: rgba(176, 74, 74, 0.20);
+    border-color: rgba(176, 74, 74, 0.55);
+  }
+}
+
+.install-icon {
+  flex: 0 0 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.15);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+
+  .is-done & { background: rgba(45, 95, 78, 0.95); }
+  .is-error & { background: rgba(176, 74, 74, 0.95); }
+}
+
+.spinner {
+  width: 14px; height: 14px;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top-color: #fff;
+  animation: ias-spin 0.7s linear infinite;
+}
+@keyframes ias-spin { to { transform: rotate(360deg); } }
+
+.install-text {
+  flex: 1;
+  min-width: 0;
+}
+
+.install-name {
+  font-size: 0.875rem;
+  color: rgba(255, 255, 255, 0.92);
+
+  strong {
+    color: #fff;
+    font-weight: 600;
+    margin-left: 0.2rem;
+  }
+}
+
+.install-error {
+  font-size: 0.75rem;
+  color: rgba(255, 220, 220, 0.85);
+  margin-top: 2px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.install-status {
+  flex-shrink: 0;
+  font-size: 0.6875rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-weight: 600;
+  padding: 2px 9px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.16);
+  color: rgba(255, 255, 255, 0.85);
+
+  .is-done & { background: rgba(45, 95, 78, 0.85); color: #fff; }
+  .is-error & { background: rgba(176, 74, 74, 0.85); color: #fff; }
+}
+
+.install-empty {
+  font-size: 0.875rem;
+  color: rgba(255, 255, 255, 0.7);
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px dashed rgba(255, 255, 255, 0.18);
+  border-radius: 12px;
+  padding: 0.75rem 1rem;
+  margin-bottom: 1.25rem;
+}
+
+.install-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+</style>
