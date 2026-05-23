@@ -326,7 +326,7 @@ export default {
 }
 
 .firstboot-shell {
-  width: 560px;
+  width: 640px;
   max-width: 100%;
   /* Cap the shell at the viewport so a tall step (the install
      progress list, mostly) scrolls inside the box instead of pushing
@@ -356,29 +356,39 @@ export default {
   &::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.25); border-radius: 999px; }
 }
 
+/* Compact step rail. With 7 steps we ran out of horizontal room to
+   show every label without truncating to "A...", "I...", "S..."; the
+   solution is dots-only for everything except the active step, which
+   expands into a pill carrying its own label. Done dots are filled,
+   upcoming dots are translucent. */
 .fb-rail {
   list-style: none;
   margin: 0 0 1.25rem 0;
   padding: 0;
   display: flex;
+  align-items: center;
   gap: 0.4rem;
 }
 
 .fb-rail-item {
-  flex: 1;
   display: flex;
   align-items: center;
   gap: 0.4rem;
-  padding: 0.3rem 0.55rem;
+  padding: 0.25rem 0.4rem 0.25rem 0.25rem;
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.10);
-  color: rgba(255, 255, 255, 0.7);
+  background: transparent;
+  color: rgba(255, 255, 255, 0.55);
   font-size: 0.75rem;
+  transition: background 0.18s ease, color 0.18s ease, padding 0.18s ease;
+  flex-shrink: 0;
 
   &.is-current {
     background: rgba(255, 255, 255, 0.22);
     color: #fff;
     font-weight: 500;
+    padding: 0.25rem 0.75rem 0.25rem 0.25rem;
+    flex-shrink: 1;
+    min-width: 0;
   }
   &.is-done {
     color: #fff;
@@ -386,25 +396,32 @@ export default {
 }
 
 .fb-rail-dot {
-  flex: 0 0 18px;
-  height: 18px;
+  flex: 0 0 20px;
+  width: 20px;
+  height: 20px;
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.18);
   color: #fff;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  font-size: 0.65rem;
-  font-weight: 500;
+  font-size: 0.6875rem;
+  font-weight: 600;
 
   .is-current &,
   .is-done & { background: #2d5f4e; }
 }
 
+/* Labels are hidden by default; only the current step's label is
+   visible so the rail stays compact and fits without truncation. */
 .fb-rail-label {
+  display: none;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+.fb-rail-item.is-current .fb-rail-label {
+  display: inline;
 }
 
 .fb-fade-enter-active,
