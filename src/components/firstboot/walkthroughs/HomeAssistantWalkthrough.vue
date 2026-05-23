@@ -11,30 +11,34 @@
       <div class="wt-substep">{{ sub + 1 }} / {{ total }}</div>
     </div>
 
-    <!-- Sub 0: heads-up about complexity + slow first boot + open URL -->
+    <!-- Sub 0: open HA, set up owner account. Same setup-first
+         pattern as the rest. HA takes a while to cold-boot, so the
+         heads-up callout matters. -->
     <section v-if="sub === 0" class="wt-body">
       <p>{{ $t('Home Assistant turns your pebble into a smart-home hub — lights, thermostats, sensors, cameras, you name it. It runs entirely on your network with no cloud account required.') }}</p>
       <div class="callout">
         <b-icon icon="alert" pack="casa" size="is-small" />
-        <span>{{ $t('Heads up: Home Assistant takes 3–5 minutes to fully boot the first time. If the page shows "preparing Home Assistant…", that\'s normal — give it a coffee. After this, it\'s instant.') }}</span>
+        <span>{{ $t('Heads up: Home Assistant takes 3–5 minutes to fully boot the first time. If the page shows "preparing Home Assistant…", that\'s normal — give it a coffee.') }}</span>
       </div>
-      <p>{{ $t('Open it to create your owner account. Phone-friendly QR below:') }}</p>
+      <p>
+        {{ $t('Before anything else: open Home Assistant and create your owner account. Use the same email + password as your KODE account.') }}
+      </p>
+      <div class="setup-cta">
+        <a class="setup-cta-btn" :href="url" target="_blank" rel="noopener noreferrer">
+          <b-icon icon="show-search-outline" pack="casa" size="is-medium" />
+          <span>{{ $t('Open Home Assistant') }}</span>
+        </a>
+        <p class="setup-cta-hint">{{ $t('Opens in a new tab.') }} <code>{{ url }}</code></p>
+      </div>
       <div class="qr-row">
         <div class="qr">
-          <QrcodeVue :value="url" :size="180" level="M" background="#ffffff" foreground="#000000" />
+          <QrcodeVue :value="url" :size="160" level="M" background="#ffffff" foreground="#000000" />
         </div>
         <div class="qr-side">
-          <div class="server-row">
-            <code class="server">{{ url }}</code>
-            <b-button size="is-small" type="is-dark" rounded icon-pack="casa" icon-left="copy-outline" @click="copy(url)">
-              {{ copied ? $t('Copied') : $t('Copy') }}
-            </b-button>
-          </div>
-          <b-button rounded type="is-light" tag="a" :href="url" target="_blank" rel="noopener noreferrer">
-            {{ $t('Open Home Assistant') }}
-          </b-button>
+          <p class="hint">{{ $t('Or scan the QR with your phone — handy if you want to keep HA on a tablet.') }}</p>
         </div>
       </div>
+      <p class="next-prompt">{{ $t('Owner account created? Tap Next to install the companion app.') }}</p>
     </section>
 
     <!-- Sub 1: NEW — install the companion app -->
@@ -135,7 +139,7 @@ import { resolveAppUrl } from '@/service/kodeApps'
 
 const FALLBACK_PORT = 8123
 const SUB_TITLES = [
-  'Open Home Assistant',
+  'Set up your Home Assistant owner',
   'Install the companion app',
   'Add your first device',
   'Make a dashboard',

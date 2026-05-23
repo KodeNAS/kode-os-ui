@@ -218,8 +218,15 @@ export default {
   margin-bottom: 0.35rem;
 }
 
-.title { margin-bottom: 0.25rem !important; }
-.subtitle { margin-bottom: 1.25rem !important; opacity: 0.85; min-height: 2.5em; }
+/* Override Bulma's `.title + .subtitle { margin-top: -1.25rem }`. */
+.title { margin-bottom: 0.5rem !important; line-height: 1.2 !important; }
+.subtitle {
+  margin-top: 0 !important;
+  margin-bottom: 1.25rem !important;
+  opacity: 0.85;
+  min-height: 2.5em;
+  line-height: 1.45 !important;
+}
 
 .install-list {
   list-style: none;

@@ -148,8 +148,15 @@ export default {
   margin-bottom: 0.35rem;
 }
 
-.title { margin-bottom: 0.25rem !important; }
-.subtitle { margin-bottom: 1.25rem !important; opacity: 0.85; }
+/* Override Bulma's `.title + .subtitle { margin-top: -1.25rem }` so
+   the subtitle doesn't get yanked up into the title's descender. */
+.title { margin-bottom: 0.5rem !important; line-height: 1.2 !important; }
+.subtitle {
+  margin-top: 0 !important;
+  margin-bottom: 1.25rem !important;
+  opacity: 0.85;
+  line-height: 1.45 !important;
+}
 
 /* 2-up grid of cards (single column on narrow screens). */
 .layout-grid {

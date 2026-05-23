@@ -11,27 +11,32 @@
       <div class="wt-substep">{{ sub + 1 }} / {{ total }}</div>
     </div>
 
-    <!-- Sub 0: what it is + open admin (with QR for phone access) -->
+    <!-- Sub 0: open Pi-hole admin + set the password. Same setup-first
+         pattern as the other walkthroughs. Pi-hole doesn't have a
+         signup REST API, so this step is always required. -->
     <section v-if="sub === 0" class="wt-body">
       <p>{{ $t('Pi-hole is your home network\'s ad blocker. Instead of installing a blocker on every device, your pebble blocks ads at the DNS layer — for your phones, TVs, smart speakers, everything.') }}</p>
-      <p>{{ $t('Open the Pi-hole admin to finish setup. You can paste the URL on a computer or scan the QR from your phone:') }}</p>
+      <p>
+        {{ $t('Before anything else: open the Pi-hole admin and sign in with the default password printed on your pebble box (or run') }}
+        <code>sudo pihole -a -p</code>
+        {{ $t('on your pebble to set a new one).') }}
+      </p>
+      <div class="setup-cta">
+        <a class="setup-cta-btn" :href="adminUrl" target="_blank" rel="noopener noreferrer">
+          <b-icon icon="show-search-outline" pack="casa" size="is-medium" />
+          <span>{{ $t('Open Pi-hole admin') }}</span>
+        </a>
+        <p class="setup-cta-hint">{{ $t('Or scan from your phone:') }} <code>{{ adminUrl }}</code></p>
+      </div>
       <div class="qr-row">
         <div class="qr">
-          <QrcodeVue :value="adminUrl" :size="180" level="M" background="#ffffff" foreground="#000000" />
+          <QrcodeVue :value="adminUrl" :size="160" level="M" background="#ffffff" foreground="#000000" />
         </div>
         <div class="qr-side">
-          <div class="server-row">
-            <code class="server">{{ adminUrl }}</code>
-            <b-button size="is-small" type="is-dark" rounded icon-pack="casa" icon-left="copy-outline" @click="copy(adminUrl)">
-              {{ copied ? $t('Copied') : $t('Copy') }}
-            </b-button>
-          </div>
-          <b-button rounded type="is-light" tag="a" :href="adminUrl" target="_blank" rel="noopener noreferrer">
-            {{ $t('Open Pi-hole admin') }}
-          </b-button>
-          <p class="hint">{{ $t('Sign in with the admin password set during install. The default lives in /etc/pihole/setupVars.conf on your pebble if you forgot it.') }}</p>
+          <p class="hint">{{ $t('If you forget the admin password later, the default is stored in /etc/pihole/setupVars.conf on your pebble (PIHOLE_WEBHASH).') }}</p>
         </div>
       </div>
+      <p class="next-prompt">{{ $t('Signed in? Tap Next to point your router\'s DNS at the pebble.') }}</p>
     </section>
 
     <!-- Sub 1: point router DNS to pebble -->
@@ -130,7 +135,7 @@ import copy from 'clipboard-copy'
 import { resolveAppUrl } from '@/service/kodeApps'
 
 const SUB_TITLES = [
-  'What it does',
+  'Sign in to Pi-hole admin',
   'Point your router at the pebble',
   'Verify it\'s working',
   'Add quality blocklists',

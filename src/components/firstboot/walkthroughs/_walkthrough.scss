@@ -220,3 +220,55 @@
   color: #2d5f4e;
   text-decoration: underline;
 }
+
+/* "Open <app>" call-to-action block — used at the FIRST sub-step of
+   every walkthrough that requires the buyer to create an account in
+   the app's web UI before continuing. Keeps the same styling across
+   all walkthroughs for a consistent setup-first pattern. */
+.setup-cta {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.5rem;
+  margin: 0.6rem 0 0.85rem;
+}
+
+.setup-cta-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.55rem;
+  padding: 0.85rem 1.25rem;
+  background: linear-gradient(180deg, #3a7762 0%, #2d5f4e 100%);
+  color: #fff;
+  font-size: 1rem;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  text-decoration: none;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.28),
+    0 6px 16px rgba(0, 0, 0, 0.22);
+  transition: transform 0.18s cubic-bezier(0.2, 0.7, 0.2, 1), background 0.18s ease;
+
+  &:hover {
+    transform: translateY(-1px);
+    background: linear-gradient(180deg, #428970 0%, #336d59 100%);
+    color: #fff;
+  }
+}
+
+.setup-cta-hint {
+  font-size: 0.8125rem;
+  color: rgba(0, 0, 0, 0.6);
+  text-align: center;
+  margin: 0;
+}
+
+.next-prompt {
+  margin-top: 0.85rem;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: rgba(45, 95, 78, 0.85);
+}

@@ -115,8 +115,17 @@ export default {
   color: rgba(255, 255, 255, 0.7);
   margin-bottom: 0.35rem;
 }
-.title { margin-bottom: 0.25rem !important; }
-.subtitle { margin-bottom: 1.25rem !important; opacity: 0.85; }
+/* Bulma applies `.title + .subtitle { margin-top: -1.25rem }` which
+   yanks the subtitle up into the title's descender — overriding so
+   the two lines don't overlap. Same fix in every wizard step that
+   uses the kicker / title / subtitle stack. */
+.title { margin-bottom: 0.5rem !important; line-height: 1.2 !important; }
+.subtitle {
+  margin-top: 0 !important;
+  margin-bottom: 1.25rem !important;
+  opacity: 0.85;
+  line-height: 1.45 !important;
+}
 
 .lang-grid {
   list-style: none;

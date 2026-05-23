@@ -11,20 +11,27 @@
       <div class="wt-substep">{{ sub + 1 }} / {{ total }}</div>
     </div>
 
-    <!-- Sub 0: open Jellyfin & finish account setup -->
+    <!-- Sub 0: open Jellyfin & finish account setup. Same setup-first
+         pattern used in every walkthrough — even when the wizard's
+         auto-bootstrap succeeded, this gives the user a clear "open
+         the app, confirm you're signed in, come back" step. -->
     <section v-if="sub === 0" class="wt-body">
       <p>{{ $t('Jellyfin streams the movies, shows, and music stored on your pebble to any TV, phone, or browser — no subscription, no ads.') }}</p>
-      <p>{{ $t('Open it in your browser and finish the built-in setup wizard (admin account, language, etc.):') }}</p>
-      <div class="server-row">
-        <code class="server">{{ url }}</code>
-        <b-button size="is-small" type="is-dark" rounded icon-pack="casa" icon-left="copy-outline" @click="copy(url)">
-          {{ copied ? $t('Copied') : $t('Copy') }}
-        </b-button>
+      <p>
+        {{ $t('Before anything else: open Jellyfin in your browser and finish the built-in setup wizard. Use the same email + password as your KODE account so they stay in sync.') }}
+      </p>
+      <div class="setup-cta">
+        <a class="setup-cta-btn" :href="url" target="_blank" rel="noopener noreferrer">
+          <b-icon icon="show-search-outline" pack="casa" size="is-medium" />
+          <span>{{ $t('Open Jellyfin') }}</span>
+        </a>
+        <p class="setup-cta-hint">{{ $t('Opens in a new tab.') }} <code>{{ url }}</code></p>
       </div>
-      <b-button rounded type="is-light" tag="a" :href="url" target="_blank" rel="noopener noreferrer">
-        {{ $t('Open Jellyfin') }}
-      </b-button>
-      <p class="hint">{{ $t('Use the same email + password as your KODE account so you don\'t have to remember a second one.') }}</p>
+      <div class="callout">
+        <b-icon icon="information-outline" pack="casa" size="is-small" />
+        <span>{{ $t('If Jellyfin sends you straight to the library (no setup wizard), you\'re good — we already set it up for you.') }}</span>
+      </div>
+      <p class="next-prompt">{{ $t('Done? Tap Next to add your media folders.') }}</p>
     </section>
 
     <!-- Sub 1: add libraries -->
@@ -134,7 +141,7 @@ import { resolveAppUrl } from '@/service/kodeApps'
 
 const FALLBACK_PORT = 8096
 const SUB_TITLES = [
-  'Open Jellyfin',
+  'Set up your Jellyfin account',
   'Add your media',
   'Install on your devices',
   'Power-user settings',

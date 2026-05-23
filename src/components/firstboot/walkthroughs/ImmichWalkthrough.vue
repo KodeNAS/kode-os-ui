@@ -11,8 +11,34 @@
       <div class="wt-substep">{{ sub + 1 }} / {{ total }}</div>
     </div>
 
-    <!-- Sub-step 1: install the app -->
+    <!-- Sub-step 1: set up the Immich admin account on the web first.
+         The wizard tried to do this automatically using the buyer's
+         credentials, but cross-origin CORS often blocks it. So we
+         always show the manual button as the source of truth — if
+         the auto-setup worked, signing in just works; if it didn't,
+         the user creates the account here. -->
     <section v-if="sub === 0" class="wt-body">
+      <p>
+        {{ $t('Before anything else: open Immich in your browser and create your admin account. Use the same email + password you set for KODE so they stay in sync.') }}
+      </p>
+      <div class="setup-cta">
+        <a class="setup-cta-btn" :href="immichUrl" target="_blank" rel="noopener noreferrer">
+          <b-icon icon="show-search-outline" pack="casa" size="is-medium" />
+          <span>{{ $t('Open Immich') }}</span>
+        </a>
+        <p class="setup-cta-hint">
+          {{ $t('Opens in a new tab. Sign up with the email + password you just set, then come back here.') }}
+        </p>
+      </div>
+      <div class="callout">
+        <b-icon icon="information-outline" pack="casa" size="is-small" />
+        <span>{{ $t('If Immich looks already set up (no "Admin Registration" screen), you\'re good — we tried to set it up for you automatically.') }}</span>
+      </div>
+      <p class="next-prompt">{{ $t('Done? Tap Next below to continue with the phone app.') }}</p>
+    </section>
+
+    <!-- Sub-step 2: install the phone app -->
+    <section v-else-if="sub === 1" class="wt-body">
       <p>{{ $t('Immich runs in two places: on your pebble (already done) and on your phone, which sends photos to the pebble in the background.') }}</p>
       <div class="store-row">
         <a class="store-button" href="https://apps.apple.com/app/immich/id1613945652" target="_blank" rel="noopener noreferrer">
@@ -27,8 +53,8 @@
       <p class="hint">{{ $t('Tap one of the buttons on your phone, or search "Immich" in your phone\'s app store.') }}</p>
     </section>
 
-    <!-- Sub-step 2: connect to pebble (QR + URL) -->
-    <section v-else-if="sub === 1" class="wt-body">
+    <!-- Sub-step 3: connect to pebble (QR + URL) -->
+    <section v-else-if="sub === 2" class="wt-body">
       <p>{{ $t('Open Immich on your phone. When it asks for a server, scan this code or paste the address below.') }}</p>
       <div class="qr-row">
         <div class="qr">
@@ -46,8 +72,8 @@
       </div>
     </section>
 
-    <!-- Sub-step 3: enable backup -->
-    <section v-else-if="sub === 2" class="wt-body">
+    <!-- Sub-step 4: enable backup -->
+    <section v-else-if="sub === 3" class="wt-body">
       <p>{{ $t('Now turn on automatic backup so new photos copy themselves over Wi-Fi.') }}</p>
       <ol class="steps">
         <li>{{ $t('In the Immich app, open the menu and tap Backup.') }}</li>
@@ -60,8 +86,8 @@
       </div>
     </section>
 
-    <!-- Sub-step 4: verify -->
-    <section v-else-if="sub === 3" class="wt-body">
+    <!-- Sub-step 5: verify -->
+    <section v-else-if="sub === 4" class="wt-body">
       <p>{{ $t('Once backup is on, check that the first photos arrive at your pebble.') }}</p>
       <ol class="steps">
         <li>
@@ -81,7 +107,7 @@
          generates a read-only API key automatically — saved straight
          into the widget's localStorage settings so the user never has
          to find/copy a key themselves. Skippable. -->
-    <section v-else-if="sub === 4" class="wt-body">
+    <section v-else-if="sub === 5" class="wt-body">
       <p v-if="!potdConfigured">
         {{ $t('Want a daily photo from your Immich library on your KODE dashboard? Sign in once and we\'ll set it up for you.') }}
       </p>
@@ -156,7 +182,8 @@ import { resolveAppUrl } from '@/service/kodeApps'
 
 const IMMICH_FALLBACK_PORT = 2283
 const SUB_TITLES = [
-  'Install the app',
+  'Set up your Immich account',
+  'Install the phone app',
   'Connect to your pebble',
   'Turn on auto backup',
   'See your photos arrive',
