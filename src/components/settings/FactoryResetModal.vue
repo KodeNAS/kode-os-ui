@@ -14,54 +14,52 @@
 
     <section class="modal-card-body">
       <p class="lead">
-        {{ $t("This returns your pebble to the state it was in when you first plugged it in — without erasing your photos, files, or apps.") }}
+        {{ $t('This wipes your pebble back to the state it was in when you first plugged it in. The setup wizard will run again.') }}
       </p>
 
-      <div class="will-section">
-        <div class="will-block destroy">
-          <h4 class="will-title">
-            <b-icon icon="alert" pack="casa" size="is-small" />
-            {{ $t('Will be deleted') }}
-          </h4>
-          <ul>
-            <li>{{ $t('All KODE accounts on this pebble') }}</li>
-            <li>{{ $t('Your pebble\'s name and Easy/Advanced mode') }}</li>
-            <li>{{ $t('First-boot completion flag — wizard re-runs') }}</li>
-            <li>{{ $t('Wallpaper preference') }}</li>
-          </ul>
-        </div>
-
-        <div class="will-block keep">
-          <h4 class="will-title">
-            <b-icon icon="check" pack="casa" size="is-small" />
-            {{ $t('Will be kept') }}
-          </h4>
-          <ul>
-            <li>{{ $t('All installed apps (Immich, Jellyfin, etc.)') }}</li>
-            <li>{{ $t('All files in /DATA (Photos, Videos, Documents…)') }}</li>
-            <li>{{ $t('All app data and configurations') }}</li>
-            <li>{{ $t('Your pebble\'s network setup') }}</li>
-          </ul>
-        </div>
+      <div class="destroy-block">
+        <h4 class="destroy-title">
+          <b-icon icon="alert" pack="casa" size="is-small" />
+          {{ $t('Everything below will be permanently deleted') }}
+        </h4>
+        <ul>
+          <li>{{ $t('All KODE accounts on this pebble') }}</li>
+          <li>{{ $t('All installed apps (Immich, Jellyfin, Pi-hole, Home Assistant…) and their app data') }}</li>
+          <li>{{ $t('All your files in /DATA (Photos, Videos, Documents, Music, Downloads, Backups, Gallery, AppData)') }}</li>
+          <li>{{ $t('Pebble name, dashboard layout, wallpaper, and tour state') }}</li>
+        </ul>
       </div>
 
       <p class="confirm-prompt">
-        {{ $t('Type') }} <strong>RESET</strong> {{ $t('to confirm:') }}
+        {{ $t('Type') }} <strong>WIPE</strong> {{ $t('to confirm this cannot be undone:') }}
       </p>
       <b-input
         v-model="confirmText"
         type="text"
-        :placeholder="$t('RESET')"
+        :placeholder="$t('WIPE')"
         autocomplete="off"
         class="confirm-input"
       />
+
+      <!-- Live progress while the reset runs. The user can't cancel
+           mid-flight but at least sees what's happening rather than a
+           frozen modal. -->
+      <div v-if="isResetting" class="progress-block">
+        <div class="progress-row">
+          <span class="progress-icon">
+            <span class="spinner"></span>
+          </span>
+          <span class="progress-label">{{ statusLabel }}</span>
+        </div>
+        <div v-if="appProgress" class="progress-sub">{{ appProgress }}</div>
+      </div>
     </section>
 
     <footer class="modal-card-foot is-flex is-align-items-center">
       <div class="is-flex-grow-1"></div>
-      <b-button :label="$t('Cancel')" rounded @click="$emit('close')" />
+      <b-button :label="$t('Cancel')" :disabled="isResetting" rounded @click="$emit('close')" />
       <b-button
-        :label="$t('Reset pebble')"
+        :label="$t('Wipe everything')"
         :disabled="!canReset"
         :loading="isResetting"
         rounded
@@ -73,17 +71,34 @@
 </template>
 
 <script>
+import { syncApps } from '@/service/appSync'
+
+// Paths under /DATA that the wizard re-creates. We wipe these on
+// factory reset so the user gets a clean tree on next boot.
+const DATA_FOLDERS_TO_WIPE = [
+  '/DATA/Photos',
+  '/DATA/Videos',
+  '/DATA/Documents',
+  '/DATA/Music',
+  '/DATA/Downloads',
+  '/DATA/Backups',
+  '/DATA/Gallery',
+  '/DATA/AppData',
+]
+
 export default {
   name: 'FactoryResetModal',
   data() {
     return {
       confirmText: '',
       isResetting: false,
+      statusLabel: '',
+      appProgress: '',
     }
   },
   computed: {
     canReset() {
-      return this.confirmText.trim().toUpperCase() === 'RESET' && !this.isResetting
+      return this.confirmText.trim().toUpperCase() === 'WIPE' && !this.isResetting
     },
   },
   methods: {
@@ -91,15 +106,63 @@ export default {
       if (!this.canReset) return
       this.isResetting = true
 
-      // Step 1: Best-effort wipe KODE-specific custom storage while we still
-      // have auth. allSettled so a single failure doesn't abort the reset.
+      // Phase 1 — uninstall every compose app and delete their userdata.
+      // Empty target set means "uninstall everything". syncApps's
+      // onUpdate stream lets us show per-app progress so the user
+      // doesn't think the modal froze.
+      this.statusLabel = this.$t('Removing installed apps…')
+      try {
+        await syncApps(
+          this.$openAPI,
+          [],
+          (entry) => {
+            if (entry.state === 'running') {
+              this.appProgress = `${this.$t('Removing')} ${entry.id}…`
+            } else if (entry.state === 'done') {
+              this.appProgress = `${this.$t('Removed')} ${entry.id}`
+            }
+          },
+          { deleteUserdata: true },
+        )
+      } catch (e) {
+        // Partial app removal is acceptable — continue with the wipe.
+        // eslint-disable-next-line no-console
+        console.warn('Factory reset: app uninstall partially failed', e)
+      }
+      this.appProgress = ''
+
+      // Phase 2 — delete the user-data folders under /DATA. We list
+      // first so we only delete what's actually there (the install may
+      // not have every folder), and we go one folder at a time so a
+      // single failure (locked file, etc.) doesn't abort the rest.
+      this.statusLabel = this.$t('Deleting files in /DATA…')
+      try {
+        const list = await this.$api.folder.getList('/DATA')
+        const items = (list && list.data && list.data.data && list.data.data.content) || []
+        const presentPaths = items.map(i => i && i.path).filter(Boolean)
+        const toDelete = presentPaths.filter(p => DATA_FOLDERS_TO_WIPE.includes(p))
+        // batch.delete expects a JSON-stringified array body
+        // (see the existing call site in mixins/mixin.js).
+        if (toDelete.length > 0) {
+          await this.$api.batch.delete(JSON.stringify(toDelete))
+        }
+      } catch (e) {
+        // eslint-disable-next-line no-console
+        console.warn('Factory reset: /DATA wipe partially failed', e)
+      }
+
+      // Phase 3 — wipe KODE-specific custom storage while we still have
+      // auth. allSettled so a single failure doesn't abort the reset.
+      this.statusLabel = this.$t('Clearing settings…')
       await Promise.allSettled([
         this.$api.users.setCustomStorage('kode_first_boot', {}),
         this.$api.users.setCustomStorage('kode_pebble_name', {}),
       ])
 
-      // Step 2: Delete all user accounts on the pebble. This is the
-      // load-bearing destructive call — if it fails we abort.
+      // Phase 4 — delete all user accounts. Load-bearing destructive
+      // call; if it fails the user is stuck in a half-reset state, so
+      // we abort and surface the error.
+      this.statusLabel = this.$t('Removing accounts…')
       try {
         await this.$api.users.deleteAllUser()
       } catch (err) {
@@ -114,12 +177,26 @@ export default {
         return
       }
 
-      // Step 3: Wipe KODE-controlled localStorage + auth tokens.
+      // Phase 5 — wipe KODE-controlled localStorage + auth tokens.
+      this.statusLabel = this.$t('Finishing up…')
       const keysToKill = [
         'kode_interface_mode',
         'kode_tile_order',
         'kode_tour_seen',
         'kode_hint_mode',
+        'kode_columns_layout_v2',
+        'kode_columns_weights_v1',
+        'kode_column_count_v1',
+        'kode_user_templates_v1',
+        'kode_clock_settings',
+        'kode_weather_settings',
+        'kode_potd_settings',
+        'kode_potd_cache_v1',
+        'kode_recent_expanded',
+        'kode_sysinfo_settings',
+        'kode_network_settings',
+        'kode_network_interface',
+        'kode_advanced_view',
         'wallpaper',
         'access_token',
         'refresh_token',
@@ -132,8 +209,8 @@ export default {
       ]
       keysToKill.forEach((k) => localStorage.removeItem(k))
 
-      // Step 4: Reset Vuex so the router's beforeEach guard sees us as
-      // uninitialized and routes /welcome on next nav.
+      // Phase 6 — reset Vuex so the router's beforeEach guard sees us
+      // as uninitialized and routes /welcome on next nav.
       this.$store.commit('SET_NEED_INITIALIZATION', true)
       this.$store.commit('SET_ACCESS_TOKEN', '')
       this.$store.commit('SET_REFRESH_TOKEN', '')
@@ -144,8 +221,8 @@ export default {
 
       this.$emit('close')
 
-      // Step 5: Hard reload to /welcome so all in-memory state from any
-      // component (including caches, polls, sockets) is dropped.
+      // Phase 7 — hard reload to /welcome so all in-memory state from
+      // any component (caches, polls, sockets) is dropped.
       window.location.assign('/#/welcome')
       window.location.reload()
     },
@@ -166,20 +243,12 @@ export default {
   margin-bottom: 1.25rem;
 }
 
-.will-section {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 0.75rem;
-  margin-bottom: 1.25rem;
-
-  @media (max-width: 520px) {
-    grid-template-columns: 1fr;
-  }
-}
-
-.will-block {
-  padding: 0.85rem 1rem;
+.destroy-block {
+  background: rgba(176, 74, 74, 0.08);
+  border: 1px solid rgba(176, 74, 74, 0.22);
   border-radius: 12px;
+  padding: 0.9rem 1.1rem;
+  margin-bottom: 1.25rem;
 
   ul {
     margin: 0.25rem 0 0 0;
@@ -187,40 +256,25 @@ export default {
     list-style: none;
     font-size: 0.8125rem;
     line-height: 1.55;
-    color: rgba(0, 0, 0, 0.75);
+    color: rgba(0, 0, 0, 0.78);
   }
 
   li {
-    padding: 0.15rem 0;
-    padding-left: 0.8rem;
+    padding: 0.2rem 0;
+    padding-left: 0.9rem;
     position: relative;
 
     &::before {
       content: '•';
       position: absolute;
       left: 0;
+      color: #b04a4a;
       font-weight: 700;
     }
   }
 }
 
-.will-block.destroy {
-  background: rgba(176, 74, 74, 0.08);
-  border: 1px solid rgba(176, 74, 74, 0.18);
-
-  .will-title { color: #b04a4a; }
-  li::before  { color: #b04a4a; }
-}
-
-.will-block.keep {
-  background: rgba(45, 95, 78, 0.08);
-  border: 1px solid rgba(45, 95, 78, 0.18);
-
-  .will-title { color: #2d5f4e; }
-  li::before  { color: #2d5f4e; }
-}
-
-.will-title {
+.destroy-title {
   display: flex;
   align-items: center;
   gap: 0.35rem;
@@ -228,7 +282,8 @@ export default {
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.04em;
-  margin-bottom: 0.35rem;
+  color: #b04a4a;
+  margin-bottom: 0.5rem;
 }
 
 .confirm-prompt {
@@ -237,7 +292,8 @@ export default {
   color: rgba(0, 0, 0, 0.78);
 
   strong {
-    background: rgba(0, 0, 0, 0.06);
+    background: rgba(176, 74, 74, 0.12);
+    color: #b04a4a;
     padding: 1px 8px;
     border-radius: 4px;
     font-family: monospace;
@@ -248,6 +304,40 @@ export default {
 .confirm-input {
   max-width: 220px;
 }
+
+.progress-block {
+  margin-top: 1rem;
+  padding: 0.75rem 0.9rem;
+  background: rgba(0, 0, 0, 0.04);
+  border-radius: 10px;
+  border: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+.progress-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #1f2937;
+}
+
+.progress-sub {
+  margin-top: 0.25rem;
+  margin-left: 1.6rem;
+  font-size: 0.75rem;
+  color: rgba(0, 0, 0, 0.55);
+  font-feature-settings: 'tnum' 1;
+}
+
+.spinner {
+  width: 14px; height: 14px;
+  border-radius: 50%;
+  border: 2px solid rgba(0, 0, 0, 0.18);
+  border-top-color: #b04a4a;
+  animation: factory-spin 0.7s linear infinite;
+}
+@keyframes factory-spin { to { transform: rotate(360deg); } }
 
 .modal-card-foot { gap: 0.5rem; }
 </style>
