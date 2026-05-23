@@ -180,6 +180,7 @@
                     :key="key"
                     class="widget-slot"
                     :class="slotClass(key)"
+                    :data-tour="tourKeyFor(widgetType(key))"
                   >
                     <FilesTile          v-if="widgetType(key) === 'files'" />
                     <RecentActivityTile v-else-if="widgetType(key) === 'recent'" />

@@ -328,6 +328,12 @@ export default {
 .firstboot-shell {
   width: 560px;
   max-width: 100%;
+  /* Cap the shell at the viewport so a tall step (the install
+     progress list, mostly) scrolls inside the box instead of pushing
+     content out of the bottom of the card. */
+  max-height: calc(100vh - 3rem);
+  overflow-y: auto;
+  overflow-x: hidden;
   /* Global wallpaper scrim in App.vue handles base darkening. Shell adds
      a touch more so the card pops off the wallpaper evenly. The inset
      highlight + slightly larger radius give the wizard a softer, more
@@ -341,6 +347,13 @@ export default {
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.10),
     0 24px 60px rgba(0, 0, 0, 0.38);
+
+  /* Subtle scrollbar that matches the rest of the OS. */
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.25) transparent;
+  &::-webkit-scrollbar { width: 6px; }
+  &::-webkit-scrollbar-track { background: transparent; }
+  &::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.25); border-radius: 999px; }
 }
 
 .fb-rail {

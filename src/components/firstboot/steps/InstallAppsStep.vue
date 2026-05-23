@@ -26,7 +26,7 @@
       >
         <span class="install-icon">
           <b-icon v-if="row.state === 'pending'" icon="time-outline" pack="casa" size="is-small" />
-          <span v-else-if="row.state === 'running'" class="spinner"></span>
+          <span v-else-if="row.state === 'running' || row.state === 'starting'" class="spinner"></span>
           <b-icon v-else-if="row.state === 'done'" icon="check-outline" pack="casa" size="is-small" />
           <b-icon v-else icon="alert" pack="casa" size="is-small" />
         </span>
@@ -35,11 +35,25 @@
             {{ row.action === 'uninstall' ? $t('Removing') : $t('Installing') }}
             <strong>{{ row.id }}</strong>
           </div>
+          <div v-if="row.state === 'starting'" class="install-detail">
+            {{ $t('Container is starting up') }}{{ row.detail ? ` (${row.detail})` : '…' }}
+          </div>
           <div v-if="row.state === 'error' && row.error" class="install-error">{{ row.error }}</div>
         </div>
         <span class="install-status">{{ statusLabel(row.state) }}</span>
       </li>
     </ul>
+
+    <!-- If anything failed, show a Retry button so the user can take
+         another pass without going back through the wizard. -->
+    <div v-if="errorCount > 0 && phase === 'done'" class="install-retry">
+      <p class="install-retry-text">
+        {{ $t('Some apps couldn\'t finish installing. You can retry now or skip and re-run setup later from Settings.') }}
+      </p>
+      <b-button rounded size="is-small" type="is-warning" @click="runSync">
+        {{ $t('Retry failed installs') }}
+      </b-button>
+    </div>
 
     <div v-else-if="phase === 'done'" class="install-empty">
       {{ $t('Nothing to change — your app selection already matches what\'s installed.') }}
@@ -98,8 +112,9 @@ export default {
     statusLabel(state) {
       switch (state) {
         case 'pending':   return this.$t('Pending')
-        case 'running':   return this.$t('Working…')
-        case 'done':      return this.$t('Done')
+        case 'running':   return this.$t('Installing…')
+        case 'starting':  return this.$t('Starting…')
+        case 'done':      return this.$t('Running')
         case 'error':     return this.$t('Failed')
         default:          return ''
       }
@@ -112,19 +127,23 @@ export default {
           this.$openAPI,
           this.targetIds,
           (entry) => {
-            // The progress callback fires before AND after each op,
-            // so we either upsert by (id, action) or append on first
-            // sight, then update the state on subsequent reports.
+            // The progress callback fires repeatedly per app as it
+            // transitions pending → running → starting → done/error.
+            // Upsert by (id, action) so each row tracks its own state.
             const existing = this.rows.find(r => r.id === entry.id && r.action === entry.action)
             if (existing) {
               existing.state = entry.state
               if (entry.error) existing.error = entry.error
+              if (entry.detail != null) existing.detail = entry.detail
             } else {
               this.rows.push({ ...entry })
             }
             if (this.phase === 'starting') this.phase = 'running'
           },
         )
+      } catch (e) {
+        // eslint-disable-next-line no-console
+        console.error('InstallAppsStep: syncApps threw', e)
       } finally {
         this.phase = 'done'
       }
@@ -170,7 +189,8 @@ export default {
   border-radius: 12px;
   transition: background 0.2s, border-color 0.2s;
 
-  &.is-running {
+  &.is-running,
+  &.is-starting {
     background: rgba(45, 95, 78, 0.32);
     border-color: rgba(45, 95, 78, 0.85);
   }
@@ -223,13 +243,33 @@ export default {
   }
 }
 
+.install-detail {
+  margin-top: 2px;
+  font-size: 0.75rem;
+  color: rgba(255, 255, 255, 0.65);
+  font-feature-settings: 'tnum' 1;
+}
+
 .install-error {
   font-size: 0.75rem;
-  color: rgba(255, 220, 220, 0.85);
+  color: rgba(255, 220, 220, 0.92);
   margin-top: 2px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  word-break: break-word;
+}
+
+.install-retry {
+  margin-bottom: 1rem;
+  padding: 0.75rem 0.9rem;
+  background: rgba(196, 127, 0, 0.18);
+  border: 1px solid rgba(196, 127, 0, 0.4);
+  border-radius: 12px;
+
+  .install-retry-text {
+    font-size: 0.8125rem;
+    color: rgba(255, 255, 255, 0.9);
+    margin-bottom: 0.5rem;
+    line-height: 1.45;
+  }
 }
 
 .install-status {
