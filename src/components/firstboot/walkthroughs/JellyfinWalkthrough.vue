@@ -27,10 +27,6 @@
         </a>
         <p class="setup-cta-hint">{{ $t('Opens in a new tab.') }} <code>{{ url }}</code></p>
       </div>
-      <div class="callout">
-        <b-icon icon="information-outline" pack="casa" size="is-small" />
-        <span>{{ $t('If Jellyfin sends you straight to the library (no setup wizard), you\'re good — we already set it up for you.') }}</span>
-      </div>
       <p class="next-prompt">{{ $t('Done? Tap Next to add your media folders.') }}</p>
     </section>
 

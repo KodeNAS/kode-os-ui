@@ -270,3 +270,47 @@ export async function bootstrapByAppId(appstoreId, host, creds) {
     default:                        return { ok: true, extra: { skipped: 'no bootstrap' } }
   }
 }
+
+/* --------------------------------------------------------------------- *
+ * Pre-install YAML transforms.
+ *
+ * Some apps can be fully auto-configured by injecting the buyer's
+ * password into a compose env var BEFORE the install POST. That way
+ * the container boots with the right credentials baked in and the
+ * buyer can immediately sign in with their KODE password — no shell
+ * commands, no walkthrough setup.
+ *
+ * Pi-hole is the headline case: it reads FTLCONF_webserver_api_password
+ * at startup and uses it as the admin-UI password.
+ * --------------------------------------------------------------------- */
+
+/**
+ * Replace Pi-hole's default API password (`casaos`) with the buyer's
+ * KODE password so they sign in with credentials they already know.
+ * Safe across YAML quoting variants because we only replace the value
+ * after the well-known key.
+ */
+export function preparePiholeYaml(yaml, creds) {
+  if (!yaml || !creds || !creds.password) return yaml
+  // Escape backslashes + double quotes so the YAML stays parseable
+  // even if the user picks a password with those characters.
+  const escaped = String(creds.password).replace(/\\/g, '\\\\').replace(/"/g, '\\"')
+  // Match `FTLCONF_webserver_api_password:` followed by any value
+  // (quoted or unquoted) to end-of-line. Replace with a quoted
+  // version of the user's password.
+  return yaml.replace(
+    /(FTLCONF_webserver_api_password:\s*)([^\n\r]*)/,
+    `$1"${escaped}"`,
+  )
+}
+
+/**
+ * Dispatch by appstore id. Each app can register its own transform;
+ * unknown apps pass through untouched.
+ */
+export function prepareYamlByAppId(appstoreId, yaml, creds) {
+  switch (appstoreId) {
+    case 'pihole': return preparePiholeYaml(yaml, creds)
+    default:       return yaml
+  }
+}

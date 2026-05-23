@@ -87,7 +87,25 @@
  * no-op since syncApps's diff returns an empty install/uninstall set.
  */
 import { syncApps } from '@/service/appSync'
-import { bootstrapByAppId } from '@/service/appBootstrap'
+import { bootstrapByAppId, prepareYamlByAppId } from '@/service/appBootstrap'
+
+// Standard /DATA folders we make sure exist before installing apps.
+// Jellyfin specifically asks the buyer to select library paths during
+// its setup wizard — if /DATA/Videos / /DATA/Music don't exist, the
+// path picker has nothing to select. Idempotent: folder.create()
+// returns an error if the folder already exists which we swallow.
+const DATA_FOLDERS = [
+  '/DATA/Photos',
+  '/DATA/Videos',
+  '/DATA/Videos/Movies',
+  '/DATA/Videos/TV',
+  '/DATA/Documents',
+  '/DATA/Music',
+  '/DATA/Downloads',
+  '/DATA/Backups',
+  '/DATA/Gallery',
+  '/DATA/AppData',
+]
 
 export default {
   name: 'InstallAppsStep',
@@ -132,10 +150,22 @@ export default {
         default:              return ''
       }
     },
+    async ensureDataFolders() {
+      // Best-effort: create every standard folder under /DATA so the
+      // app walkthroughs (especially Jellyfin's library picker) have
+      // something to point at. Failures are non-blocking — the folder
+      // probably already exists.
+      for (const path of DATA_FOLDERS) {
+        try { await this.$api.folder.create(path) } catch (e) { /* exists or permission */ }
+      }
+    },
     async runSync() {
       this.phase = 'starting'
       this.rows = []
       const installedOk = []
+      // Make sure /DATA/* exists BEFORE installs so any compose file
+      // that bind-mounts /DATA/AppData/* has a parent to attach to.
+      await this.ensureDataFolders()
       try {
         await syncApps(
           this.$openAPI,
@@ -158,6 +188,12 @@ export default {
               if (!installedOk.includes(entry.id)) installedOk.push(entry.id)
             }
             if (this.phase === 'starting') this.phase = 'running'
+          },
+          {
+            // Pre-install YAML transforms: lets us inject the buyer's
+            // password into env vars (Pi-hole) so the container boots
+            // with the right credentials already baked in.
+            prepareYaml: (appId, yaml) => prepareYamlByAppId(appId, yaml, this.creds),
           },
         )
       } catch (e) {

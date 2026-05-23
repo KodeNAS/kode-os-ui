@@ -47,8 +47,13 @@ export async function listInstalledAppIds(openAPI) {
  * Docker pull + container start happens asynchronously and can take
  * 30s–2min per app. Callers that need to wait for "actually running"
  * should follow up with waitForRunning().
+ *
+ * `prepareYaml` is an optional callback `(appId, yaml) => yaml` that
+ * runs before the install POST. Used to inject the buyer's password
+ * into env vars (Pi-hole's FTLCONF_webserver_api_password, etc.) so
+ * the app boots already-configured.
  */
-export async function installApp(openAPI, appstoreId) {
+export async function installApp(openAPI, appstoreId, { prepareYaml } = {}) {
   // Fetch the compose YAML. The OpenAPI client supports a per-call
   // headers config — we need application/yaml on both ends so the
   // server returns YAML and the install endpoint accepts it.
@@ -58,8 +63,17 @@ export async function installApp(openAPI, appstoreId) {
       'accept': 'application/yaml',
     },
   })
-  const yaml = yamlRes && yamlRes.data
+  let yaml = yamlRes && yamlRes.data
   if (!yaml) throw new Error(`empty compose YAML for ${appstoreId}`)
+  if (typeof prepareYaml === 'function') {
+    try {
+      const transformed = prepareYaml(appstoreId, yaml)
+      if (transformed) yaml = transformed
+    } catch (e) {
+      // eslint-disable-next-line no-console
+      console.warn('appSync.installApp: prepareYaml threw for', appstoreId, e)
+    }
+  }
   // Install: (yaml, dryRun, checkPortConflict).
   await openAPI.appManagement.compose.installComposeApp(yaml, false, true)
   return true
@@ -134,6 +148,7 @@ export async function uninstallApp(openAPI, appId, { deleteUserdata = false } = 
  * @param opts.deleteUserdata - pass to uninstall (default false)
  */
 export async function syncApps(openAPI, targetIds, onUpdate, opts = {}) {
+  const prepareYaml = typeof opts.prepareYaml === 'function' ? opts.prepareYaml : null
   const installed = new Set(await listInstalledAppIds(openAPI))
   const target = new Set((targetIds || []).filter(Boolean))
 
@@ -150,7 +165,7 @@ export async function syncApps(openAPI, targetIds, onUpdate, opts = {}) {
   for (const id of toInstall) {
     report({ id, action: 'install', state: 'running' })
     try {
-      await installApp(openAPI, id)
+      await installApp(openAPI, id, { prepareYaml })
       report({ id, action: 'install', state: 'starting' })
       await waitForRunning(openAPI, id, {
         onTick: (s) => report({ id, action: 'install', state: 'starting', detail: s }),

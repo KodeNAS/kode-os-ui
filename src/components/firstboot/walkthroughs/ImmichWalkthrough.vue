@@ -30,10 +30,6 @@
           {{ $t('Opens in a new tab. Sign up with the email + password you just set, then come back here.') }}
         </p>
       </div>
-      <div class="callout">
-        <b-icon icon="information-outline" pack="casa" size="is-small" />
-        <span>{{ $t('If Immich looks already set up (no "Admin Registration" screen), you\'re good — we tried to set it up for you automatically.') }}</span>
-      </div>
       <p class="next-prompt">{{ $t('Done? Tap Next below to continue with the phone app.') }}</p>
     </section>
 

@@ -11,15 +11,15 @@
       <div class="wt-substep">{{ sub + 1 }} / {{ total }}</div>
     </div>
 
-    <!-- Sub 0: open Pi-hole admin + set the password. Same setup-first
-         pattern as the other walkthroughs. Pi-hole doesn't have a
-         signup REST API, so this step is always required. -->
+    <!-- Sub 0: open Pi-hole admin. The wizard already injected the
+         buyer's KODE password into the compose file's
+         FTLCONF_webserver_api_password env var, so the admin password
+         IS their KODE password — no shell commands, no copy-paste
+         from a sticker. -->
     <section v-if="sub === 0" class="wt-body">
       <p>{{ $t('Pi-hole is your home network\'s ad blocker. Instead of installing a blocker on every device, your pebble blocks ads at the DNS layer — for your phones, TVs, smart speakers, everything.') }}</p>
       <p>
-        {{ $t('Before anything else: open the Pi-hole admin and sign in with the default password printed on your pebble box (or run') }}
-        <code>sudo pihole -a -p</code>
-        {{ $t('on your pebble to set a new one).') }}
+        {{ $t('Open the Pi-hole admin and sign in with your KODE password — we already set it for you.') }}
       </p>
       <div class="setup-cta">
         <a class="setup-cta-btn" :href="adminUrl" target="_blank" rel="noopener noreferrer">
@@ -33,7 +33,7 @@
           <QrcodeVue :value="adminUrl" :size="160" level="M" background="#ffffff" foreground="#000000" />
         </div>
         <div class="qr-side">
-          <p class="hint">{{ $t('If you forget the admin password later, the default is stored in /etc/pihole/setupVars.conf on your pebble (PIHOLE_WEBHASH).') }}</p>
+          <p class="hint">{{ $t('Use the password you set when you created your KODE account at the start of this wizard.') }}</p>
         </div>
       </div>
       <p class="next-prompt">{{ $t('Signed in? Tap Next to point your router\'s DNS at the pebble.') }}</p>
