@@ -34,8 +34,9 @@
         <AdminAccountStep   v-else-if="stepIndex === 3" key="adm" @next="onAdminDone"     @back="back" />
         <PebbleNameStep     v-else-if="stepIndex === 4" key="nm"  @next="onPebbleNameDone" @back="back" />
         <PickAppsStep       v-else-if="stepIndex === 5" key="ap"  @next="onAppsPicked"    @back="back" />
-        <WalkthroughStep    v-else-if="stepIndex === 6" key="wt"  :apps="pickedApps" :host="host" @next="next" @back="back" @restart="restart" />
-        <DoneStep           v-else-if="stepIndex === 7" key="dn"  :hostname="hostname" :apps="pickedApps" :is-replay="isReplay" @finish="finish" />
+        <LayoutChooserStep  v-else-if="stepIndex === 6" key="lc"  @next="onLayoutPicked"  @back="back" />
+        <WalkthroughStep    v-else-if="stepIndex === 7" key="wt"  :apps="pickedApps" :host="host" @next="next" @back="back" @restart="restart" />
+        <DoneStep           v-else-if="stepIndex === 8" key="dn"  :hostname="hostname" :apps="pickedApps" :is-replay="isReplay" @finish="finish" />
       </transition>
     </div>
   </div>
@@ -48,8 +49,10 @@ import SystemCheckStep  from '@/components/firstboot/steps/SystemCheckStep.vue'
 import AdminAccountStep from '@/components/firstboot/steps/AdminAccountStep.vue'
 import PebbleNameStep   from '@/components/firstboot/steps/PebbleNameStep.vue'
 import PickAppsStep     from '@/components/firstboot/steps/PickAppsStep.vue'
+import LayoutChooserStep from '@/components/firstboot/steps/LayoutChooserStep.vue'
 import WalkthroughStep  from '@/components/firstboot/steps/WalkthroughStep.vue'
 import DoneStep         from '@/components/firstboot/steps/DoneStep.vue'
+import { TEMPLATES } from '@/service/dashboardTemplates'
 
 export default {
   name: 'welcome-page',
@@ -60,6 +63,7 @@ export default {
     AdminAccountStep,
     PebbleNameStep,
     PickAppsStep,
+    LayoutChooserStep,
     WalkthroughStep,
     DoneStep,
   },
@@ -67,21 +71,25 @@ export default {
     return {
       isLoading: true,
       stepIndex: 0,
-      lastStep: 7,
+      lastStep: 8,
       adminCreated: false,
       userType: '', // 'beginner' | 'normal' | 'developer' — chosen at step 1
-      // Compact rail labels for steps 2..6 (welcome + usertype + done are hidden).
+      // Compact rail labels for steps 2..7 (welcome + usertype + done are hidden).
       railLabels: [
         this.$t('Check'),
         this.$t('Account'),
         this.$t('Name'),
         this.$t('Apps'),
+        this.$t('Layout'),
         this.$t('Set up'),
       ],
       // Collected wizard data
       adminUsername: '',
       hostname: 'pebble',
       pickedApps: [],
+      // Default to the user's "Default" template if they don't visit
+      // the layout chooser (e.g. developer fast-path).
+      chosenLayoutKey: 'builtin-default',
       host: window.location.hostname || 'pebble.local',
     }
   },
@@ -209,10 +217,17 @@ export default {
     },
     onAppsPicked(payload) {
       if (payload && Array.isArray(payload.apps)) this.pickedApps = payload.apps
-      // If the user picked zero apps somehow, skip the walkthrough step
-      // and go straight to Done. With UserTypeStep inserted at index 1,
-      // Walkthrough is now step 6 and Done is step 7.
-      this.stepIndex = this.pickedApps.length > 0 ? 6 : 7
+      // Always advance to LayoutChooser (step 6) — whether or not any
+      // apps were picked. From there the user can choose their starting
+      // dashboard layout, and the walkthrough step is conditional on
+      // whether any apps were picked.
+      this.stepIndex = 6
+    },
+    onLayoutPicked(payload) {
+      if (payload && payload.templateKey) this.chosenLayoutKey = payload.templateKey
+      // Skip the walkthrough step entirely if the user picked zero
+      // apps — there's nothing to walk them through.
+      this.stepIndex = this.pickedApps.length > 0 ? 7 : 8
     },
     async finish() {
       // Only persist the first-boot complete flag on initial setup; replay
@@ -236,19 +251,51 @@ export default {
       this.$router.push('/')
     },
     resetDashboardLayoutForFirstBoot() {
-      // After a factory reset / fresh install, the user expects to land
-      // on the Default layout — but localStorage from a prior install
-      // can persist past the backend reset, leaving the old saved
-      // layout in place. Clearing the layout-related keys here forces
-      // the dashboard's loadLayout to fall back to DEFAULT_LAYOUT, which
-      // already mirrors the "Default" template. User-saved templates
-      // (kode_user_templates_v1) are kept so anything they intentionally
-      // bookmarked survives the wizard.
+      // After a factory reset / fresh install, write the user's chosen
+      // starting layout (from LayoutChooserStep) into localStorage so
+      // the dashboard mounts onto it directly. Falls back to clearing
+      // the keys for the 'blank' choice (so the dashboard's loadLayout
+      // applies DEFAULT_LAYOUT, which IS the user's "Default" template
+      // already) and for any unrecognized key.
       try {
-        localStorage.removeItem('kode_columns_layout_v2')
-        localStorage.removeItem('kode_columns_weights_v1')
-        localStorage.removeItem('kode_column_count_v1')
-        localStorage.removeItem('kode_tile_order')
+        localStorage.removeItem('kode_tile_order') // legacy
+        if (this.chosenLayoutKey === 'blank') {
+          // Blank canvas — start with empty columns. Write a single
+          // 2-column empty layout so the user has something to drop
+          // widgets into without invoking the Default fallback.
+          localStorage.setItem('kode_columns_layout_v2', JSON.stringify([
+            { widgets: [], subCols: null },
+            { widgets: [], subCols: null },
+          ]))
+          localStorage.setItem('kode_columns_weights_v1', JSON.stringify([1, 1]))
+          localStorage.setItem('kode_column_count_v1', '2')
+          return
+        }
+        const t = TEMPLATES.find(x => x.key === this.chosenLayoutKey)
+        if (!t) {
+          // Unknown key — clear so loadLayout falls back to DEFAULT_LAYOUT.
+          localStorage.removeItem('kode_columns_layout_v2')
+          localStorage.removeItem('kode_columns_weights_v1')
+          localStorage.removeItem('kode_column_count_v1')
+          return
+        }
+        // Normalize cols into the canonical {widgets, subCols} shape so
+        // the dashboard's loader doesn't have to coerce legacy arrays.
+        const cleaned = t.cols.map(c => (
+          Array.isArray(c)
+            ? { widgets: [...c], subCols: null }
+            : {
+                widgets: Array.isArray(c.widgets) ? [...c.widgets] : [],
+                subCols: Array.isArray(c.subCols) ? c.subCols.map(s => [...s]) : null,
+              }
+        ))
+        localStorage.setItem('kode_columns_layout_v2', JSON.stringify(cleaned))
+        if (Array.isArray(t.weights) && t.weights.length === cleaned.length) {
+          localStorage.setItem('kode_columns_weights_v1', JSON.stringify(t.weights))
+        } else {
+          localStorage.removeItem('kode_columns_weights_v1')
+        }
+        localStorage.setItem('kode_column_count_v1', String(cleaned.length))
       } catch (e) { /* ignore */ }
     },
   },

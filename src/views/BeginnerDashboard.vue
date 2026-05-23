@@ -282,6 +282,7 @@ import PhotoOfTheDayWidget from '@/components/beginner/PhotoOfTheDayWidget.vue'
 import AddWidgetPanel from '@/components/beginner/AddWidgetPanel.vue'
 import LayoutSettingsPanel from '@/components/beginner/LayoutSettingsPanel.vue'
 import { maybeStartEasyTourOnce } from '@/service/tour'
+import { TEMPLATES } from '@/service/dashboardTemplates'
 
 // Mode-aware localStorage key set. Each interface mode (beginner vs.
 // advanced) stores its own layout/weights/column-count/templates so a
@@ -302,73 +303,8 @@ function keysFor(mode) {
 // their own browser and asked to ship as the canonical pre-made set.
 // Each `cols` entry may be either a legacy string[] (flat column) or
 // the new { widgets, subCols } shape — normalizeColumn handles both.
-const TEMPLATES = [
-  {
-    key: 'builtin-default',
-    name: 'Default',
-    description: 'Clock + weather, apps in the middle, family on the side.',
-    cols: [
-      { widgets: ['clock', 'weather'], subCols: null },
-      { widgets: ['apps', 'search', 'addDevice'], subCols: null },
-      { widgets: ['tips', 'family', 'files'], subCols: null },
-    ],
-    weights: [0.75, 1.75, 0.7],
-  },
-  {
-    key: 'builtin-essential-1',
-    name: 'Essential 1',
-    description: 'Clock + recent on the left, search and apps in the middle.',
-    cols: [
-      ['clock', 'recent'],
-      ['search', 'apps', 'sysInfo'],
-      ['weather', 'files', 'family', 'addDevice'],
-    ],
-    weights: [0.75, 1.63, 0.62],
-  },
-  {
-    key: 'builtin-minimalist-1',
-    name: 'Minimalist 1',
-    description: 'Two-column setup with the essentials only.',
-    cols: [
-      ['search', 'clock', 'weather', 'addDevice'],
-      ['apps', 'files', 'family'],
-    ],
-    weights: [1, 1],
-  },
-  {
-    key: 'builtin-simple-1',
-    name: 'Simple 1',
-    description: 'Search + apps on the left, time + weather on the right.',
-    cols: [
-      ['search', 'apps'],
-      ['clock', 'weather'],
-    ],
-    weights: [1, 1],
-  },
-  {
-    key: 'builtin-full-1',
-    name: 'Full 1',
-    description: 'Clock + weather, the search/family stack, and an app shortcuts column.',
-    cols: [
-      ['clock', 'weather'],
-      ['search', 'family', 'addDevice', 'files'],
-      ['app:immich', 'app:jellyfin', 'app:filebrowser', 'app:homeassistant', 'app:pihole'],
-    ],
-    weights: [1, 1, 1],
-  },
-  {
-    key: 'builtin-full-2',
-    name: 'Full 2',
-    description: 'Four-column dashboard — everything turned on.',
-    cols: [
-      { widgets: ['clock', 'weather', 'sysInfo'], subCols: null },
-      { widgets: ['recent', 'family'], subCols: null },
-      { widgets: ['search', 'apps', 'tips'], subCols: null },
-      { widgets: ['appsRunning', 'files', 'addDevice', 'storage', 'network'], subCols: null },
-    ],
-    weights: [1, 1, 1, 1],
-  },
-]
+// TEMPLATES are imported at the top of this <script>. Listing this
+// comment here so future readers know where they live.
 // Generic widget keys. Per-app shortcuts use the `app:<id>` prefix and
 // are validated separately. App shortcuts can be duplicated across the
 // dashboard by appending a "#N" instance suffix (`app:immich#1`,
