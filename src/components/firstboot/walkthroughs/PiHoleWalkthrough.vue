@@ -23,7 +23,7 @@
       </p>
       <div class="setup-cta">
         <a class="setup-cta-btn" :href="adminUrl" target="_blank" rel="noopener noreferrer">
-          <b-icon icon="show-search-outline" pack="casa" size="is-medium" />
+          <b-icon icon="internet-outline" pack="casa" size="is-medium" />
           <span>{{ $t('Open Pi-hole admin') }}</span>
         </a>
         <p class="setup-cta-hint">{{ $t('Or scan from your phone:') }} <code>{{ adminUrl }}</code></p>

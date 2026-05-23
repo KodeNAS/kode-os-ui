@@ -12,18 +12,18 @@
 
     <p class="wt-body">{{ meta.intro }}</p>
 
+    <!-- Same setup-first pattern used in the four named walkthroughs:
+         primary "Open <App>" CTA above the inline Next button so every
+         walkthrough in the OS looks identical at this point. -->
+    <div v-if="appUrl" class="setup-cta">
+      <a class="setup-cta-btn" :href="appUrl" target="_blank" rel="noopener noreferrer">
+        <b-icon icon="internet-outline" pack="casa" size="is-medium" />
+        <span>{{ `${$t('Open')} ${meta.title}` }}</span>
+      </a>
+    </div>
+
     <div class="wt-actions">
-      <b-button
-        v-if="appUrl"
-        rounded
-        type="is-light"
-        tag="a"
-        :href="appUrl"
-        target="_blank"
-        rel="noopener noreferrer"
-      >
-        {{ `${$t('Open')} ${meta.title}` }}
-      </b-button>
+      <div class="is-flex-grow-1"></div>
       <b-button rounded type="is-primary" @click="$emit('done')">
         {{ isLast ? $t('All set') : $t('Next app') }}
       </b-button>
@@ -105,6 +105,8 @@ export default {
 </script>
 
 <style lang="scss" scoped>
+@import './_walkthrough.scss';
+
 .walkthrough {
   background: rgba(255, 255, 255, 0.55);
   backdrop-filter: blur(24px) saturate(180%);

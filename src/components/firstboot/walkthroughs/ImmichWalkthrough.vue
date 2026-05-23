@@ -23,7 +23,7 @@
       </p>
       <div class="setup-cta">
         <a class="setup-cta-btn" :href="immichUrl" target="_blank" rel="noopener noreferrer">
-          <b-icon icon="show-search-outline" pack="casa" size="is-medium" />
+          <b-icon icon="internet-outline" pack="casa" size="is-medium" />
           <span>{{ $t('Open Immich') }}</span>
         </a>
         <p class="setup-cta-hint">

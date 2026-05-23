@@ -285,6 +285,36 @@ export async function bootstrapByAppId(appstoreId, host, creds) {
  * --------------------------------------------------------------------- */
 
 /**
+ * Jellyfin's stock compose binds /DATA/Media → /Media — which doesn't
+ * match the rest of the OS where the user-facing folders are
+ * /DATA/Videos, /DATA/Music, /DATA/Photos. Result: the buyer puts a
+ * movie in /DATA/Videos via the file browser, opens Jellyfin's library
+ * picker, and sees nothing useful (only /Media which is empty).
+ *
+ * Replacement: swap the single /DATA/Media bind for three explicit
+ * binds where the host path equals the container path. The buyer can
+ * type /DATA/Videos in Jellyfin's library setup and it just works —
+ * no mental translation, same path everywhere in the OS.
+ */
+export function prepareJellyfinYaml(yaml) {
+  if (!yaml) return yaml
+  return yaml.replace(
+    / {12}- type: bind\n {14}source: \/DATA\/Media\n {14}target: \/Media\n/,
+    [
+      '            - type: bind\n',
+      '              source: /DATA/Videos\n',
+      '              target: /DATA/Videos\n',
+      '            - type: bind\n',
+      '              source: /DATA/Music\n',
+      '              target: /DATA/Music\n',
+      '            - type: bind\n',
+      '              source: /DATA/Photos\n',
+      '              target: /DATA/Photos\n',
+    ].join(''),
+  )
+}
+
+/**
  * Replace Pi-hole's default API password (`casaos`) with the buyer's
  * KODE password so they sign in with credentials they already know.
  * Safe across YAML quoting variants because we only replace the value
@@ -310,7 +340,8 @@ export function preparePiholeYaml(yaml, creds) {
  */
 export function prepareYamlByAppId(appstoreId, yaml, creds) {
   switch (appstoreId) {
-    case 'pihole': return preparePiholeYaml(yaml, creds)
-    default:       return yaml
+    case 'pihole':   return preparePiholeYaml(yaml, creds)
+    case 'jellyfin': return prepareJellyfinYaml(yaml)
+    default:         return yaml
   }
 }

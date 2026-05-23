@@ -25,7 +25,7 @@
       </p>
       <div class="setup-cta">
         <a class="setup-cta-btn" :href="url" target="_blank" rel="noopener noreferrer">
-          <b-icon icon="show-search-outline" pack="casa" size="is-medium" />
+          <b-icon icon="internet-outline" pack="casa" size="is-medium" />
           <span>{{ $t('Open Home Assistant') }}</span>
         </a>
         <p class="setup-cta-hint">{{ $t('Opens in a new tab.') }} <code>{{ url }}</code></p>
