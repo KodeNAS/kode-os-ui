@@ -25,7 +25,7 @@
         <ul>
           <li>{{ $t('All KODE accounts on this pebble') }}</li>
           <li>{{ $t('All installed apps (Immich, Jellyfin, Pi-hole, Home Assistant…) and their app data') }}</li>
-          <li>{{ $t('All your files in /DATA (Photos, Videos, Documents, Music, Downloads, Backups, Gallery, AppData)') }}</li>
+          <li>{{ $t('Everything under /DATA — photos, videos, documents, music, downloads, app data, and any folders you\'ve added yourself') }}</li>
           <li>{{ $t('Pebble name, dashboard layout, wallpaper, and tour state') }}</li>
         </ul>
       </div>
@@ -72,19 +72,6 @@
 
 <script>
 import { syncApps, listInstalledAppIds, uninstallApp } from '@/service/appSync'
-
-// Paths under /DATA that the wizard re-creates. We wipe these on
-// factory reset so the user gets a clean tree on next boot.
-const DATA_FOLDERS_TO_WIPE = [
-  '/DATA/Photos',
-  '/DATA/Videos',
-  '/DATA/Documents',
-  '/DATA/Music',
-  '/DATA/Downloads',
-  '/DATA/Backups',
-  '/DATA/Gallery',
-  '/DATA/AppData',
-]
 
 export default {
   name: 'FactoryResetModal',
@@ -169,16 +156,22 @@ export default {
       }
       this.appProgress = ''
 
-      // Phase 2 — delete the user-data folders under /DATA. We list
-      // first so we only delete what's actually there (the install may
-      // not have every folder), and we go one folder at a time so a
-      // single failure (locked file, etc.) doesn't abort the rest.
+      // Phase 2 — wipe every top-level entry under /DATA. "Fresh out
+      // of the box" should mean exactly that, so we no longer filter
+      // against a hardcoded whitelist (which previously skipped any
+      // user-created folder names like `media`). Hidden dot-entries
+      // are kept because they're typically system markers, not user
+      // data; the file browser hides them anyway.
       this.statusLabel = this.$t('Deleting files in /DATA…')
       try {
         const list = await this.$api.folder.getList('/DATA')
         const items = (list && list.data && list.data.data && list.data.data.content) || []
-        const presentPaths = items.map(i => i && i.path).filter(Boolean)
-        const toDelete = presentPaths.filter(p => DATA_FOLDERS_TO_WIPE.includes(p))
+        const toDelete = items
+          .map(i => i && i.path)
+          .filter(Boolean)
+          .filter(p => !/(^|\/)\.[^/]+$/.test(p)) // skip dotfiles/dotdirs
+        // eslint-disable-next-line no-console
+        console.info('Factory reset: wiping /DATA entries', toDelete)
         // batch.delete expects a JSON-stringified array body
         // (see the existing call site in mixins/mixin.js).
         if (toDelete.length > 0) {
