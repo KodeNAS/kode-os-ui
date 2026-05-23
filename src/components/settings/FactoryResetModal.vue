@@ -71,7 +71,7 @@
 </template>
 
 <script>
-import { syncApps } from '@/service/appSync'
+import { syncApps, listInstalledAppIds, uninstallApp } from '@/service/appSync'
 
 // Paths under /DATA that the wizard re-creates. We wipe these on
 // factory reset so the user gets a clean tree on next boot.
@@ -107,27 +107,65 @@ export default {
       this.isResetting = true
 
       // Phase 1 — uninstall every compose app and delete their userdata.
-      // Empty target set means "uninstall everything". syncApps's
-      // onUpdate stream lets us show per-app progress so the user
-      // doesn't think the modal froze.
+      // We list first so we can show "Removing X of N apps", then run
+      // syncApps with an empty target. After it finishes we list AGAIN
+      // and retry any leftovers individually — Docker can take a moment
+      // to surface a clean state, so a 2nd pass catches stragglers.
       this.statusLabel = this.$t('Removing installed apps…')
+      let installed = []
       try {
-        await syncApps(
-          this.$openAPI,
-          [],
-          (entry) => {
-            if (entry.state === 'running') {
-              this.appProgress = `${this.$t('Removing')} ${entry.id}…`
-            } else if (entry.state === 'done') {
-              this.appProgress = `${this.$t('Removed')} ${entry.id}`
-            }
-          },
-          { deleteUserdata: true },
-        )
+        installed = await listInstalledAppIds(this.$openAPI)
       } catch (e) {
-        // Partial app removal is acceptable — continue with the wipe.
         // eslint-disable-next-line no-console
-        console.warn('Factory reset: app uninstall partially failed', e)
+        console.warn('Factory reset: pre-uninstall list failed', e)
+      }
+      // eslint-disable-next-line no-console
+      console.info('Factory reset: uninstalling apps', installed)
+      this.appProgress = installed.length === 0
+        ? this.$t('No apps installed.')
+        : `${this.$t('Found')} ${installed.length} ${this.$t('apps')}`
+
+      if (installed.length > 0) {
+        try {
+          await syncApps(
+            this.$openAPI,
+            [],
+            (entry) => {
+              if (entry.state === 'running') {
+                this.appProgress = `${this.$t('Removing')} ${entry.id}…`
+              } else if (entry.state === 'done') {
+                this.appProgress = `${this.$t('Removed')} ${entry.id}`
+              } else if (entry.state === 'error') {
+                // eslint-disable-next-line no-console
+                console.warn('Factory reset: failed to remove', entry.id, entry.error)
+              }
+            },
+            { deleteUserdata: true },
+          )
+        } catch (e) {
+          // eslint-disable-next-line no-console
+          console.warn('Factory reset: syncApps threw', e)
+        }
+
+        // Verification pass — anything still listed gets a second try.
+        let leftovers = []
+        try {
+          leftovers = await listInstalledAppIds(this.$openAPI)
+        } catch (e) { /* ignore */ }
+        if (leftovers.length > 0) {
+          this.appProgress = `${this.$t('Retrying')} ${leftovers.length} ${this.$t('apps')}…`
+          // eslint-disable-next-line no-console
+          console.warn('Factory reset: leftover apps after first pass', leftovers)
+          for (const id of leftovers) {
+            try {
+              this.appProgress = `${this.$t('Removing')} ${id}…`
+              await uninstallApp(this.$openAPI, id, { deleteUserdata: true })
+            } catch (e) {
+              // eslint-disable-next-line no-console
+              console.warn('Factory reset: second-pass uninstall failed for', id, e)
+            }
+          }
+        }
       }
       this.appProgress = ''
 
