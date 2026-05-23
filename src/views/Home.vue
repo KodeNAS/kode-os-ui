@@ -37,6 +37,16 @@ export default {
       hardwareInfoLoading: true,
       user_id: localStorage.getItem('user_id') ? localStorage.getItem('user_id') : 1,
       isFileActive: false,
+      // Advanced mode sub-view: 'classic' (upstream layout) or 'widgets'
+      // (the KODE widget canvas with its own localStorage bucket).
+      // Persisted under kode_advanced_view. Defaults to 'classic' so an
+      // existing Advanced user sees no change until they opt in.
+      advancedView: (() => {
+        try {
+          const v = localStorage.getItem('kode_advanced_view')
+          return v === 'widgets' ? 'widgets' : 'classic'
+        } catch (e) { return 'classic' }
+      })(),
       topbarHidden: false,
       // When true, the auto-hide is paused — used by the dashboard
       // tour so it can keep the top bar visible while explaining it.
@@ -102,6 +112,16 @@ export default {
     this.$EventBus.$off('casaUI:openStorageManager')
   },
   methods: {
+
+    /**
+     * Flip the Advanced sub-view between Classic (upstream layout) and
+     * Widgets (KODE widget canvas with mode='advanced'). Persists the
+     * choice so a reload keeps the user where they were.
+     */
+    toggleAdvancedView() {
+      this.advancedView = this.advancedView === 'widgets' ? 'classic' : 'widgets'
+      try { localStorage.setItem('kode_advanced_view', this.advancedView) } catch (e) { /* ignore */ }
+    },
 
     /**
      * @description: Get CasaOS Configs
@@ -365,10 +385,28 @@ export default {
     <!-- Beginner Dashboard (KODE OS) — widget canvas with custom layout. -->
     <BeginnerDashboard v-if="isBeginner" />
 
-    <!-- Advanced mode: upstream CasaOS layout (SideBar + SearchBar + Apps).
-         Restored after a brief over-correction; the widget canvas + custom
-         layouts live in Easy mode only. -->
-    <div v-else class="contents  pt-55 contextmenu-canvas" @contextmenu.prevent="openHomeContaxtMenu">
+    <!-- Advanced mode now has two flavors. Classic = the upstream CasaOS
+         layout (SideBar + SearchBar + Apps). Widgets = the same widget
+         canvas Easy mode uses, but with its own localStorage bucket and
+         a denser default layout. A floating chip in the top-left lets
+         the user flip between them; choice is persisted. -->
+    <template v-else>
+      <button
+        type="button"
+        class="advanced-view-chip"
+        :title="advancedView === 'widgets' ? $t('Switch to classic layout') : $t('Switch to widget layout')"
+        @click="toggleAdvancedView"
+      >
+        <b-icon
+          :icon="advancedView === 'widgets' ? 'view-grid-outline' : 'view-dashboard-outline'"
+          pack="casa"
+          size="is-small"
+        />
+        <span>{{ advancedView === 'widgets' ? $t('Widgets') : $t('Classic') }}</span>
+      </button>
+
+      <BeginnerDashboard v-if="advancedView === 'widgets'" mode="advanced" />
+      <div v-else class="contents  pt-55 contextmenu-canvas" @contextmenu.prevent="openHomeContaxtMenu">
       <div class="container">
         <div class="columns is-variable is-2">
           <div class="column is-one-quarter slider-content">
@@ -412,6 +450,7 @@ export default {
         </div>
       </div>
     </div>
+    </template>
     <!-- Content End -->
 
     <!-- File Panel Start -->
@@ -584,6 +623,38 @@ export default {
 @media screen and (max-width: $tablet) {
     .columns {
         display: flex;
+    }
+}
+
+/* Floating Classic / Widgets toggle — only shown in Advanced mode.
+   Sits flush with the left edge below the (auto-hiding) top bar,
+   matching the dashboard's frosted-chip aesthetic. */
+.advanced-view-chip {
+    position: fixed;
+    top: 5rem;
+    left: 1rem;
+    z-index: 40;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    padding: 7px 14px;
+    background: rgba(255, 255, 255, 0.18);
+    border: 1px solid rgba(255, 255, 255, 0.32);
+    border-radius: 999px;
+    color: #fff;
+    font-size: 0.8125rem;
+    font-weight: 500;
+    letter-spacing: 0.01em;
+    cursor: pointer;
+    backdrop-filter: blur(12px) saturate(160%);
+    -webkit-backdrop-filter: blur(12px) saturate(160%);
+    text-shadow: 0 1px 4px rgba(0, 0, 0, 0.45);
+    transition: background 0.15s, border-color 0.15s, transform 0.15s;
+
+    &:hover {
+        background: rgba(255, 255, 255, 0.28);
+        border-color: rgba(255, 255, 255, 0.5);
+        transform: translateY(-1px);
     }
 }
 </style>

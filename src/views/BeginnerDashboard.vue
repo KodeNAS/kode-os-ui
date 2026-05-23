@@ -17,17 +17,25 @@
             <span>{{ editMode ? $t('Done') : $t('Edit layout') }}</span>
           </button>
 
-          <h1 class="title is-2 has-text-white">
-            {{ $t('Welcome to pebble') }}
-          </h1>
-          <p class="subtitle is-5 has-text-white">
-            <template v-if="editMode">
-              {{ $t('Drag any widget to any column.') }}
-              <span class="subtitle-hint">{{ $t('Hold Shift while resizing to snap.') }}</span>
-            </template>
-            <template v-else>
-              {{ $t('Your own private cloud, ready when you are.') }}
-            </template>
+          <!-- Welcome banner is beginner-only. Advanced users don't need
+               the greeting and the screen real estate is better spent on
+               their denser default layout. -->
+          <template v-if="mode !== 'advanced'">
+            <h1 class="title is-2 has-text-white">
+              {{ $t('Welcome to pebble') }}
+            </h1>
+            <p class="subtitle is-5 has-text-white">
+              <template v-if="editMode">
+                {{ $t('Drag any widget to any column.') }}
+                <span class="subtitle-hint">{{ $t('Hold Shift while resizing to snap.') }}</span>
+              </template>
+              <template v-else>
+                {{ $t('Your own private cloud, ready when you are.') }}
+              </template>
+            </p>
+          </template>
+          <p v-else-if="editMode" class="subtitle is-6 has-text-white advanced-edit-hint">
+            {{ $t('Drag any widget to any column. Hold Shift while resizing to snap.') }}
           </p>
         </header>
 
@@ -275,10 +283,20 @@ import AddWidgetPanel from '@/components/beginner/AddWidgetPanel.vue'
 import LayoutSettingsPanel from '@/components/beginner/LayoutSettingsPanel.vue'
 import { maybeStartEasyTourOnce } from '@/service/tour'
 
-const LAYOUT_KEY = 'kode_columns_layout_v2'
-const WEIGHTS_KEY = 'kode_columns_weights_v1'
-const COLCOUNT_KEY = 'kode_column_count_v1'
-const USER_TEMPLATES_KEY = 'kode_user_templates_v1'
+// Mode-aware localStorage key set. Each interface mode (beginner vs.
+// advanced) stores its own layout/weights/column-count/templates so a
+// power user can build a dense Advanced canvas without overwriting
+// their Easy-mode setup, and vice versa. `keysFor` returns an object
+// of fully-qualified keys for the given mode.
+function keysFor(mode) {
+  const prefix = mode === 'advanced' ? 'kode_adv_' : 'kode_'
+  return {
+    layout:         `${prefix}columns_layout_v2`,
+    weights:        `${prefix}columns_weights_v1`,
+    colCount:       `${prefix}column_count_v1`,
+    userTemplates:  `${prefix}user_templates_v1`,
+  }
+}
 
 // Built-in templates. These match the layouts the user designed in
 // their own browser and asked to ship as the canonical pre-made set.
@@ -437,19 +455,37 @@ function normalizeColumn(col) {
   return { widgets: [], subCols: null }
 }
 
-// First-boot seed — matches the user's "Default" saved layout. Picked
-// because it's the one explicitly named Default among their templates
-// and balances utility (apps + search + addDevice in the middle) with
-// quick-glance info (clock + weather on the left).
-const DEFAULT_LAYOUT = [
+// First-boot seed for BEGINNER mode — matches the user's "Default"
+// saved layout. Balances quick-glance info (clock + weather) on the
+// left with utility (apps + search + addDevice) in the middle.
+const BEGINNER_DEFAULT_LAYOUT = [
   { widgets: ['clock', 'weather'], subCols: null },
   { widgets: ['apps', 'search', 'addDevice'], subCols: null },
   { widgets: ['tips', 'family', 'files'], subCols: null },
 ]
+const BEGINNER_DEFAULT_WEIGHTS = [0.75, 1.75, 0.7]
 
-// Matches the weights from the user's Default layout so the first-boot
-// proportions look the same as the saved template.
-const DEFAULT_WEIGHTS = [0.75, 1.75, 0.7]
+// First-boot seed for ADVANCED mode — denser, monitoring-forward.
+// Left column has a flat top (clock + weather) plus a nested 2-sub-col
+// stack below for system stats, demonstrating mixed-mode layout.
+const ADVANCED_DEFAULT_LAYOUT = [
+  {
+    widgets: ['clock', 'weather'],
+    subCols: [
+      ['sysInfo', 'storage'],
+      ['network', 'appsRunning'],
+    ],
+  },
+  { widgets: ['search', 'apps', 'recent', 'tips'], subCols: null },
+]
+const ADVANCED_DEFAULT_WEIGHTS = [1.4, 1]
+
+function defaultLayoutFor(mode) {
+  return mode === 'advanced' ? ADVANCED_DEFAULT_LAYOUT : BEGINNER_DEFAULT_LAYOUT
+}
+function defaultWeightsFor(mode) {
+  return mode === 'advanced' ? ADVANCED_DEFAULT_WEIGHTS : BEGINNER_DEFAULT_WEIGHTS
+}
 const MIN_WEIGHT = 0.35
 const MAX_WEIGHT = 2.5
 const DIVIDER_PX = 6
@@ -457,6 +493,18 @@ const SNAP_STEP = 0.25  // Shift-held: round each affected weight to this fr ste
 
 export default {
   name: 'BeginnerDashboard',
+  props: {
+    // 'beginner' (default) or 'advanced'. Drives which localStorage
+    // bucket the layout/weights/templates are read from, which
+    // default layout seeds a fresh install, and which chrome
+    // (welcome banner, auto-tour) shows. Both modes share the entire
+    // widget canvas otherwise.
+    mode: {
+      type: String,
+      default: 'beginner',
+      validator(v) { return v === 'beginner' || v === 'advanced' },
+    },
+  },
   components: {
     draggable,
     AppSection,
@@ -498,7 +546,7 @@ export default {
     }
     // Keep the standalone count key in sync with the canonical
     // columns.length so any downstream read sees the right value.
-    try { localStorage.setItem(COLCOUNT_KEY, String(columnCount)) } catch (e) { /* ignore */ }
+    try { localStorage.setItem(keysFor(this.mode).colCount, String(columnCount)) } catch (e) { /* ignore */ }
     return {
       pickedApps: [],
       columnCount,
@@ -528,8 +576,11 @@ export default {
   },
   mounted() {
     // First visit only — fires the driver.js tour if kode_tour_seen
-    // isn't set. Tour itself marks the flag on close/finish.
-    maybeStartEasyTourOnce()
+    // isn't set. Tour itself marks the flag on close/finish. Advanced
+    // mode skips the tour entirely; power users don't need it.
+    if (this.mode !== 'advanced') {
+      maybeStartEasyTourOnce()
+    }
     // Final reconciliation pass — covers the Easy→Advanced→Easy round-trip
     // where stale state from a prior mount could leave colWeights at a
     // different length than columns (e.g. user changed column count in
@@ -539,7 +590,7 @@ export default {
       this.colWeights = Array(this.columns.length).fill(1)
       this.columnCount = this.columns.length
       this.saveWeights()
-      try { localStorage.setItem(COLCOUNT_KEY, String(this.columnCount)) } catch (e) { /* ignore */ }
+      try { localStorage.setItem(keysFor(this.mode).colCount, String(this.columnCount)) } catch (e) { /* ignore */ }
     }
   },
   methods: {
@@ -557,19 +608,19 @@ export default {
 
     loadColumnCount() {
       try {
-        const raw = parseInt(localStorage.getItem(COLCOUNT_KEY), 10)
+        const raw = parseInt(localStorage.getItem(keysFor(this.mode).colCount), 10)
         if ([2, 3, 4].includes(raw)) return raw
       } catch (e) { /* ignore */ }
       return 3
     },
     loadLayout() {
       try {
-        const raw = localStorage.getItem(LAYOUT_KEY)
-        if (!raw) return this.expandLayoutTo(DEFAULT_LAYOUT, this.columnCount || 3)
+        const raw = localStorage.getItem(keysFor(this.mode).layout)
+        if (!raw) return this.expandLayoutTo(defaultLayoutFor(this.mode), this.columnCount || 3)
         const parsed = JSON.parse(raw)
         if (!Array.isArray(parsed) || parsed.length < 2 || parsed.length > 4) {
           // Corrupt or truncated — fall back to defaults.
-          return this.expandLayoutTo(DEFAULT_LAYOUT, this.columnCount || 3)
+          return this.expandLayoutTo(defaultLayoutFor(this.mode), this.columnCount || 3)
         }
         // Normalize each column into { widgets, subCols }. Defensive against
         // mixed legacy + new shapes, missing fields, and corrupt entries.
@@ -590,7 +641,7 @@ export default {
       } catch (e) {
         // eslint-disable-next-line no-console
         console.warn('loadLayout failed; falling back to defaults:', e)
-        return this.expandLayoutTo(DEFAULT_LAYOUT, this.columnCount || 3)
+        return this.expandLayoutTo(defaultLayoutFor(this.mode), this.columnCount || 3)
       }
     },
     isSubdivided(column) {
@@ -673,7 +724,7 @@ export default {
           widgets: Array.isArray(c.widgets) ? [...c.widgets] : [],
           subCols: Array.isArray(c.subCols) ? c.subCols.map(sub => [...sub]) : null,
         }))
-        localStorage.setItem(LAYOUT_KEY, JSON.stringify(clean))
+        localStorage.setItem(keysFor(this.mode).layout, JSON.stringify(clean))
       } catch (e) { /* ignore quota / disabled storage */ }
     },
     loadWeights(targetCount) {
@@ -682,7 +733,7 @@ export default {
       // assigned yet during data() initialization).
       const count = targetCount || this.columnCount || 3
       try {
-        const raw = localStorage.getItem(WEIGHTS_KEY)
+        const raw = localStorage.getItem(keysFor(this.mode).weights)
         if (raw) {
           const parsed = JSON.parse(raw)
           if (Array.isArray(parsed) && parsed.length === count) {
@@ -698,7 +749,7 @@ export default {
     },
     saveWeights() {
       try {
-        localStorage.setItem(WEIGHTS_KEY, JSON.stringify(this.colWeights))
+        localStorage.setItem(keysFor(this.mode).weights, JSON.stringify(this.colWeights))
       } catch (e) { /* ignore */ }
     },
     startDividerResize(dividerIdx, e) {
@@ -775,7 +826,7 @@ export default {
       this.columns = this.expandLayoutTo(this.columns, n)
       this.colWeights = Array(n).fill(1)
       this.columnCount = n
-      try { localStorage.setItem(COLCOUNT_KEY, String(n)) } catch (e) { /* ignore */ }
+      try { localStorage.setItem(keysFor(this.mode).colCount, String(n)) } catch (e) { /* ignore */ }
       this.saveLayout()
       this.saveWeights()
     },
@@ -790,13 +841,13 @@ export default {
       this.colWeights = Array.isArray(t.weights) && t.weights.length === next.length
         ? t.weights.map(w => Math.max(MIN_WEIGHT, Math.min(MAX_WEIGHT, Number(w) || 1)))
         : Array(next.length).fill(1)
-      try { localStorage.setItem(COLCOUNT_KEY, String(next.length)) } catch (e) { /* ignore */ }
+      try { localStorage.setItem(keysFor(this.mode).colCount, String(next.length)) } catch (e) { /* ignore */ }
       this.saveLayout()
       this.saveWeights()
     },
     loadUserTemplates() {
       try {
-        const raw = localStorage.getItem(USER_TEMPLATES_KEY)
+        const raw = localStorage.getItem(keysFor(this.mode).userTemplates)
         if (!raw) return []
         const parsed = JSON.parse(raw)
         if (!Array.isArray(parsed)) return []
@@ -807,7 +858,7 @@ export default {
     },
     saveUserTemplates() {
       try {
-        localStorage.setItem(USER_TEMPLATES_KEY, JSON.stringify(this.userTemplates))
+        localStorage.setItem(keysFor(this.mode).userTemplates, JSON.stringify(this.userTemplates))
       } catch (e) { /* ignore */ }
     },
     saveCurrentAsTemplate() {
@@ -903,13 +954,13 @@ export default {
       // re-apply one. Use when the layout state has drifted into a
       // bad shape that won't render.
       try {
-        localStorage.removeItem(LAYOUT_KEY)
-        localStorage.removeItem(WEIGHTS_KEY)
-        localStorage.removeItem(COLCOUNT_KEY)
+        localStorage.removeItem(keysFor(this.mode).layout)
+        localStorage.removeItem(keysFor(this.mode).weights)
+        localStorage.removeItem(keysFor(this.mode).colCount)
       } catch (e) { /* ignore */ }
       this.columnCount = 3
-      this.columns = this.expandLayoutTo(DEFAULT_LAYOUT, 3)
-      this.colWeights = [...DEFAULT_WEIGHTS]
+      this.columns = this.expandLayoutTo(defaultLayoutFor(this.mode), 3)
+      this.colWeights = [...defaultWeightsFor(this.mode)]
       this.$buefy.toast.open({
         message: this.$t('Layout reset to default.'),
         type: 'is-success',
