@@ -69,14 +69,6 @@ const mutations = {
     state.rssSwitch = val
   },
 
-  // KODE OS — toggles between simplified (beginner) and full (advanced) UI.
-  // Persists to localStorage so the choice survives reloads.
-  SET_INTERFACE_MODE(state, val) {
-    const next = val === 'advanced' ? 'advanced' : 'beginner'
-    localStorage.setItem('kode_interface_mode', next)
-    state.interfaceMode = next
-  },
-
   SET_HARDWARE_INFO(state, val) {
     state.hardwareInfo = val
   },

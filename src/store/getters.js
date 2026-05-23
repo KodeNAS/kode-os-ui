@@ -11,7 +11,5 @@
  * KODE OS additions © KODE NAS, licensed separately.
  */
 const getters = {
-  isBeginner: state => state.interfaceMode !== 'advanced',
-  isAdvanced: state => state.interfaceMode === 'advanced',
 }
 export default getters

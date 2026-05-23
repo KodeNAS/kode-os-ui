@@ -24,10 +24,6 @@ const state = {
   recommendSwitch: true,
   rssSwitch: false,
 
-  // KODE OS — interface mode: 'beginner' shows the simplified dashboard,
-  // 'advanced' exposes the full CasaOS power-user surface. Default beginner.
-  interfaceMode: localStorage.getItem('kode_interface_mode') || 'beginner',
-
   siteLoading: true,
   needInitialization: false,
   hardwareInfo: {},

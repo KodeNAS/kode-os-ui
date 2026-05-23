@@ -135,7 +135,6 @@ export default {
       // Step 4: Reset Vuex so the router's beforeEach guard sees us as
       // uninitialized and routes /welcome on next nav.
       this.$store.commit('SET_NEED_INITIALIZATION', true)
-      this.$store.commit('SET_INTERFACE_MODE', 'beginner')
       this.$store.commit('SET_ACCESS_TOKEN', '')
       this.$store.commit('SET_REFRESH_TOKEN', '')
       this.$store.commit('SET_USER', {

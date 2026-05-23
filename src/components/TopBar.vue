@@ -6,7 +6,6 @@ import UpdateModal from './settings/UpdateModal.vue'
 import FactoryResetModal from './settings/FactoryResetModal.vue'
 import HintButton from './Hint/HintButton.vue'
 import { mixin } from '@/mixins/mixin'
-import { advancedGate } from '@/mixins/advancedGate'
 import messages from '@/assets/lang'
 
 import events from '@/events/events'
@@ -19,7 +18,7 @@ export default {
     AccountPanel,
     HintButton,
   },
-  mixins: [mixin, advancedGate],
+  mixins: [mixin],
   props: {
     initBarData: {
       type: Object,
@@ -387,20 +386,14 @@ export default {
       })
     },
 
-    // KODE OS — Easy-mode gate around the Terminal trigger.
+    // KODE OS — Terminal trigger (was Easy-mode gated; Advanced is gone).
     gateTerminal() {
-      this.requireAdvanced(this.showTerminalPanel, {
-        title: this.$t('Open Terminal & Logs'),
-        message: this.$t('The terminal lets you run system commands on your pebble. It assumes some Linux familiarity. Switch to Advanced mode to continue?'),
-      })
+      this.showTerminalPanel()
     },
 
-    // KODE OS — Easy-mode gate around the WebUI port change.
+    // KODE OS — WebUI port change trigger (was Easy-mode gated).
     gatePort() {
-      this.requireAdvanced(this.showPortPanel, {
-        title: this.$t('Change WebUI Port'),
-        message: this.$t('Changing the WebUI port changes how your pebble is reached on the network. If you set it wrong you may lose access. Switch to Advanced mode to continue?'),
-      })
+      this.showPortPanel()
     },
 
     // KODE OS — open the destructive factory-reset confirmation modal.
@@ -427,14 +420,9 @@ export default {
       this.$router.push({ path: '/welcome', query: { replay: '1' } })
     },
 
-    // KODE OS — Easy-mode gate around Restart / Shutdown.
+    // KODE OS — Restart / Shutdown trigger.
     gatePower(key) {
-      this.requireAdvanced(() => this.power(key), {
-        title: key === 'Shutdown' ? this.$t('Shut down your pebble?') : this.$t('Restart your pebble?'),
-        message: key === 'Shutdown'
-          ? this.$t('Your pebble will turn off and stop serving apps and files until you switch it back on. Continue?')
-          : this.$t('Your pebble will go offline for about 90 seconds while it restarts. Continue?'),
-      })
+      this.power(key)
     },
 
     rssConfirm() {

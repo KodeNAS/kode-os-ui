@@ -114,7 +114,6 @@ import events from '@/events/events'
 import last from 'lodash/last'
 import business_ShowNewAppTag from '@/mixins/app/Business_ShowNewAppTag'
 import business_LinkApp from '@/mixins/app/Business_LinkApp'
-import { advancedGate } from '@/mixins/advancedGate'
 import isEqual from 'lodash/isEqual'
 import { ice_i18n } from '@/mixins/base/common-i18n'
 import YAML from 'yamljs'
@@ -148,7 +147,7 @@ const builtInApplications = [
 const orderConfig = 'app_order'
 
 export default {
-	mixins: [business_ShowNewAppTag, business_LinkApp, advancedGate],
+	mixins: [business_ShowNewAppTag, business_LinkApp],
 	props: {
 		// KODE OS — when set to a non-empty array of app keys (e.g.
 		// ['immich', 'jellyfin']), AppSection only renders containers whose
@@ -260,20 +259,15 @@ export default {
 		this.getSkCount()
 	},
 	methods: {
-		// KODE OS — Easy-mode gate around custom-install (compose-file paste).
+		// KODE OS — custom-install (compose-file paste). Was Easy-mode
+		// gated; Advanced is gone so we just run the action directly.
 		gateCustomInstall () {
-			this.requireAdvanced(() => this.showInstall(0, 'custom'), {
-				title: this.$t('Custom Install APP'),
-				message: this.$t('Custom install lets you paste a Docker Compose file to add an app. It\'s a power-user tool. Switch to Advanced mode to continue?'),
-			})
+			this.showInstall(0, 'custom')
 		},
 
-		// KODE OS — Easy-mode gate around external-link app add.
+		// KODE OS — external-link app add (was Easy-mode gated).
 		gateExternalLink () {
-			this.requireAdvanced(() => this.showExternalLinkPanel(), {
-				title: this.$t('Add external link/APP'),
-				message: this.$t('This adds a custom link or external app shortcut. Switch to Advanced mode to continue?'),
-			})
+			this.showExternalLinkPanel()
 		},
 
 		isMobile () {
