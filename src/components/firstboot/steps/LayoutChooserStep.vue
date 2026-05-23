@@ -170,7 +170,9 @@ export default {
   display: flex;
   align-items: center;
   gap: 0.7rem;
-  padding: 0.7rem 0.85rem;
+  /* Right padding leaves room for the absolute check badge so the
+     description text doesn't run underneath it. */
+  padding: 0.7rem 2.1rem 0.7rem 0.85rem;
   background: rgba(255, 255, 255, 0.10);
   border: 1px solid rgba(255, 255, 255, 0.16);
   border-radius: 14px;
@@ -189,7 +191,9 @@ export default {
   }
 }
 
-/* Mini-preview: tiny stack of column boxes filled with widget blocks. */
+/* Mini-preview: tiny stack of column boxes filled with widget blocks.
+   grid-auto-flow column + 1fr columns gives each preview-col equal
+   width regardless of how many there are. */
 .layout-preview {
   flex: 0 0 72px;
   height: 52px;
@@ -198,8 +202,6 @@ export default {
   padding: 4px;
   background: rgba(15, 25, 30, 0.55);
   border-radius: 8px;
-  grid-template-columns: var(--cols-template);
-  /* fallback when no var set */
   grid-auto-flow: column;
   grid-auto-columns: 1fr;
 
@@ -238,15 +240,25 @@ export default {
   align-items: center;
   gap: 0.4rem;
   margin-bottom: 0.15rem;
+  /* Lets the name truncate while the recommended tag stays intact. */
+  min-width: 0;
 }
 
 .layout-name {
+  /* Truncate long names so the recommended tag and check don't get
+     pushed off / overlapped on narrow cards. */
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
   font-size: 0.9375rem;
   font-weight: 500;
   color: #fff;
 }
 
 .layout-tag {
+  flex-shrink: 0;
+  white-space: nowrap;
   font-size: 0.625rem;
   text-transform: uppercase;
   letter-spacing: 0.06em;
@@ -261,6 +273,12 @@ export default {
   font-size: 0.75rem;
   color: rgba(255, 255, 255, 0.78);
   line-height: 1.4;
+  /* Cap at two lines so cards stay a consistent height regardless of
+     description length. */
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 
 .layout-check {
