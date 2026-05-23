@@ -1,9 +1,21 @@
 <template>
   <div class="fb-step admin-account-step">
     <h2 class="step-title">{{ $t('Create your account') }}</h2>
-    <p class="step-intro">{{ $t('This account is the owner of your pebble. Keep the password somewhere safe.') }}</p>
+    <p class="step-intro">
+      {{ $t('This is the owner account for your pebble. The same email + password also signs you in to your apps (Immich, Jellyfin, etc.) automatically — you don\'t have to set them up one by one.') }}
+    </p>
 
     <ValidationObserver ref="observer" v-slot="{ handleSubmit }">
+      <ValidationProvider v-slot="{ errors, valid }" name="Name" rules="required">
+        <b-field
+          :label="$t('Your name')"
+          :message="$t(errors[0] || '')"
+          :type="{ 'is-danger': errors[0], 'is-success': valid }"
+        >
+          <b-input v-model="fullName" type="text" autocomplete="name" :placeholder="$t('Jane Doe')" />
+        </b-field>
+      </ValidationProvider>
+
       <ValidationProvider v-slot="{ errors, valid }" name="User" rules="required">
         <b-field
           :label="$t('Username')"
@@ -11,6 +23,16 @@
           :type="{ 'is-danger': errors[0], 'is-success': valid }"
         >
           <b-input v-model="username" type="text" autocomplete="username" />
+        </b-field>
+      </ValidationProvider>
+
+      <ValidationProvider v-slot="{ errors, valid }" name="Email" rules="required|email">
+        <b-field
+          :label="$t('Email')"
+          :message="$t(errors[0] || '')"
+          :type="{ 'is-danger': errors[0], 'is-success': valid }"
+        >
+          <b-input v-model="email" type="email" autocomplete="email" :placeholder="$t('you@example.com')" />
         </b-field>
       </ValidationProvider>
 
@@ -63,7 +85,9 @@ export default {
   components: { ValidationObserver, ValidationProvider },
   data() {
     return {
+      fullName: '',
       username: '',
+      email: '',
       password: '',
       confirmation: '',
       isSubmitting: false,
@@ -94,7 +118,17 @@ export default {
         this.$store.commit('SET_ACCESS_TOKEN', token.access_token)
         this.$store.commit('SET_REFRESH_TOKEN', token.refresh_token)
 
-        this.$emit('next', { username: this.username })
+        // Pass credentials through so InstallAppsStep can use them to
+        // auto-bootstrap each installed app (Immich admin signup,
+        // Jellyfin setup wizard, Home Assistant onboarding, etc.).
+        // Wizard state is in-memory only — the password isn't persisted
+        // anywhere except localStorage (access_token / refresh_token).
+        this.$emit('next', {
+          username: this.username,
+          email: this.email,
+          fullName: this.fullName,
+          password: this.password,
+        })
       } catch (err) {
         const msg = (err && err.response && err.response.data && err.response.data.message) || err.message || 'Error'
         this.$buefy.toast.open({ message: msg, type: 'is-danger', position: 'is-top', duration: 4000 })

@@ -28,16 +28,17 @@
       </ol>
 
       <transition name="fb-fade" mode="out-in">
-        <WelcomeStep   v-if="stepIndex === 0" key="welcome"      :is-replay="isReplay" @next="next" />
-        <UserTypeStep  v-else-if="stepIndex === 1" key="usertype" @next="onUserType" />
-        <SystemCheckStep    v-else-if="stepIndex === 2" key="sys" @next="next"            @back="back" />
-        <AdminAccountStep   v-else-if="stepIndex === 3" key="adm" @next="onAdminDone"     @back="back" />
-        <PebbleNameStep     v-else-if="stepIndex === 4" key="nm"  @next="onPebbleNameDone" @back="back" />
-        <PickAppsStep       v-else-if="stepIndex === 5" key="ap"  @next="onAppsPicked"    @back="back" />
-        <LayoutChooserStep  v-else-if="stepIndex === 6" key="lc"  @next="onLayoutPicked"  @back="back" />
-        <InstallAppsStep    v-else-if="stepIndex === 7" key="ia"  :target-ids="targetAppstoreIds" @next="onInstallDone" @back="back" />
-        <WalkthroughStep    v-else-if="stepIndex === 8" key="wt"  :apps="pickedApps" :host="host" @next="next" @back="back" @restart="restart" />
-        <DoneStep           v-else-if="stepIndex === 9" key="dn"  :hostname="hostname" :apps="pickedApps" :is-replay="isReplay" @finish="finish" />
+        <LanguageStep  v-if="stepIndex === 0" key="lang"         @next="next" />
+        <WelcomeStep   v-else-if="stepIndex === 1" key="welcome"  :is-replay="isReplay" @next="next" />
+        <UserTypeStep  v-else-if="stepIndex === 2" key="usertype" @next="onUserType" />
+        <SystemCheckStep    v-else-if="stepIndex === 3" key="sys" @next="next"            @back="back" />
+        <AdminAccountStep   v-else-if="stepIndex === 4" key="adm" @next="onAdminDone"     @back="back" />
+        <PebbleNameStep     v-else-if="stepIndex === 5" key="nm"  @next="onPebbleNameDone" @back="back" />
+        <PickAppsStep       v-else-if="stepIndex === 6" key="ap"  @next="onAppsPicked"    @back="back" />
+        <LayoutChooserStep  v-else-if="stepIndex === 7" key="lc"  @next="onLayoutPicked"  @back="back" />
+        <InstallAppsStep    v-else-if="stepIndex === 8" key="ia"  :target-ids="targetAppstoreIds" @next="onInstallDone" @back="back" />
+        <WalkthroughStep    v-else-if="stepIndex === 9" key="wt"  :apps="pickedApps" :host="host" @next="next" @back="back" @restart="restart" />
+        <DoneStep           v-else-if="stepIndex === 10" key="dn" :hostname="hostname" :apps="pickedApps" :is-replay="isReplay" @finish="finish" />
       </transition>
     </div>
   </div>
@@ -45,6 +46,7 @@
 
 <script>
 import WelcomeStep      from '@/components/firstboot/steps/WelcomeStep.vue'
+import LanguageStep     from '@/components/firstboot/steps/LanguageStep.vue'
 import UserTypeStep     from '@/components/firstboot/steps/UserTypeStep.vue'
 import SystemCheckStep  from '@/components/firstboot/steps/SystemCheckStep.vue'
 import AdminAccountStep from '@/components/firstboot/steps/AdminAccountStep.vue'
@@ -60,6 +62,7 @@ export default {
   name: 'welcome-page',
   components: {
     WelcomeStep,
+    LanguageStep,
     UserTypeStep,
     SystemCheckStep,
     AdminAccountStep,
@@ -74,10 +77,10 @@ export default {
     return {
       isLoading: true,
       stepIndex: 0,
-      lastStep: 9,
+      lastStep: 10,
       adminCreated: false,
-      userType: '', // 'beginner' | 'normal' | 'developer' — chosen at step 1
-      // Compact rail labels for steps 2..8 (welcome + usertype + done are hidden).
+      userType: '', // 'beginner' | 'normal' | 'developer' — chosen at step 2
+      // Compact rail labels for steps 3..9 (Language + Welcome + UserType + Done are hidden).
       railLabels: [
         this.$t('Check'),
         this.$t('Account'),
@@ -88,7 +91,11 @@ export default {
         this.$t('Set up'),
       ],
       // Collected wizard data
+      language: 'en_us',
       adminUsername: '',
+      adminEmail: '',
+      adminFullName: '',
+      adminPassword: '',
       hostname: 'pebble',
       pickedApps: [],
       // Appstore ids derived from pickedApps. PickAppsStep emits this
@@ -103,11 +110,11 @@ export default {
   },
   computed: {
     railIndex() {
-      // rail items map to stepIndex 2..6 (SystemCheck through Walkthrough)
-      return Math.max(0, Math.min(this.railLabels.length - 1, this.stepIndex - 2))
+      // rail items map to stepIndex 3..9 (SystemCheck through Walkthrough)
+      return Math.max(0, Math.min(this.railLabels.length - 1, this.stepIndex - 3))
     },
     showRail() {
-      return this.stepIndex >= 2 && this.stepIndex < this.lastStep
+      return this.stepIndex >= 3 && this.stepIndex < this.lastStep
     },
     isReplay() {
       return this.$route.query.replay === '1'
@@ -120,8 +127,9 @@ export default {
     next() {
       if (this.stepIndex >= this.lastStep) return
       // In replay mode, skip the AdminAccountStep — the account already exists.
-      if (this.isReplay && this.stepIndex === 2) {
-        this.stepIndex = 4
+      // SystemCheck is now step 3 (Language added at index 0); skip to PebbleName (5).
+      if (this.isReplay && this.stepIndex === 3) {
+        this.stepIndex = 5
         return
       }
       this.stepIndex += 1
@@ -129,19 +137,19 @@ export default {
     async back() {
       if (this.stepIndex <= 0) return
 
-      // Skip backward past AdminAccountStep (step 3) when an account exists;
+      // Skip backward past AdminAccountStep (step 4) when an account exists;
       // re-entering would try to re-register on top of the existing one.
-      if (this.stepIndex === 4 && (this.adminCreated || this.isReplay)) {
-        this.stepIndex = 2
+      if (this.stepIndex === 5 && (this.adminCreated || this.isReplay)) {
+        this.stepIndex = 3
         return
       }
 
-      // Returning to UserTypeStep with a fresh account means the user is
-      // changing their mind — delete the account so initKey regenerates
-      // and the next forward pass can register with new credentials.
-      if (this.stepIndex === 2 && this.adminCreated && !this.isReplay) {
+      // Returning to UserTypeStep (step 2) with a fresh account means the user
+      // is changing their mind — delete the account so initKey regenerates and
+      // the next forward pass can register with new credentials.
+      if (this.stepIndex === 3 && this.adminCreated && !this.isReplay) {
         await this.deleteAccount()
-        this.stepIndex = 1
+        this.stepIndex = 2
         return
       }
 
@@ -174,9 +182,9 @@ export default {
       // Developer skips the SystemCheck but STILL needs to create an admin
       // account — otherwise the router bounces back to /welcome or /login
       // on the next navigation (no initialized user). Jump straight to
-      // step 3 (AdminAccountStep); onAdminDone routes developer to finish.
+      // step 4 (AdminAccountStep); onAdminDone routes developer to finish.
       if (type === 'developer') {
-        this.stepIndex = 3
+        this.stepIndex = 4
         return
       }
       this.next()
@@ -209,7 +217,12 @@ export default {
       this.stepIndex = 0
     },
     onAdminDone(payload) {
-      if (payload && payload.username) this.adminUsername = payload.username
+      if (payload) {
+        if (payload.username) this.adminUsername = payload.username
+        if (payload.email)    this.adminEmail    = payload.email
+        if (payload.fullName) this.adminFullName = payload.fullName
+        if (payload.password) this.adminPassword = payload.password
+      }
       this.adminCreated = true
       // Developer mode finishes immediately after account creation,
       // skipping PebbleName, PickApps, and Walkthroughs.
@@ -226,23 +239,23 @@ export default {
     onAppsPicked(payload) {
       if (payload && Array.isArray(payload.apps)) this.pickedApps = payload.apps
       if (payload && Array.isArray(payload.targetIds)) this.targetAppstoreIds = payload.targetIds
-      // Always advance to LayoutChooser (step 6) — whether or not any
+      // Always advance to LayoutChooser (step 7) — whether or not any
       // apps were picked. From there the user can choose their starting
       // dashboard layout, then we run the install/sync step, then the
       // walkthroughs (conditional on having any apps).
-      this.stepIndex = 6
+      this.stepIndex = 7
     },
     onLayoutPicked(payload) {
       if (payload && payload.templateKey) this.chosenLayoutKey = payload.templateKey
-      // After Layout: always run InstallApps (step 7), even with zero
+      // After Layout: always run InstallApps (step 8), even with zero
       // apps — that step's diff will be a no-op but it still confirms
       // the install state matches the picks.
-      this.stepIndex = 7
+      this.stepIndex = 8
     },
     onInstallDone() {
-      // After install/sync: walkthroughs (step 8) only if the user
-      // picked at least one app, otherwise jump straight to Done (9).
-      this.stepIndex = this.pickedApps.length > 0 ? 8 : 9
+      // After install/sync: walkthroughs (step 9) only if the user
+      // picked at least one app, otherwise jump straight to Done (10).
+      this.stepIndex = this.pickedApps.length > 0 ? 9 : 10
     },
     async finish() {
       // Only persist the first-boot complete flag on initial setup; replay
