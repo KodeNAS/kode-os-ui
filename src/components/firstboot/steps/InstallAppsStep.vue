@@ -26,7 +26,7 @@
       >
         <span class="install-icon">
           <b-icon v-if="row.state === 'pending'" icon="time-outline" pack="casa" size="is-small" />
-          <span v-else-if="row.state === 'running' || row.state === 'starting'" class="spinner"></span>
+          <span v-else-if="row.state === 'running' || row.state === 'starting' || row.state === 'configuring'" class="spinner"></span>
           <b-icon v-else-if="row.state === 'done'" icon="check-outline" pack="casa" size="is-small" />
           <b-icon v-else icon="alert" pack="casa" size="is-small" />
         </span>
@@ -87,6 +87,7 @@
  * no-op since syncApps's diff returns an empty install/uninstall set.
  */
 import { syncApps } from '@/service/appSync'
+import { bootstrapByAppId } from '@/service/appBootstrap'
 
 export default {
   name: 'InstallAppsStep',
@@ -94,6 +95,16 @@ export default {
     // Appstore ids the user wants installed (NOT picker keys; the
     // mapping is done one step up in PickAppsStep before emit).
     targetIds: { type: Array, default: () => [] },
+    // Pebble's hostname/IP — used to build per-app URLs (Immich on
+    // :2283, Jellyfin on :8096, etc.) when calling each app's first-
+    // run bootstrap.
+    host: { type: String, default: '' },
+    // Owner credentials captured in AdminAccountStep. Used to auto-
+    // provision the buyer's account in each app (Immich admin signup,
+    // Jellyfin setup wizard, HA owner onboarding, Pi-hole password)
+    // so the buyer never sees a "set up your account" screen post-
+    // install. Format: { username, email, password, fullName, language }
+    creds: { type: Object, default: () => ({}) },
   },
   data() {
     return {
@@ -111,17 +122,20 @@ export default {
   methods: {
     statusLabel(state) {
       switch (state) {
-        case 'pending':   return this.$t('Pending')
-        case 'running':   return this.$t('Installing…')
-        case 'starting':  return this.$t('Starting…')
-        case 'done':      return this.$t('Running')
-        case 'error':     return this.$t('Failed')
-        default:          return ''
+        case 'pending':       return this.$t('Pending')
+        case 'running':       return this.$t('Installing…')
+        case 'starting':      return this.$t('Starting…')
+        case 'configuring':   return this.$t('Setting up account…')
+        case 'partial':       return this.$t('Set up manually')
+        case 'done':          return this.$t('Ready')
+        case 'error':         return this.$t('Failed')
+        default:              return ''
       }
     },
     async runSync() {
       this.phase = 'starting'
       this.rows = []
+      const installedOk = []
       try {
         await syncApps(
           this.$openAPI,
@@ -138,15 +152,52 @@ export default {
             } else {
               this.rows.push({ ...entry })
             }
+            // Track which installs finished so we can bootstrap each
+            // app's account after the docker work is done.
+            if (entry.action === 'install' && entry.state === 'done') {
+              if (!installedOk.includes(entry.id)) installedOk.push(entry.id)
+            }
             if (this.phase === 'starting') this.phase = 'running'
           },
         )
       } catch (e) {
         // eslint-disable-next-line no-console
         console.error('InstallAppsStep: syncApps threw', e)
-      } finally {
-        this.phase = 'done'
       }
+
+      // Auto-bootstrap each freshly-installed app using the buyer's
+      // credentials. Each row gets a sub-status ("Setting up your
+      // account…") then either "Done" or "Setup skipped" depending
+      // on whether the bootstrap helper succeeded.
+      for (const id of installedOk) {
+        const row = this.rows.find(r => r.id === id && r.action === 'install')
+        if (!row) continue
+        row.state = 'configuring'
+        row.detail = ''
+        try {
+          // eslint-disable-next-line no-console
+          console.info('InstallAppsStep: bootstrapping', id)
+          const result = await bootstrapByAppId(id, this.host, this.creds)
+          if (result && result.ok) {
+            row.state = 'done'
+            if (result.extra && result.extra.alreadyConfigured) {
+              row.detail = this.$t('already configured')
+            }
+          } else {
+            row.state = 'partial'
+            row.error = (result && result.error) || this.$t('Bootstrap failed; the walkthrough will let you set it up manually.')
+            // eslint-disable-next-line no-console
+            console.warn('InstallAppsStep: bootstrap failed for', id, result && result.error)
+          }
+        } catch (e) {
+          row.state = 'partial'
+          row.error = (e && e.message) || String(e)
+          // eslint-disable-next-line no-console
+          console.warn('InstallAppsStep: bootstrap threw for', id, e)
+        }
+      }
+
+      this.phase = 'done'
     },
   },
 }
@@ -190,13 +241,18 @@ export default {
   transition: background 0.2s, border-color 0.2s;
 
   &.is-running,
-  &.is-starting {
+  &.is-starting,
+  &.is-configuring {
     background: rgba(45, 95, 78, 0.32);
     border-color: rgba(45, 95, 78, 0.85);
   }
   &.is-done {
     background: rgba(45, 95, 78, 0.20);
     border-color: rgba(45, 95, 78, 0.4);
+  }
+  &.is-partial {
+    background: rgba(196, 127, 0, 0.18);
+    border-color: rgba(196, 127, 0, 0.5);
   }
   &.is-error {
     background: rgba(176, 74, 74, 0.20);

@@ -28,7 +28,7 @@
       </ol>
 
       <transition name="fb-fade" mode="out-in">
-        <LanguageStep  v-if="stepIndex === 0" key="lang"         @next="next" />
+        <LanguageStep  v-if="stepIndex === 0" key="lang"         @next="onLanguagePicked" />
         <WelcomeStep   v-else-if="stepIndex === 1" key="welcome"  :is-replay="isReplay" @next="next" />
         <UserTypeStep  v-else-if="stepIndex === 2" key="usertype" @next="onUserType" />
         <SystemCheckStep    v-else-if="stepIndex === 3" key="sys" @next="next"            @back="back" />
@@ -36,7 +36,13 @@
         <PebbleNameStep     v-else-if="stepIndex === 5" key="nm"  @next="onPebbleNameDone" @back="back" />
         <PickAppsStep       v-else-if="stepIndex === 6" key="ap"  @next="onAppsPicked"    @back="back" />
         <LayoutChooserStep  v-else-if="stepIndex === 7" key="lc"  @next="onLayoutPicked"  @back="back" />
-        <InstallAppsStep    v-else-if="stepIndex === 8" key="ia"  :target-ids="targetAppstoreIds" @next="onInstallDone" @back="back" />
+        <InstallAppsStep
+          v-else-if="stepIndex === 8" key="ia"
+          :target-ids="targetAppstoreIds"
+          :host="host"
+          :creds="{ username: adminUsername, email: adminEmail, password: adminPassword, fullName: adminFullName, language }"
+          @next="onInstallDone" @back="back"
+        />
         <WalkthroughStep    v-else-if="stepIndex === 9" key="wt"  :apps="pickedApps" :host="host" @next="next" @back="back" @restart="restart" />
         <DoneStep           v-else-if="stepIndex === 10" key="dn" :hostname="hostname" :apps="pickedApps" :is-replay="isReplay" @finish="finish" />
       </transition>
@@ -175,6 +181,10 @@ export default {
           duration: 6000,
         })
       }
+    },
+    onLanguagePicked(payload) {
+      if (payload && payload.language) this.language = payload.language
+      this.next()
     },
     onUserType(payload) {
       const type = (payload && payload.userType) || 'beginner'
