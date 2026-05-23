@@ -163,14 +163,6 @@ function easySteps() {
       },
     },
     {
-      element: '[data-tour="modepill"]',
-      popover: {
-        title: 'Easy / Advanced mode',
-        description: 'Easy mode keeps things simple. Advanced exposes everything CasaOS does — switch anytime.',
-        side: 'left',
-      },
-    },
-    {
       element: '[data-tour="hintbutton"]',
       popover: {
         title: 'Hints anytime',

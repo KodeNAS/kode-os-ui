@@ -166,8 +166,9 @@ export default {
       this.next()
     },
     async finishDeveloper() {
-      // Mark wizard complete with developer profile + Advanced mode default.
-      this.$store.commit('SET_INTERFACE_MODE', 'advanced')
+      // Mark wizard complete with developer profile. KODE OS no longer
+      // exposes an Advanced mode — there's only one dashboard now, so
+      // every user-type lands on the same widget canvas.
       try {
         await this.$api.users.setCustomStorage('kode_first_boot', {
           complete: true,
@@ -227,10 +228,8 @@ export default {
           })
         } catch (e) { /* non-blocking */ }
 
-        // Normal-mode users default to Advanced interface; Beginner defaults to Easy.
-        if (this.userType === 'normal') {
-          this.$store.commit('SET_INTERFACE_MODE', 'advanced')
-        }
+        // Advanced mode is gone in KODE OS — every userType lands on
+        // the same widget canvas.
         this.resetDashboardLayoutForFirstBoot()
         sessionStorage.setItem('fromWelcome', true)
       }

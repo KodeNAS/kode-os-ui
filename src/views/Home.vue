@@ -1,14 +1,9 @@
 <script>
 import { nanoid } from 'nanoid'
-import SearchBar from '@/components/SearchBar.vue'
-import SideBar from '@/components/SideBar.vue'
 import TopBar from '@/components/TopBar.vue'
-import CoreService from '@/components/CoreService.vue'
-import AppSection from '@/components/Apps/AppSection.vue'
 import FilePanel from '@/components/filebrowser/FilePanel.vue'
 import UpdateCompleteModal from '@/components/settings/UpdateCompleteModal.vue'
 import BeginnerDashboard from '@/views/BeginnerDashboard.vue'
-import InterfaceModePanel from '@/components/settings/InterfaceModePanel.vue'
 import { mixin } from '@/mixins/mixin'
 import events from '@/events/events'
 
@@ -17,11 +12,7 @@ const wallpaperConfig = 'wallpaper'
 export default {
   name: 'HomePage',
   components: {
-    SideBar,
-    SearchBar,
-    AppSection,
     TopBar,
-    CoreService,
     FilePanel,
     BeginnerDashboard,
   },
@@ -37,16 +28,6 @@ export default {
       hardwareInfoLoading: true,
       user_id: localStorage.getItem('user_id') ? localStorage.getItem('user_id') : 1,
       isFileActive: false,
-      // Advanced mode sub-view: 'classic' (upstream layout) or 'widgets'
-      // (the KODE widget canvas with its own localStorage bucket).
-      // Persisted under kode_advanced_view. Defaults to 'classic' so an
-      // existing Advanced user sees no change until they opt in.
-      advancedView: (() => {
-        try {
-          const v = localStorage.getItem('kode_advanced_view')
-          return v === 'widgets' ? 'widgets' : 'classic'
-        } catch (e) { return 'classic' }
-      })(),
       topbarHidden: false,
       // When true, the auto-hide is paused — used by the dashboard
       // tour so it can keep the top bar visible while explaining it.
@@ -66,9 +47,6 @@ export default {
     },
     searchbarShow() {
       return this.$store.state.searchEngineSwitch
-    },
-    isBeginner() {
-      return this.$store.getters.isBeginner
     },
   },
   created() {
@@ -112,16 +90,6 @@ export default {
     this.$EventBus.$off('casaUI:openStorageManager')
   },
   methods: {
-
-    /**
-     * Flip the Advanced sub-view between Classic (upstream layout) and
-     * Widgets (KODE widget canvas with mode='advanced'). Persists the
-     * choice so a reload keeps the user where they were.
-     */
-    toggleAdvancedView() {
-      this.advancedView = this.advancedView === 'widgets' ? 'classic' : 'widgets'
-      try { localStorage.setItem('kode_advanced_view', this.advancedView) } catch (e) { /* ignore */ }
-    },
 
     /**
      * @description: Get CasaOS Configs
@@ -337,17 +305,6 @@ export default {
       this.topbarLocked = false
     },
 
-    openModePanel() {
-      this.$buefy.modal.open({
-        parent: this,
-        component: InterfaceModePanel,
-        hasModalCard: true,
-        trapFocus: true,
-        scroll: 'keep',
-        animation: 'zoom-in',
-      })
-    },
-
     // show storage settings modal
     async showStorageManagerPanelModal() {
       this.$messageBus('widget_storagemanager')
@@ -382,75 +339,12 @@ export default {
     </div>
     <!-- NavBar End -->
 
-    <!-- Beginner Dashboard (KODE OS) — widget canvas with custom layout. -->
-    <BeginnerDashboard v-if="isBeginner" />
+    <!-- KODE OS: only the Easy-mode widget canvas now. Advanced mode +
+         upstream SideBar / SearchBar / AppSection layout were removed
+         per product decision — the OS reads as a single appliance UI
+         instead of two competing surfaces. -->
+    <BeginnerDashboard />
 
-    <!-- Advanced mode now has two flavors. Classic = the upstream CasaOS
-         layout (SideBar + SearchBar + Apps). Widgets = the same widget
-         canvas Easy mode uses, but with its own localStorage bucket and
-         a denser default layout. A floating chip in the top-left lets
-         the user flip between them; choice is persisted. -->
-    <template v-else>
-      <button
-        type="button"
-        class="advanced-view-chip"
-        :title="advancedView === 'widgets' ? $t('Switch to classic layout') : $t('Switch to widget layout')"
-        @click="toggleAdvancedView"
-      >
-        <b-icon
-          :icon="advancedView === 'widgets' ? 'view-grid-outline' : 'view-dashboard-outline'"
-          pack="casa"
-          size="is-small"
-        />
-        <span>{{ advancedView === 'widgets' ? $t('Widgets') : $t('Classic') }}</span>
-      </button>
-
-      <BeginnerDashboard v-if="advancedView === 'widgets'" mode="advanced" />
-      <div v-else class="contents  pt-55 contextmenu-canvas" @contextmenu.prevent="openHomeContaxtMenu">
-      <div class="container">
-        <div class="columns is-variable is-2">
-          <div class="column is-one-quarter slider-content">
-            <!-- SideBar Start -->
-            <SideBar v-if="!hardwareInfoLoading" />
-            <!-- SideBar End -->
-          </div>
-          <div :class="{ open: sidebarOpen }" class="column is-three-quarters main-content">
-            <!-- MainContent Start -->
-            <div class=" contextmenu-canvas">
-              <!-- SearchBar Start -->
-              <section>
-                <transition name="fade">
-                  <SearchBar v-if="searchbarShow" />
-                </transition>
-              </section>
-              <!-- SearchBar End -->
-
-              <!-- core-service Start -->
-              <section>
-                <transition name="fade">
-                  <CoreService />
-                </transition>
-              </section>
-              <!-- core-service End -->
-
-              <!-- Apps Start -->
-              <section>
-                <AppSection ref="apps" />
-              </section>
-              <!-- Apps End -->
-
-              <!-- Shortcuts Start -->
-              <!-- <section>
-								<shortcuts></shortcuts>
-							</section> -->
-              <!-- Shortcuts End -->
-            </div>
-            <!-- MainContent End -->
-          </div>
-        </div>
-      </div>
-    </div>
-    </template>
     <!-- Content End -->
 
     <!-- File Panel Start -->
@@ -464,24 +358,6 @@ export default {
       </template>
     </b-modal>
     <!-- File Panel End -->
-
-    <!-- KODE OS: persistent mode-switch pill — works in both modes -->
-    <button
-      type="button"
-      class="mode-switcher has-text-white"
-      data-tour="modepill"
-      @click="openModePanel"
-    >
-      <b-icon
-        :icon="isBeginner ? 'control-outline' : 'view-dashboard-outline'"
-        pack="casa"
-        size="is-small"
-        class="mode-switcher-icon"
-      />
-      <span class="mode-switcher-label">
-        {{ isBeginner ? $t('Switch to Advanced mode') : $t('Switch to Easy mode') }}
-      </span>
-    </button>
   </div>
 </template>
 
@@ -495,49 +371,6 @@ export default {
 
 .out-container.is-topbar-hidden .topbar-shell {
     transform: translateY(-100%);
-}
-
-.mode-switcher {
-    position: fixed;
-    bottom: 1.25rem;
-    right: 1.25rem;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 6px;
-    background: rgba(0, 0, 0, 0.45);
-    border: 1px solid rgba(255, 255, 255, 0.25);
-    border-radius: 999px;
-    padding: 8px 14px;
-    font-size: 13px;
-    line-height: 1;
-    cursor: pointer;
-    backdrop-filter: blur(14px);
-    transition: background 0.15s, transform 0.18s;
-    z-index: 30;
-
-    &:hover {
-        background: rgba(0, 0, 0, 0.6);
-        transform: translateY(-1px);
-    }
-}
-
-.mode-switcher-icon {
-    display: inline-flex;
-}
-
-.mode-switcher-label {
-    display: inline-block;
-    line-height: 1;
-}
-
-.mode-switcher-icon {
-    color: #fff;
-    opacity: 0.9;
-}
-
-.mode-switcher-label {
-    line-height: 1;
 }
 
 .out-container {
@@ -626,35 +459,4 @@ export default {
     }
 }
 
-/* Floating Classic / Widgets toggle — only shown in Advanced mode.
-   Sits flush with the left edge below the (auto-hiding) top bar,
-   matching the dashboard's frosted-chip aesthetic. */
-.advanced-view-chip {
-    position: fixed;
-    top: 5rem;
-    left: 1rem;
-    z-index: 40;
-    display: inline-flex;
-    align-items: center;
-    gap: 0.45rem;
-    padding: 7px 14px;
-    background: rgba(255, 255, 255, 0.18);
-    border: 1px solid rgba(255, 255, 255, 0.32);
-    border-radius: 999px;
-    color: #fff;
-    font-size: 0.8125rem;
-    font-weight: 500;
-    letter-spacing: 0.01em;
-    cursor: pointer;
-    backdrop-filter: blur(12px) saturate(160%);
-    -webkit-backdrop-filter: blur(12px) saturate(160%);
-    text-shadow: 0 1px 4px rgba(0, 0, 0, 0.45);
-    transition: background 0.15s, border-color 0.15s, transform 0.15s;
-
-    &:hover {
-        background: rgba(255, 255, 255, 0.28);
-        border-color: rgba(255, 255, 255, 0.5);
-        transform: translateY(-1px);
-    }
-}
 </style>
