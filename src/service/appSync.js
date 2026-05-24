@@ -131,9 +131,22 @@ export async function waitForRunning(openAPI, appId, { timeoutMs = 240000, inter
  * Uninstall a single app by its id. Pass `deleteUserdata: true` to
  * also remove the app's data folder; we default to false so accidental
  * un-picks during wizard replay don't nuke photos / config.
+ *
+ * Apps with slow shutdown (Home Assistant, Immich's multi-container
+ * stack) can make the underlying API hang for minutes. timeoutMs caps
+ * each call so a single stuck app doesn't lock the whole reset.
  */
-export async function uninstallApp(openAPI, appId, { deleteUserdata = false } = {}) {
-  await openAPI.appManagement.compose.uninstallComposeApp(appId, deleteUserdata)
+export async function uninstallApp(openAPI, appId, { deleteUserdata = false, timeoutMs = 60000 } = {}) {
+  const call = openAPI.appManagement.compose.uninstallComposeApp(appId, deleteUserdata)
+  let timer
+  const guard = new Promise((_, reject) => {
+    timer = setTimeout(() => reject(new Error(`uninstall timed out after ${timeoutMs}ms`)), timeoutMs)
+  })
+  try {
+    await Promise.race([call, guard])
+  } finally {
+    clearTimeout(timer)
+  }
   return true
 }
 
@@ -181,7 +194,10 @@ export async function syncApps(openAPI, targetIds, onUpdate, opts = {}) {
   for (const id of toUninstall) {
     report({ id, action: 'uninstall', state: 'running' })
     try {
-      await uninstallApp(openAPI, id, { deleteUserdata: opts.deleteUserdata === true })
+      await uninstallApp(openAPI, id, {
+        deleteUserdata: opts.deleteUserdata === true,
+        timeoutMs: opts.uninstallTimeoutMs,
+      })
       report({ id, action: 'uninstall', state: 'done' })
     } catch (e) {
       report({ id, action: 'uninstall', state: 'error', error: e && e.message })

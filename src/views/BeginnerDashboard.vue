@@ -1008,7 +1008,7 @@ export default {
         tips: 'tips',
         photoOfTheDay: 'photooftheday',
       }
-      return map[key]
+      return map[key] || ''
     },
     widgetType(key) {
       return widgetTypeOf(key)

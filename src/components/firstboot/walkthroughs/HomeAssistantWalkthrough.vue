@@ -11,18 +11,13 @@
       <div class="wt-substep">{{ sub + 1 }} / {{ total }}</div>
     </div>
 
-    <!-- Sub 0: open HA, set up owner account. Same setup-first
-         pattern as the rest. HA takes a while to cold-boot, so the
-         heads-up callout matters. -->
+    <!-- Sub 0: open Home Assistant at its IP. -->
     <section v-if="sub === 0" class="wt-body">
       <p>{{ $t('Home Assistant turns your pebble into a smart-home hub — lights, thermostats, sensors, cameras, you name it. It runs entirely on your network with no cloud account required.') }}</p>
       <div class="callout">
         <b-icon icon="alert" pack="casa" size="is-small" />
         <span>{{ $t('Heads up: Home Assistant takes 3–5 minutes to fully boot the first time. If the page shows "preparing Home Assistant…", that\'s normal — give it a coffee.') }}</span>
       </div>
-      <p>
-        {{ $t('Before anything else: open Home Assistant and create your owner account. Use the same email + password as your KODE account.') }}
-      </p>
       <div class="setup-cta">
         <a class="setup-cta-btn" :href="url" target="_blank" rel="noopener noreferrer">
           <b-icon icon="internet-outline" pack="casa" size="is-medium" />
@@ -30,20 +25,23 @@
         </a>
         <p class="setup-cta-hint">{{ $t('Opens in a new tab.') }} <code>{{ url }}</code></p>
       </div>
-      <div class="qr-row">
-        <div class="qr">
-          <QrcodeVue :value="url" :size="160" level="M" background="#ffffff" foreground="#000000" />
-        </div>
-        <div class="qr-side">
-          <p class="hint">{{ $t('Or scan the QR with your phone — handy if you want to keep HA on a tablet.') }}</p>
-        </div>
-      </div>
-      <p class="next-prompt">{{ $t('Owner account created? Tap Next to install the companion app.') }}</p>
+      <p class="next-prompt">{{ $t('Once you\'re on the Home Assistant page, tap Next for the steps.') }}</p>
     </section>
 
-    <!-- Sub 1: NEW — install the companion app -->
+    <!-- Sub 1: in-app steps (create owner). -->
     <section v-else-if="sub === 1" class="wt-body">
-      <p>{{ $t('Install the Home Assistant Companion app on your phone before the next step. It\'s how you\'ll actually use HA day-to-day — for notifications, location-based automations ("turn off lights when I leave"), and as a remote.') }}</p>
+      <p>{{ $t('On the Home Assistant page:') }}</p>
+      <ol class="steps">
+        <li>{{ $t('Create the owner account. Use the same email + password as your KODE account so they stay in sync.') }}</li>
+        <li>{{ $t('Pick your location, timezone, and units when prompted.') }}</li>
+        <li>{{ $t('Sign in. You\'ll land on a near-empty Overview — we\'ll add a device next.') }}</li>
+      </ol>
+      <p class="next-prompt">{{ $t('Owner account created? Tap Next to install the phone app.') }}</p>
+    </section>
+
+    <!-- Sub 2: install + connect the mobile app. -->
+    <section v-else-if="sub === 2" class="wt-body">
+      <p>{{ $t('Install the Home Assistant Companion app on your phone. It\'s how you\'ll use HA day-to-day — for notifications, location automations ("turn off lights when I leave"), and as a remote.') }}</p>
       <div class="store-row">
         <a class="store-button" href="https://apps.apple.com/app/home-assistant/id1099568401" target="_blank" rel="noopener noreferrer">
           <b-icon icon="ios" pack="casa" size="is-medium" />
@@ -54,72 +52,57 @@
           <span>{{ $t('Google Play') }}</span>
         </a>
       </div>
-      <p>{{ $t('When the app opens, tap "Continue", then either scan the QR from the previous step, or paste:') }}</p>
-      <div class="server-row">
-        <code class="server">{{ url }}</code>
-        <b-button size="is-small" type="is-dark" rounded icon-pack="casa" icon-left="copy-outline" @click="copy(url)">
-          {{ copied ? $t('Copied') : $t('Copy') }}
-        </b-button>
-      </div>
-      <p class="hint">{{ $t('Sign in with the owner account you just created in the browser.') }}</p>
-    </section>
-
-    <!-- Sub 2: add an integration -->
-    <section v-else-if="sub === 2" class="wt-body">
-      <p>{{ $t('Now hook up your first device. Home Assistant auto-discovers most network gear, so this is usually a few clicks:') }}</p>
-      <ol class="steps">
-        <li>{{ $t('Click Settings (bottom left of the web UI).') }}</li>
-        <li>{{ $t('Click Devices & services.') }}</li>
-        <li>{{ $t('Check the Discovered section at the top — anything HA found on your network shows up here.') }}</li>
-        <li>{{ $t('Or click + Add Integration and search for the brand: Philips Hue, Nest, Sonos, IKEA TRÅDFRI, Aqara, Govee, Tuya, Shelly, etc.') }}</li>
-        <li>{{ $t('Follow the on-screen pairing steps; most integrations take 30 seconds.') }}</li>
-      </ol>
-      <div class="callout">
-        <b-icon icon="information-outline" pack="casa" size="is-small" />
-        <span>{{ $t('Don\'t know what brand you have? Click + Add Integration and use the Match brand by photo option (some integrations support it) or browse the categories.') }}</span>
+      <p>{{ $t('Open the app, tap Continue, then scan the QR or paste:') }}</p>
+      <div class="qr-row">
+        <div class="qr">
+          <QrcodeVue :value="url" :size="180" level="M" background="#ffffff" foreground="#000000" />
+        </div>
+        <div class="qr-side">
+          <div class="server-row">
+            <code class="server">{{ url }}</code>
+            <b-button size="is-small" type="is-dark" rounded icon-pack="casa" icon-left="copy-outline" @click="copy(url)">
+              {{ copied ? $t('Copied') : $t('Copy') }}
+            </b-button>
+          </div>
+          <p class="hint">{{ $t('Sign in with the owner account you just created.') }}</p>
+        </div>
       </div>
     </section>
 
-    <!-- Sub 3: build a dashboard -->
+    <!-- Sub 3: extra settings (add devices + dashboard). -->
     <section v-else-if="sub === 3" class="wt-body">
-      <p>{{ $t('The Overview page is where you see and control everything. To make it your own:') }}</p>
+      <p>{{ $t('A few things worth flipping on once HA is up:') }}</p>
       <ol class="steps">
-        <li>{{ $t('Click the three dots top right → Edit dashboard.') }}</li>
-        <li>{{ $t('Click + Add Card to drop in switches, sensors, weather, media controls, and more. There are dozens of card types.') }}</li>
-        <li>{{ $t('Drag cards to rearrange them; HA snaps them to a grid.') }}</li>
-        <li>{{ $t('Three dots → Add Section to make multiple tabs (e.g. "Living room", "Outside", "Energy").') }}</li>
-        <li>{{ $t('Click the X (top right) to finish editing.') }}</li>
+        <li>
+          <strong>{{ $t('Add your first device.') }}</strong>
+          {{ $t('Settings → Devices & services → Discovered (top of the page). HA auto-finds Philips Hue, Nest, Sonos, IKEA TRÅDFRI, Aqara, Govee, Tuya, Shelly and more. For anything not auto-discovered: + Add Integration, search the brand.') }}
+        </li>
+        <li>
+          <strong>{{ $t('Customise your dashboard.') }}</strong>
+          {{ $t('Three dots top right → Edit dashboard → + Add Card. Drag to rearrange. Three dots → Add Section for tabs like "Living room" or "Outside".') }}
+        </li>
+        <li>
+          <strong>{{ $t('Try an automation.') }}</strong>
+          {{ $t('Settings → Automations & scenes. Start with "when motion detected after sunset, turn on hallway light".') }}
+        </li>
+        <li>
+          <strong>{{ $t('Voice + add-ons.') }}</strong>
+          {{ $t('Settings → Voice assistants for local voice. Settings → Add-ons → Add-on Store for ESPHome, MQTT, AdGuard, Node-RED.') }}
+        </li>
       </ol>
-      <div class="callout">
-        <b-icon icon="information-outline" pack="casa" size="is-small" />
-        <span>{{ $t('Want it on your phone? Open the companion app — your dashboard syncs automatically.') }}</span>
-      </div>
     </section>
 
-    <!-- Sub 4: where to go next -->
+    <!-- Sub 4: all done. -->
     <section v-else-if="sub === 4" class="wt-body">
-      <p>{{ $t('That\'s the basics. A few directions to grow into:') }}</p>
+      <p>{{ $t('You\'re running a fully local smart-home hub. From here:') }}</p>
       <ul class="tips">
+        <li>{{ $t('Your phone dashboard syncs automatically with the web — change a card on the laptop and it shows up on the phone.') }}</li>
         <li>
-          <strong>{{ $t('Automations.') }}</strong>
-          {{ $t('Settings → Automations & scenes. Try "when motion detected after sunset, turn on hallway light".') }}
+          {{ $t('Docs and recipes:') }}
+          <a href="https://www.home-assistant.io/getting-started/" target="_blank" rel="noopener noreferrer" class="link">home-assistant.io</a>
         </li>
-        <li>
-          <strong>{{ $t('Voice control.') }}</strong>
-          {{ $t('Settings → Voice assistants. HA can run a local voice pipeline (no cloud), or hook into Alexa / Google Home.') }}
-        </li>
-        <li>
-          <strong>{{ $t('Add-ons.') }}</strong>
-          {{ $t('Settings → Add-ons → Add-on Store. ESPHome, Mosquitto MQTT, AdGuard, Node-RED, and many more.') }}
-        </li>
-        <li>
-          <strong>{{ $t('Docs:') }}</strong>
-          <a href="https://www.home-assistant.io/getting-started/" target="_blank" rel="noopener noreferrer" class="link">
-            home-assistant.io
-          </a>
-        </li>
+        <li>{{ $t('Heads up: HA has a learning curve. The first hour is fun. The next ten can become a rabbit hole — pace yourself.') }}</li>
       </ul>
-      <p class="hint">{{ $t('Heads up: HA has a learning curve. The first hour is fun. The next ten can become a rabbit hole — pace yourself.') }}</p>
     </section>
 
     <div class="wt-actions">
@@ -139,11 +122,11 @@ import { resolveAppUrl } from '@/service/kodeApps'
 
 const FALLBACK_PORT = 8123
 const SUB_TITLES = [
-  'Set up your Home Assistant owner',
+  'Open Home Assistant',
+  'Create your owner account',
   'Install the companion app',
-  'Add your first device',
-  'Make a dashboard',
-  'Where to go next',
+  'Extra settings',
+  'You\'re running a smart home',
 ]
 
 export default {

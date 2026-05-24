@@ -22,7 +22,7 @@
     </div>
     <ul v-else class="family-list">
       <li
-        v-for="(user, idx) in users"
+        v-for="user in users"
         :key="user.name"
         class="family-member"
         :class="`is-${user.role}`"
@@ -30,8 +30,7 @@
       >
         <span class="family-avatar">{{ initial(user.name) }}</span>
         <span class="family-name">{{ user.name }}</span>
-        <span v-if="idx === 0 || user.role === 'root'" class="family-role-badge is-root">{{ $t('root') }}</span>
-        <span v-else class="family-role-badge is-viewer">{{ $t('viewer') }}</span>
+        <span class="family-role-badge" :class="`is-${user.role}`">{{ $t(user.role) }}</span>
       </li>
     </ul>
   </div>
@@ -42,13 +41,14 @@ import AddUserModal from './AddUserModal.vue'
 import { hintMode } from '@/mixins/hintMode'
 
 const ROLES_KEY = 'kode_user_roles'
+const MEMBERS_KEY = 'kode_family_members'
 
 export default {
   name: 'FamilyTile',
   mixins: [hintMode],
   computed: {
     hintLabel() {
-      return this.$t('Family accounts on your pebble. Root admin = full control; viewers see files and apps but don\'t change settings. + adds more (coming soon).')
+      return this.$t('Family accounts on your pebble. Root admin = full control; viewers see files and apps but don\'t change settings. Tap + to add more.')
     },
   },
   data() {
@@ -64,10 +64,14 @@ export default {
   methods: {
     async load() {
       try {
-        // Pull the roles map in parallel with the username list.
-        const [namesRes, rolesRes] = await Promise.allSettled([
+        // Pull the roles map AND the local family-members list in
+        // parallel with the username list. The list of real Linux
+        // users on the pebble (from /users/name) gets merged with
+        // user-added display-only family members from custom storage.
+        const [namesRes, rolesRes, membersRes] = await Promise.allSettled([
           this.$api.users.getAllUserName(),
           this.$api.users.getCustomStorage(ROLES_KEY),
+          this.$api.users.getCustomStorage(MEMBERS_KEY),
         ])
 
         let names = []
@@ -84,13 +88,30 @@ export default {
         }
         this.roles = rolesMap
 
-        // First user in the list is the root admin by convention (the
-        // initial registered account). Everyone else inherits from the
-        // roles map, defaulting to viewer.
-        this.users = names.map((name, idx) => ({
+        // First Linux user is the root admin by convention.
+        const realUsers = names.map((name, idx) => ({
           name,
           role: idx === 0 ? 'root' : (rolesMap[name] || 'viewer'),
+          isMember: false,
         }))
+
+        // Locally-added family members: name-tagged entries that share
+        // the admin login (Linux multi-user is on the roadmap).
+        let members = []
+        if (membersRes.status === 'fulfilled' && membersRes.value && membersRes.value.data && membersRes.value.data.data) {
+          const raw = membersRes.value.data.data
+          if (Array.isArray(raw)) members = raw
+        }
+        const realNames = new Set(realUsers.map(u => u.name.toLowerCase()))
+        const memberUsers = members
+          .filter(m => m && m.name && !realNames.has(String(m.name).toLowerCase()))
+          .map(m => ({
+            name: m.name,
+            role: m.role || 'viewer',
+            isMember: true,
+          }))
+
+        this.users = [...realUsers, ...memberUsers]
       } catch (e) {
         this.users = []
       } finally {
@@ -101,7 +122,12 @@ export default {
       return (name && name[0] && name[0].toUpperCase()) || '?'
     },
     roleLabel(role) {
-      return role === 'root' ? this.$t('Root admin — full control') : this.$t('Viewer — sees files and apps, cannot change settings')
+      switch (role) {
+        case 'root':   return this.$t('Root admin — full control')
+        case 'admin':  return this.$t('Admin — full control')
+        case 'editor': return this.$t('Editor — can add and remove files')
+        default:       return this.$t('Viewer — sees files and apps, cannot change settings')
+      }
     },
     openAddUser() {
       this.$buefy.modal.open({
@@ -253,9 +279,15 @@ export default {
   padding: 2px 8px;
   border-radius: 999px;
 
-  &.is-root {
+  &.is-root,
+  &.is-admin {
     background: #2d5f4e;
     color: #fff;
+  }
+
+  &.is-editor {
+    background: rgba(45, 95, 78, 0.22);
+    color: #1f4438;
   }
 
   &.is-viewer {

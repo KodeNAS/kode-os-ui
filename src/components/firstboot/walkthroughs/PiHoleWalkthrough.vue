@@ -11,36 +11,32 @@
       <div class="wt-substep">{{ sub + 1 }} / {{ total }}</div>
     </div>
 
-    <!-- Sub 0: open Pi-hole admin. The wizard already injected the
-         buyer's KODE password into the compose file's
-         FTLCONF_webserver_api_password env var, so the admin password
-         IS their KODE password — no shell commands, no copy-paste
-         from a sticker. -->
+    <!-- Sub 0: open Pi-hole admin. -->
     <section v-if="sub === 0" class="wt-body">
       <p>{{ $t('Pi-hole is your home network\'s ad blocker. Instead of installing a blocker on every device, your pebble blocks ads at the DNS layer — for your phones, TVs, smart speakers, everything.') }}</p>
-      <p>
-        {{ $t('Open the Pi-hole admin and sign in with your KODE password — we already set it for you.') }}
-      </p>
       <div class="setup-cta">
         <a class="setup-cta-btn" :href="adminUrl" target="_blank" rel="noopener noreferrer">
           <b-icon icon="internet-outline" pack="casa" size="is-medium" />
           <span>{{ $t('Open Pi-hole admin') }}</span>
         </a>
-        <p class="setup-cta-hint">{{ $t('Or scan from your phone:') }} <code>{{ adminUrl }}</code></p>
+        <p class="setup-cta-hint">{{ $t('Opens in a new tab.') }} <code>{{ adminUrl }}</code></p>
       </div>
-      <div class="qr-row">
-        <div class="qr">
-          <QrcodeVue :value="adminUrl" :size="160" level="M" background="#ffffff" foreground="#000000" />
-        </div>
-        <div class="qr-side">
-          <p class="hint">{{ $t('Use the password you set when you created your KODE account at the start of this wizard.') }}</p>
-        </div>
-      </div>
-      <p class="next-prompt">{{ $t('Signed in? Tap Next to point your router\'s DNS at the pebble.') }}</p>
+      <p class="next-prompt">{{ $t('Once you\'re on the Pi-hole login page, tap Next for the steps.') }}</p>
     </section>
 
-    <!-- Sub 1: point router DNS to pebble -->
+    <!-- Sub 1: in-app steps (sign in). -->
     <section v-else-if="sub === 1" class="wt-body">
+      <p>{{ $t('On the Pi-hole admin page:') }}</p>
+      <ol class="steps">
+        <li>{{ $t('Sign in. We already set the admin password to your KODE password — same one you created at the start of this wizard.') }}</li>
+        <li>{{ $t('You should see the dashboard with queries ticking up (or zeros if no device on your network is using it yet — fixed in the next step).') }}</li>
+      </ol>
+      <p class="next-prompt">{{ $t('Signed in? Tap Next to point your network at the pebble.') }}</p>
+    </section>
+
+    <!-- Sub 2: connect your network (the equivalent of "mobile app"
+         for an app that has no mobile app — point router DNS here). -->
+    <section v-else-if="sub === 2" class="wt-body">
       <p>{{ $t('To start blocking, tell your home router to use the pebble as its DNS server. This is the one technical bit — about 2 minutes:') }}</p>
       <ol class="steps">
         <li>
@@ -58,27 +54,14 @@
       </div>
     </section>
 
-    <!-- Sub 2: verify -->
-    <section v-else-if="sub === 2" class="wt-body">
-      <p>{{ $t('Once the router restarts, ads should start vanishing across your network.') }}</p>
-      <ol class="steps">
-        <li>{{ $t('Open the Pi-hole admin again.') }}</li>
-        <li>{{ $t('On the dashboard, Queries blocked should be ticking up — that\'s ads and trackers getting stopped at the DNS level.') }}</li>
-        <li>{{ $t('Try visiting an ad-heavy site (a news site, a free game) on any device — banners should be gone or replaced with blank rectangles.') }}</li>
-        <li>{{ $t('Open the Top Permitted Domains and Top Blocked Domains lists — it\'s genuinely interesting to see what\'s phoning home.') }}</li>
-      </ol>
-      <div class="callout">
-        <b-icon icon="alert" pack="casa" size="is-small" />
-        <span>{{ $t('No blocked queries after 10 minutes? Your router probably didn\'t actually apply the DNS change — double-check step 2 and reboot the router fully.') }}</span>
-      </div>
-    </section>
-
-    <!-- Sub 3: NEW — recommended blocklists -->
+    <!-- Sub 3: extra settings (blocklists + false positives). -->
     <section v-else-if="sub === 3" class="wt-body">
-      <p>{{ $t('Pi-hole ships with a basic blocklist. For real coverage, add a couple of community lists:') }}</p>
+      <p>{{ $t('A few settings worth adjusting once it\'s blocking:') }}</p>
       <ol class="steps">
-        <li>{{ $t('In the Pi-hole admin, go to Adlists.') }}</li>
-        <li>{{ $t('Paste each URL below into the Address field and click Add. Then run Tools → Update Gravity to apply.') }}</li>
+        <li>
+          <strong>{{ $t('Better blocklists.') }}</strong>
+          {{ $t('Adlists → paste each URL below → Add → Tools → Update Gravity.') }}
+        </li>
       </ol>
       <ul class="blocklist">
         <li>
@@ -100,23 +83,22 @@
           </b-button>
         </li>
       </ul>
-      <p class="hint">{{ $t('Together these block ~150k known ad/tracker domains. You can always add more from firebog.net or oisd.nl later.') }}</p>
+      <ol class="steps" start="2">
+        <li>
+          <strong>{{ $t('Fix false positives.') }}</strong>
+          {{ $t('If a site breaks: Query Log → find the red row → Allowlist next to it → refresh.') }}
+        </li>
+      </ol>
     </section>
 
-    <!-- Sub 4: false positives -->
+    <!-- Sub 4: all done. -->
     <section v-else-if="sub === 4" class="wt-body">
-      <p>{{ $t('Sometimes Pi-hole blocks something useful by accident — a download, a streaming login, a banking widget. If that happens:') }}</p>
-      <ol class="steps">
-        <li>{{ $t('Open the Pi-hole admin → Query Log.') }}</li>
-        <li>{{ $t('Find the failing request (it\'ll be highlighted red, with the domain that was blocked).') }}</li>
-        <li>{{ $t('Click Allowlist next to it.') }}</li>
-        <li>{{ $t('Refresh the page you were on — it should work now.') }}</li>
-      </ol>
-      <div class="callout">
-        <b-icon icon="information-outline" pack="casa" size="is-small" />
-        <span>{{ $t('Common allowlist additions: app-measurement.com (Google Analytics, some apps need it), notify.bugsnag.com (some games), and clicks.aweber.com (some newsletters).') }}</span>
-      </div>
-      <p class="hint">{{ $t('Once it\'s all running, the OLED on your pebble will show "Ads blocked today" alongside the other rotations.') }}</p>
+      <p>{{ $t('That\'s Pi-hole running for your whole network.') }}</p>
+      <ul class="tips">
+        <li>{{ $t('Try visiting an ad-heavy site (a news site, a free game) — banners should be gone or replaced with blank rectangles.') }}</li>
+        <li>{{ $t('The Top Permitted Domains and Top Blocked Domains lists are genuinely interesting — fun to see what\'s phoning home.') }}</li>
+        <li>{{ $t('Once everything is wired up, your pebble\'s OLED will show "Ads blocked today" alongside the other rotations.') }}</li>
+      </ul>
     </section>
 
     <div class="wt-actions">
@@ -130,21 +112,19 @@
 </template>
 
 <script>
-import QrcodeVue from 'qrcode.vue'
 import copy from 'clipboard-copy'
 import { resolveAppUrl } from '@/service/kodeApps'
 
 const SUB_TITLES = [
-  'Sign in to Pi-hole admin',
+  'Open Pi-hole',
+  'Sign in',
   'Point your router at the pebble',
-  'Verify it\'s working',
-  'Add quality blocklists',
-  'Fix false positives',
+  'Extra settings',
+  'You\'re blocking ads',
 ]
 
 export default {
   name: 'PiHoleWalkthrough',
-  components: { QrcodeVue },
   props: {
     host: { type: String, required: true },
     isLast: { type: Boolean, default: false },
@@ -160,7 +140,6 @@ export default {
   async created() {
     const live = await resolveAppUrl('pihole', this.host)
     if (live) {
-      // Ensure /admin/ suffix even if API returns just the root.
       this.adminUrl = live.endsWith('/admin/') ? live : live.replace(/\/+$/, '') + '/admin/'
     }
   },
@@ -185,7 +164,7 @@ export default {
 @import './_walkthrough.scss';
 .wt-icon.is-pihole { background: linear-gradient(135deg, #a83239, #d04a51); }
 
-/* Per-row copy button for blocklist URLs in sub-step 3. */
+/* Per-row copy button for blocklist URLs in the extras step. */
 .blocklist {
   list-style: none;
   margin: 0 0 0.75rem 0;

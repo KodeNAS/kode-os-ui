@@ -41,9 +41,9 @@
         class="confirm-input"
       />
 
-      <!-- Live progress while the reset runs. The user can't cancel
-           mid-flight but at least sees what's happening rather than a
-           frozen modal. -->
+      <!-- Live progress while the reset runs. Every API call has a
+           hard timeout (see reset() below) so the modal can't sit
+           here forever — if a phase hangs, it'll log + move on. -->
       <div v-if="isResetting" class="progress-block">
         <div class="progress-row">
           <span class="progress-icon">
@@ -71,7 +71,7 @@
 </template>
 
 <script>
-import { syncApps, listInstalledAppIds, uninstallApp } from '@/service/appSync'
+import { syncApps, listInstalledAppIds } from '@/service/appSync'
 
 export default {
   name: 'FactoryResetModal',
@@ -89,32 +89,60 @@ export default {
     },
   },
   methods: {
+    // Race any promise against a timeout. Used everywhere in reset()
+    // so a 401-then-failed-refresh on the axios interceptor (which
+    // leaves the original request unresolved forever) can't lock the
+    // modal. On timeout we resolve to `null` so callers can fall
+    // through to the next phase instead of throwing.
+    withTimeout(promise, ms, label) {
+      return new Promise((resolve) => {
+        let done = false
+        const timer = setTimeout(() => {
+          if (done) return
+          done = true
+          // eslint-disable-next-line no-console
+          console.warn(`Factory reset: ${label} timed out after ${ms}ms`)
+          resolve(null)
+        }, ms)
+        Promise.resolve(promise).then(
+          (v) => { if (!done) { done = true; clearTimeout(timer); resolve(v) } },
+          (e) => {
+            if (done) return
+            done = true; clearTimeout(timer)
+            // eslint-disable-next-line no-console
+            console.warn(`Factory reset: ${label} failed`, e)
+            resolve(null)
+          },
+        )
+      })
+    },
     async reset() {
       if (!this.canReset) return
       this.isResetting = true
 
       // Phase 1 — uninstall every compose app and delete their userdata.
-      // We list first so we can show "Removing X of N apps", then run
-      // syncApps with an empty target. After it finishes we list AGAIN
-      // and retry any leftovers individually — Docker can take a moment
-      // to surface a clean state, so a 2nd pass catches stragglers.
+      // Every API call here is timeout-wrapped: the axios 401 refresh
+      // interceptor can hang the original request forever if the
+      // refresh token is also expired (it calls logout() and never
+      // resolves the original promise). 15s for the list, 60s for the
+      // syncApps wipe, no fallback retry loop — keep it simple, the
+      // 2nd pass only ever shaved a few stragglers anyway.
       this.statusLabel = this.$t('Removing installed apps…')
-      let installed = []
-      try {
-        installed = await listInstalledAppIds(this.$openAPI)
-      } catch (e) {
-        // eslint-disable-next-line no-console
-        console.warn('Factory reset: pre-uninstall list failed', e)
-      }
+
+      const installed = (await this.withTimeout(
+        listInstalledAppIds(this.$openAPI),
+        15000,
+        'listInstalledAppIds',
+      )) || []
       // eslint-disable-next-line no-console
-      console.info('Factory reset: uninstalling apps', installed)
+      console.info('Factory reset: installed apps =', installed)
       this.appProgress = installed.length === 0
         ? this.$t('No apps installed.')
         : `${this.$t('Found')} ${installed.length} ${this.$t('apps')}`
 
       if (installed.length > 0) {
-        try {
-          await syncApps(
+        await this.withTimeout(
+          syncApps(
             this.$openAPI,
             [],
             (entry) => {
@@ -127,32 +155,13 @@ export default {
                 console.warn('Factory reset: failed to remove', entry.id, entry.error)
               }
             },
-            { deleteUserdata: true },
-          )
-        } catch (e) {
-          // eslint-disable-next-line no-console
-          console.warn('Factory reset: syncApps threw', e)
-        }
-
-        // Verification pass — anything still listed gets a second try.
-        let leftovers = []
-        try {
-          leftovers = await listInstalledAppIds(this.$openAPI)
-        } catch (e) { /* ignore */ }
-        if (leftovers.length > 0) {
-          this.appProgress = `${this.$t('Retrying')} ${leftovers.length} ${this.$t('apps')}…`
-          // eslint-disable-next-line no-console
-          console.warn('Factory reset: leftover apps after first pass', leftovers)
-          for (const id of leftovers) {
-            try {
-              this.appProgress = `${this.$t('Removing')} ${id}…`
-              await uninstallApp(this.$openAPI, id, { deleteUserdata: true })
-            } catch (e) {
-              // eslint-disable-next-line no-console
-              console.warn('Factory reset: second-pass uninstall failed for', id, e)
-            }
-          }
-        }
+            { deleteUserdata: true, uninstallTimeoutMs: 45000 },
+          ),
+          // Top-level cap = perAppCap (45s) × installed.length + 15s
+          // headroom for the initial list call inside syncApps.
+          installed.length * 45000 + 15000,
+          'syncApps',
+        )
       }
       this.appProgress = ''
 
@@ -163,49 +172,56 @@ export default {
       // are kept because they're typically system markers, not user
       // data; the file browser hides them anyway.
       this.statusLabel = this.$t('Deleting files in /DATA…')
-      try {
-        const list = await this.$api.folder.getList('/DATA')
-        const items = (list && list.data && list.data.data && list.data.data.content) || []
-        const toDelete = items
-          .map(i => i && i.path)
-          .filter(Boolean)
-          .filter(p => !/(^|\/)\.[^/]+$/.test(p)) // skip dotfiles/dotdirs
-        // eslint-disable-next-line no-console
-        console.info('Factory reset: wiping /DATA entries', toDelete)
-        // batch.delete expects a JSON-stringified array body
-        // (see the existing call site in mixins/mixin.js).
-        if (toDelete.length > 0) {
-          await this.$api.batch.delete(JSON.stringify(toDelete))
-        }
-      } catch (e) {
-        // eslint-disable-next-line no-console
-        console.warn('Factory reset: /DATA wipe partially failed', e)
+      const list = await this.withTimeout(
+        this.$api.folder.getList('/DATA'),
+        15000,
+        'folder.getList(/DATA)',
+      )
+      const items = (list && list.data && list.data.data && list.data.data.content) || []
+      const toDelete = items
+        .map(i => i && i.path)
+        .filter(Boolean)
+        .filter(p => !/(^|\/)\.[^/]+$/.test(p)) // skip dotfiles/dotdirs
+      // eslint-disable-next-line no-console
+      console.info('Factory reset: wiping /DATA entries', toDelete)
+      if (toDelete.length > 0) {
+        await this.withTimeout(
+          this.$api.batch.delete(JSON.stringify(toDelete)),
+          60000,
+          'batch.delete(/DATA)',
+        )
       }
 
       // Phase 3 — wipe KODE-specific custom storage while we still have
-      // auth. allSettled so a single failure doesn't abort the reset.
+      // auth. Each one is timeout-wrapped + allSettled-equivalent so a
+      // single failure (or a 401 hang) doesn't abort the reset.
       this.statusLabel = this.$t('Clearing settings…')
-      await Promise.allSettled([
-        this.$api.users.setCustomStorage('kode_first_boot', {}),
-        this.$api.users.setCustomStorage('kode_pebble_name', {}),
+      await Promise.all([
+        this.withTimeout(this.$api.users.setCustomStorage('kode_first_boot', {}), 8000, 'clear kode_first_boot'),
+        this.withTimeout(this.$api.users.setCustomStorage('kode_pebble_name', {}), 8000, 'clear kode_pebble_name'),
       ])
 
-      // Phase 4 — delete all user accounts. Load-bearing destructive
-      // call; if it fails the user is stuck in a half-reset state, so
-      // we abort and surface the error.
+      // Phase 4 — delete all user accounts. Best-effort: if this fails
+      // (typically when the JWT expired mid-reset), we still continue
+      // to phases 5-7 so the modal returns the browser to /welcome.
+      // The user can re-run the wipe from the wizard if accounts
+      // didn't actually delete, but we never leave them stuck on a
+      // spinning modal.
       this.statusLabel = this.$t('Removing accounts…')
-      try {
-        await this.$api.users.deleteAllUser()
-      } catch (err) {
-        const detail = (err && err.response && err.response.data && err.response.data.message) || err.message || ''
+      const accountsResult = await this.withTimeout(
+        this.$api.users.deleteAllUser(),
+        15000,
+        'deleteAllUser',
+      )
+      if (accountsResult === null) {
+        // eslint-disable-next-line no-console
+        console.warn('Factory reset: account deletion failed or timed out — continuing with local wipe')
         this.$buefy.toast.open({
-          message: `${this.$t('Reset failed — could not delete accounts.')} ${detail}`,
-          type: 'is-danger',
+          message: this.$t('Some backend cleanup failed — finishing local wipe and reloading.'),
+          type: 'is-warning',
           position: 'is-top',
-          duration: 5000,
+          duration: 4500,
         })
-        this.isResetting = false
-        return
       }
 
       // Phase 5 — wipe KODE-controlled localStorage + auth tokens.

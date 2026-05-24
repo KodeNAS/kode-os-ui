@@ -11,15 +11,9 @@
       <div class="wt-substep">{{ sub + 1 }} / {{ total }}</div>
     </div>
 
-    <!-- Sub 0: open Jellyfin & finish account setup. Same setup-first
-         pattern used in every walkthrough — even when the wizard's
-         auto-bootstrap succeeded, this gives the user a clear "open
-         the app, confirm you're signed in, come back" step. -->
+    <!-- Sub 0: open Jellyfin at its IP. -->
     <section v-if="sub === 0" class="wt-body">
-      <p>{{ $t('Jellyfin streams the movies, shows, and music stored on your pebble to any TV, phone, or browser — no subscription, no ads.') }}</p>
-      <p>
-        {{ $t('Before anything else: open Jellyfin in your browser and finish the built-in setup wizard. Use the same email + password as your KODE account so they stay in sync.') }}
-      </p>
+      <p>{{ $t('Jellyfin streams the movies, shows, and music stored on your pebble — no subscription, no ads. Step one: open it in your browser.') }}</p>
       <div class="setup-cta">
         <a class="setup-cta-btn" :href="url" target="_blank" rel="noopener noreferrer">
           <b-icon icon="internet-outline" pack="casa" size="is-medium" />
@@ -27,19 +21,23 @@
         </a>
         <p class="setup-cta-hint">{{ $t('Opens in a new tab.') }} <code>{{ url }}</code></p>
       </div>
-      <p class="next-prompt">{{ $t('Done? Tap Next to add your media folders.') }}</p>
+      <p class="next-prompt">{{ $t('Once you\'re on the Jellyfin page, tap Next for the steps.') }}</p>
     </section>
 
-    <!-- Sub 1: add libraries -->
+    <!-- Sub 1: steps inside Jellyfin (account + libraries). -->
     <section v-else-if="sub === 1" class="wt-body">
-      <p>{{ $t('In Jellyfin\'s setup wizard, add libraries pointing at your pebble\'s media folders:') }}</p>
+      <p>{{ $t('Walk through Jellyfin\'s built-in setup wizard:') }}</p>
+      <ol class="steps">
+        <li>{{ $t('Pick your language, then create the admin user. Use the same email + password as your KODE account.') }}</li>
+        <li>{{ $t('When it asks for media libraries, add these three:') }}</li>
+      </ol>
       <ul class="folder-list">
         <li>
-          <strong>{{ $t('Movies:') }}</strong> <code>/DATA/Videos/Movies</code>
+          <strong>{{ $t('Movies:') }}</strong> <code>/DATA/Movies</code>
           <span class="folder-note">{{ $t('Type: Movies') }}</span>
         </li>
         <li>
-          <strong>{{ $t('TV shows:') }}</strong> <code>/DATA/Videos/TV</code>
+          <strong>{{ $t('TV shows:') }}</strong> <code>/DATA/Shows</code>
           <span class="folder-note">{{ $t('Type: Shows') }}</span>
         </li>
         <li>
@@ -47,14 +45,14 @@
           <span class="folder-note">{{ $t('Type: Music') }}</span>
         </li>
       </ul>
-      <p>{{ $t('Drop files into those folders — via File Browser, Samba on your computer, or directly through Jellyfin — and they\'ll show up in the app.') }}</p>
+      <p>{{ $t('Finish the wizard, then sign in.') }}</p>
       <div class="callout">
         <b-icon icon="information-outline" pack="casa" size="is-small" />
         <span>{{ $t('Naming matters for metadata. Use "Movie Title (Year).mp4" for movies and "Show/Season 01/Show - S01E01.mp4" for TV. Jellyfin auto-fetches posters and descriptions from TheMovieDB.') }}</span>
       </div>
     </section>
 
-    <!-- Sub 2: install on phone + TV -->
+    <!-- Sub 2: install on phone + TV. -->
     <section v-else-if="sub === 2" class="wt-body">
       <p>{{ $t('Watch on every screen. Install the Jellyfin app on each device, then point it at your pebble.') }}</p>
 
@@ -82,18 +80,18 @@
               {{ copied ? $t('Copied') : $t('Copy') }}
             </b-button>
           </div>
-          <p class="hint">{{ $t('Sign in with the Jellyfin admin account you created in step 1.') }}</p>
+          <p class="hint">{{ $t('Sign in with the Jellyfin admin account you created in step 2.') }}</p>
         </div>
       </div>
     </section>
 
-    <!-- Sub 3: power-user tips (NEW) -->
+    <!-- Sub 3: extra settings worth flipping on. -->
     <section v-else-if="sub === 3" class="wt-body">
       <p>{{ $t('A few settings worth flipping on once Jellyfin is up:') }}</p>
       <ol class="steps">
         <li>
           <strong>{{ $t('Hardware transcoding.') }}</strong>
-          {{ $t('Dashboard → Playback → Hardware acceleration → set to "Video Acceleration API (VAAPI)". Your Pi 5 can transcode without breaking a sweat — this is what lets multiple people stream at once.') }}
+          {{ $t('Dashboard → Playback → Hardware acceleration → "Video Acceleration API (VAAPI)". Your Pi 5 can transcode without breaking a sweat — this is what lets multiple people stream at once.') }}
         </li>
         <li>
           <strong>{{ $t('Subtitle providers.') }}</strong>
@@ -101,20 +99,20 @@
         </li>
         <li>
           <strong>{{ $t('Family accounts.') }}</strong>
-          {{ $t('Dashboard → Users → +. Each person can have their own watched-list and continue-watching row.') }}
+          {{ $t('Dashboard → Users → +. Each person gets their own watched-list and continue-watching row.') }}
+        </li>
+        <li>
+          <strong>{{ $t('Resume across devices.') }}</strong>
+          {{ $t('In each user\'s profile, enable "Remember where I left off" so pausing on the phone and picking up on the TV just works.') }}
         </li>
       </ol>
-      <div class="callout">
-        <b-icon icon="information-outline" pack="casa" size="is-small" />
-        <span>{{ $t('Pro tip: enable "Resume from where I left off" in each user\'s profile so picking up on the TV after pausing on the phone just works.') }}</span>
-      </div>
     </section>
 
-    <!-- Sub 4: you're ready (existing tips trimmed) -->
+    <!-- Sub 4: all done. -->
     <section v-else-if="sub === 4" class="wt-body">
       <p>{{ $t('That\'s it — hit play and enjoy.') }}</p>
       <ul class="tips">
-        <li>{{ $t('Jellyfin scans for new files every few minutes; you don\'t have to restart anything.') }}</li>
+        <li>{{ $t('Drop files into /DATA/Movies, /DATA/Shows or /DATA/Music — Jellyfin scans every few minutes, no restart needed.') }}</li>
         <li>{{ $t('Cast from your phone to a Chromecast or Apple TV right from the player.') }}</li>
         <li>{{ $t('Once everything is wired up, your pebble\'s OLED will show "Now playing" whenever someone is streaming.') }}</li>
       </ul>
@@ -137,10 +135,10 @@ import { resolveAppUrl } from '@/service/kodeApps'
 
 const FALLBACK_PORT = 8096
 const SUB_TITLES = [
-  'Set up your Jellyfin account',
-  'Add your media',
+  'Open Jellyfin',
+  'Create your account',
   'Install on your devices',
-  'Power-user settings',
+  'Extra settings',
   'You\'re ready to stream',
 ]
 

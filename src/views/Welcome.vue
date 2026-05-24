@@ -46,6 +46,19 @@
         <WalkthroughStep    v-else-if="stepIndex === 9" key="wt"  :apps="pickedApps" :host="host" @next="next" @back="back" @restart="restart" />
         <DoneStep           v-else-if="stepIndex === 10" key="dn" :hostname="hostname" :apps="pickedApps" :is-replay="isReplay" @finish="finish" />
       </transition>
+
+      <!-- Dev wipe — pinned to the wizard shell so it's reachable from
+           every step. Opens the same FactoryResetModal the Settings
+           page uses, with the same type-WIPE confirmation. -->
+      <button
+        type="button"
+        class="fb-wipe"
+        :title="$t('Factory reset (developer)')"
+        @click="openWipe"
+      >
+        <b-icon icon="alert" pack="casa" size="is-small" />
+        <span>{{ $t('Wipe') }}</span>
+      </button>
     </div>
   </div>
 </template>
@@ -62,6 +75,7 @@ import LayoutChooserStep from '@/components/firstboot/steps/LayoutChooserStep.vu
 import InstallAppsStep  from '@/components/firstboot/steps/InstallAppsStep.vue'
 import WalkthroughStep  from '@/components/firstboot/steps/WalkthroughStep.vue'
 import DoneStep         from '@/components/firstboot/steps/DoneStep.vue'
+import FactoryResetModal from '@/components/settings/FactoryResetModal.vue'
 import { TEMPLATES } from '@/service/dashboardTemplates'
 
 export default {
@@ -126,15 +140,61 @@ export default {
       return this.$route.query.replay === '1'
     },
   },
-  mounted() {
+  async mounted() {
+    // Pre-flight: if an admin account already exists on the pebble
+    // (either because this is a Settings → replay run, or because the
+    // wizard was completed once and we're walking it again in a
+    // different mode), pre-fill the credentials bag and flip
+    // `adminCreated` so AdminAccountStep is skipped end-to-end. This
+    // is what makes running setup in beginner THEN re-running in
+    // developer (or vice-versa) not prompt for a new account.
+    try {
+      const statusRes = await this.$api.users.getUserStatus()
+      const data = statusRes && statusRes.data && statusRes.data.data
+      // The init `key` is only emitted while the pebble has zero
+      // admins. Its absence means an account already exists.
+      const needsInit = !!(data && data.key)
+      if (!needsInit) {
+        this.adminCreated = true
+        // Pull the current user's username/email/fullName so InstallApps
+        // (and any future bootstrap helpers) get the same identity the
+        // user originally set, regardless of which mode they replay in.
+        try {
+          const userRes = await this.$api.users.getUserInfo()
+          const u = (userRes && userRes.data && userRes.data.data) || {}
+          if (u.user_name) this.adminUsername = u.user_name
+          else if (u.username) this.adminUsername = u.username
+          if (u.email)     this.adminEmail    = u.email
+          if (u.nickname)  this.adminFullName = u.nickname
+          else if (u.description) this.adminFullName = u.description
+          // Password is intentionally NOT recoverable from the backend.
+          // Walkthroughs always tell the user "use the same password
+          // you set in KODE", so leaving this blank is fine — the only
+          // place that read it (the post-install bootstrap loop) was
+          // removed when we cleaned up the "setup" indicators.
+        } catch (e) { /* non-blocking — we still skip AdminAccountStep */ }
+        // Pre-fill hostname + last-picked apps from custom storage so
+        // re-running in a different mode preserves prior choices.
+        try {
+          const fb = await this.$api.users.getCustomStorage('kode_first_boot')
+          const raw = (fb && fb.data && fb.data.data) || {}
+          if (raw.hostname) this.hostname = raw.hostname
+          if (Array.isArray(raw.apps)) this.pickedApps = raw.apps
+        } catch (e) { /* non-blocking */ }
+      }
+    } catch (e) { /* getUserStatus failed — fall back to fresh wizard */ }
+
     this.isLoading = false
   },
   methods: {
     next() {
       if (this.stepIndex >= this.lastStep) return
-      // In replay mode, skip the AdminAccountStep — the account already exists.
-      // SystemCheck is now step 3 (Language added at index 0); skip to PebbleName (5).
-      if (this.isReplay && this.stepIndex === 3) {
+      // Skip the AdminAccountStep when an account already exists —
+      // covers both ?replay=1 (from Settings → walk through setup
+      // again) and a fresh in-session replay from a previous wizard
+      // run (e.g. beginner → developer in the same browsing session).
+      // SystemCheck is step 3, AdminAccountStep is step 4, PebbleName 5.
+      if ((this.isReplay || this.adminCreated) && this.stepIndex === 3) {
         this.stepIndex = 5
         return
       }
@@ -186,14 +246,34 @@ export default {
       if (payload && payload.language) this.language = payload.language
       this.next()
     },
+    openWipe() {
+      // Same modal Settings → Factory reset opens. On confirm it
+      // wipes accounts + /DATA + custom storage + localStorage and
+      // hard-reloads to /welcome, which is exactly what dev wants
+      // when iterating on the wizard.
+      this.$buefy.modal.open({
+        parent: this,
+        component: FactoryResetModal,
+        hasModalCard: true,
+        trapFocus: true,
+        canCancel: ['x', 'outside', 'escape'],
+        animation: 'zoom-in',
+      })
+    },
     onUserType(payload) {
       const type = (payload && payload.userType) || 'beginner'
       this.userType = type
-      // Developer skips the SystemCheck but STILL needs to create an admin
-      // account — otherwise the router bounces back to /welcome or /login
-      // on the next navigation (no initialized user). Jump straight to
-      // step 4 (AdminAccountStep); onAdminDone routes developer to finish.
+      // Developer skips the SystemCheck. If no admin exists yet we
+      // still need to walk through AdminAccountStep (the router
+      // bounces back to /welcome until the pebble is initialized).
+      // But if an account is already set up — e.g. the user finished
+      // the wizard in beginner and is now replaying as developer —
+      // skip account creation entirely and finish immediately.
       if (type === 'developer') {
+        if (this.adminCreated) {
+          this.finishDeveloper()
+          return
+        }
         this.stepIndex = 4
         return
       }
@@ -349,6 +429,7 @@ export default {
 }
 
 .firstboot-shell {
+  position: relative;
   width: 640px;
   max-width: 100%;
   /* Cap the shell at the viewport so a tall step (the install
@@ -455,5 +536,36 @@ export default {
 .fb-fade-leave-to {
   opacity: 0;
   transform: translateY(8px);
+}
+
+/* Dev wipe — small pill in the bottom-right of the wizard shell.
+   Low-prominence (red on hover only) so it doesn't compete with the
+   primary CTA, but always reachable across every step. */
+.fb-wipe {
+  position: absolute;
+  bottom: 0.85rem;
+  right: 0.85rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 4px 9px;
+  font-size: 0.7rem;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  color: rgba(255, 255, 255, 0.55);
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 999px;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+  z-index: 5;
+
+  &:hover {
+    color: #fff;
+    background: rgba(176, 74, 74, 0.55);
+    border-color: rgba(176, 74, 74, 0.7);
+  }
+
+  ::v-deep .icon { color: inherit; }
 }
 </style>

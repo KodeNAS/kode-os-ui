@@ -1,6 +1,5 @@
 <template>
   <div class="fb-step install-apps-step has-text-white">
-    <div class="kicker">{{ $t('Setting up') }}</div>
     <h1 class="title is-3 has-text-white">{{ $t('Installing your apps') }}</h1>
     <p class="subtitle is-6 has-text-white-bis">
       <span v-if="phase === 'idle' || phase === 'starting'">
@@ -26,7 +25,7 @@
       >
         <span class="install-icon">
           <b-icon v-if="row.state === 'pending'" icon="time-outline" pack="casa" size="is-small" />
-          <span v-else-if="row.state === 'running' || row.state === 'starting' || row.state === 'configuring'" class="spinner"></span>
+          <span v-else-if="row.state === 'running' || row.state === 'starting'" class="spinner"></span>
           <b-icon v-else-if="row.state === 'done'" icon="check-outline" pack="casa" size="is-small" />
           <b-icon v-else icon="alert" pack="casa" size="is-small" />
         </span>
@@ -87,18 +86,19 @@
  * no-op since syncApps's diff returns an empty install/uninstall set.
  */
 import { syncApps } from '@/service/appSync'
-import { bootstrapByAppId, prepareYamlByAppId } from '@/service/appBootstrap'
+import { prepareYamlByAppId } from '@/service/appBootstrap'
 
 // Standard /DATA folders we make sure exist before installing apps.
 // Jellyfin specifically asks the buyer to select library paths during
-// its setup wizard — if /DATA/Videos / /DATA/Music don't exist, the
-// path picker has nothing to select. Idempotent: folder.create()
-// returns an error if the folder already exists which we swallow.
+// its setup wizard — if /DATA/Movies / /DATA/Shows / /DATA/Music don't
+// exist, the path picker has nothing to select. Idempotent:
+// folder.create() returns an error if the folder already exists which
+// we swallow.
 const DATA_FOLDERS = [
   '/DATA/Photos',
   '/DATA/Videos',
-  '/DATA/Videos/Movies',
-  '/DATA/Videos/TV',
+  '/DATA/Movies',
+  '/DATA/Shows',
   '/DATA/Documents',
   '/DATA/Music',
   '/DATA/Downloads',
@@ -143,8 +143,6 @@ export default {
         case 'pending':       return this.$t('Pending')
         case 'running':       return this.$t('Installing…')
         case 'starting':      return this.$t('Starting…')
-        case 'configuring':   return this.$t('Setting up account…')
-        case 'partial':       return this.$t('Set up manually')
         case 'done':          return this.$t('Ready')
         case 'error':         return this.$t('Failed')
         default:              return ''
@@ -162,7 +160,6 @@ export default {
     async runSync() {
       this.phase = 'starting'
       this.rows = []
-      const installedOk = []
       // Make sure /DATA/* exists BEFORE installs so any compose file
       // that bind-mounts /DATA/AppData/* has a parent to attach to.
       await this.ensureDataFolders()
@@ -182,11 +179,6 @@ export default {
             } else {
               this.rows.push({ ...entry })
             }
-            // Track which installs finished so we can bootstrap each
-            // app's account after the docker work is done.
-            if (entry.action === 'install' && entry.state === 'done') {
-              if (!installedOk.includes(entry.id)) installedOk.push(entry.id)
-            }
             if (this.phase === 'starting') this.phase = 'running'
           },
           {
@@ -201,38 +193,6 @@ export default {
         console.error('InstallAppsStep: syncApps threw', e)
       }
 
-      // Auto-bootstrap each freshly-installed app using the buyer's
-      // credentials. Each row gets a sub-status ("Setting up your
-      // account…") then either "Done" or "Setup skipped" depending
-      // on whether the bootstrap helper succeeded.
-      for (const id of installedOk) {
-        const row = this.rows.find(r => r.id === id && r.action === 'install')
-        if (!row) continue
-        row.state = 'configuring'
-        row.detail = ''
-        try {
-          // eslint-disable-next-line no-console
-          console.info('InstallAppsStep: bootstrapping', id)
-          const result = await bootstrapByAppId(id, this.host, this.creds)
-          if (result && result.ok) {
-            row.state = 'done'
-            if (result.extra && result.extra.alreadyConfigured) {
-              row.detail = this.$t('already configured')
-            }
-          } else {
-            row.state = 'partial'
-            row.error = (result && result.error) || this.$t('Bootstrap failed; the walkthrough will let you set it up manually.')
-            // eslint-disable-next-line no-console
-            console.warn('InstallAppsStep: bootstrap failed for', id, result && result.error)
-          }
-        } catch (e) {
-          row.state = 'partial'
-          row.error = (e && e.message) || String(e)
-          // eslint-disable-next-line no-console
-          console.warn('InstallAppsStep: bootstrap threw for', id, e)
-        }
-      }
-
       this.phase = 'done'
     },
   },
@@ -244,14 +204,6 @@ export default {
 @keyframes ias-fade {
   from { opacity: 0; transform: translateY(8px); }
   to   { opacity: 1; transform: translateY(0); }
-}
-
-.kicker {
-  font-size: 0.6875rem;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: rgba(255, 255, 255, 0.7);
-  margin-bottom: 0.35rem;
 }
 
 /* Override Bulma's `.title + .subtitle { margin-top: -1.25rem }`. */
@@ -284,18 +236,13 @@ export default {
   transition: background 0.2s, border-color 0.2s;
 
   &.is-running,
-  &.is-starting,
-  &.is-configuring {
+  &.is-starting {
     background: rgba(45, 95, 78, 0.32);
     border-color: rgba(45, 95, 78, 0.85);
   }
   &.is-done {
     background: rgba(45, 95, 78, 0.20);
     border-color: rgba(45, 95, 78, 0.4);
-  }
-  &.is-partial {
-    background: rgba(196, 127, 0, 0.18);
-    border-color: rgba(196, 127, 0, 0.5);
   }
   &.is-error {
     background: rgba(176, 74, 74, 0.20);
