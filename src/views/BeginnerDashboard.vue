@@ -662,6 +662,11 @@ export default {
           subCols: Array.isArray(c.subCols) ? c.subCols.map(sub => [...sub]) : null,
         }))
         localStorage.setItem(keysFor(this.mode).layout, JSON.stringify(clean))
+        // Any save invalidates the "user is on premade X" assumption
+        // unless applyTemplate restores the key after this call. Drag,
+        // remove, add, resize, column-count change all flow through
+        // saveLayout, so this is the single chokepoint.
+        localStorage.removeItem('kode_chosen_template_v1')
       } catch (e) { /* ignore quota / disabled storage */ }
     },
     loadWeights(targetCount) {
@@ -781,6 +786,12 @@ export default {
       try { localStorage.setItem(keysFor(this.mode).colCount, String(next.length)) } catch (e) { /* ignore */ }
       this.saveLayout()
       this.saveWeights()
+      // saveLayout() clears kode_chosen_template_v1 (it's called from
+      // every user customisation path too — drag, remove, add, resize).
+      // Restore it here so the tour and any other layout-aware UI can
+      // know which premade the user is on. Cleared as soon as the user
+      // edits anything → tour falls back to generic.
+      try { localStorage.setItem('kode_chosen_template_v1', key) } catch (e) { /* ignore */ }
     },
     loadUserTemplates() {
       try {

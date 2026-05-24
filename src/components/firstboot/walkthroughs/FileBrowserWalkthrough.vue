@@ -65,11 +65,6 @@
         </ol>
       </div>
 
-      <p>
-        <button type="button" class="wizard-link" @click="openAddDeviceWizard">
-          {{ $t('Or run the step-by-step Add a device wizard') }}
-        </button>
-      </p>
     </section>
 
     <!-- Sub 3: extra settings (sharing links + bookmarks). -->
@@ -117,7 +112,6 @@
 
 <script>
 import { resolveAppUrl } from '@/service/kodeApps'
-import AddDeviceWizard from '@/components/wizard/AddDeviceWizard.vue'
 
 const FALLBACK_PORT = 80
 const SUB_TITLES = [
@@ -163,15 +157,6 @@ export default {
       if (this.sub < this.total - 1) this.sub += 1
       else this.$emit('done')
     },
-    openAddDeviceWizard() {
-      this.$buefy.modal.open({
-        parent: this,
-        component: AddDeviceWizard,
-        hasModalCard: true,
-        trapFocus: true,
-        animation: 'zoom-in',
-      })
-    },
   },
 }
 </script>
@@ -205,16 +190,4 @@ export default {
   font-size: 0.9375rem;
 }
 
-.wizard-link {
-  background: none;
-  border: none;
-  padding: 0;
-  color: #2d5f4e;
-  text-decoration: underline;
-  cursor: pointer;
-  font-size: 0.875rem;
-  font-family: inherit;
-
-  &:hover { color: #1f4438; }
-}
 </style>

@@ -3,16 +3,22 @@
  * first dashboard visit (gated by localStorage["kode_tour_seen"]) and
  * available on demand via the ? button in TopBar.
  *
- * Per-layout: the tour reads each widget's data-tour attribute live
- * from the DOM, then builds the step list from what's actually placed.
- * That way a user on Minimalist sees a 3-stop tour, a user on Full 2
- * sees the full canvas, and adding/removing a widget on the fly is
- * reflected on the next replay.
+ * Layout-aware: the tour reads `kode_chosen_template_v1` (set by
+ * BeginnerDashboard.applyTemplate + Welcome.resetDashboardLayoutForFirstBoot)
+ * and uses a per-template intro line so a user on Minimalist sees
+ * a different welcome than one on Full 2. Once any widget is moved /
+ * added / removed, BeginnerDashboard.saveLayout clears that key and
+ * the tour falls back to a generic "custom layout" intro.
+ *
+ * Steps walked: every [data-tour] widget present in the live DOM, in
+ * document order. WIDGET_POPOVERS holds the per-widget popover copy;
+ * add an entry there when a new widget gets a data-tour anchor.
  */
 import { driver } from 'driver.js'
 import 'driver.js/dist/driver.css'
 
 const TOUR_SEEN_KEY = 'kode_tour_seen'
+const TEMPLATE_KEY = 'kode_chosen_template_v1'
 
 const baseConfig = {
   showProgress: true,
@@ -103,9 +109,46 @@ const WIDGET_POPOVERS = {
   },
 }
 
+// Per-template intro line. Each one names the layout, says what
+// shape it is (cols × what's where), and sets expectations for how
+// many stops the tour has. Generated copy reads "Welcome to your
+// pebble" if no template is matched (custom layout).
+const TEMPLATE_INTROS = {
+  'builtin-default': {
+    title: 'Welcome to your pebble — Default layout',
+    description: 'Three columns: clock + weather on the left, your apps in the middle, family and quick-links on the right. Tap Next to walk through each widget.',
+  },
+  'builtin-essential-1': {
+    title: 'Welcome to your pebble — Essential layout',
+    description: 'Three columns built for the essentials: clock + recent files left, search + apps + system info middle, weather + utilities right.',
+  },
+  'builtin-minimalist-1': {
+    title: 'Welcome to your pebble — Minimalist layout',
+    description: 'Two columns, the absolute essentials. Search and the clock on one side, apps and files on the other.',
+  },
+  'builtin-simple-1': {
+    title: 'Welcome to your pebble — Simple layout',
+    description: 'Two-column shortcut layout: search + apps on the left, clock + weather on the right.',
+  },
+  'builtin-full-1': {
+    title: 'Welcome to your pebble — Full layout',
+    description: 'Three columns: clock + weather left, search/family/utilities middle, plus quick-launch shortcuts to each app on the right.',
+  },
+  'builtin-full-2': {
+    title: 'Welcome to your pebble — Full 2 layout',
+    description: 'Four columns, every widget on the dashboard. About a minute to walk through them all.',
+  },
+}
+
+const GENERIC_INTRO = {
+  title: 'Welcome to your pebble',
+  description: 'A quick tour of your dashboard. Replay it anytime with the ? button at the top.',
+}
+
 // Build the per-layout step list. We:
-//   1. Open with a Welcome card that names how many widgets we'll
-//      walk through, so the tour feels personalised to the layout.
+//   1. Open with a Welcome card sized to whichever template the user
+//      is on (TEMPLATE_INTROS) or a generic line if they've already
+//      customised the layout.
 //   2. Walk each data-tour widget IN DOM ORDER (top→bottom, left→
 //      right), pulling its popover from WIDGET_POPOVERS so the user
 //      sees them in the same order they're laid out.
@@ -113,8 +156,17 @@ const WIDGET_POPOVERS = {
 //      help lives, then a final "you're set" card.
 function buildStepsForLayout() {
   const steps = []
+
+  // Layout intro: prefer the per-template flavor if the user is
+  // currently on a known premade. Cleared as soon as they customise.
+  let templateKey = ''
+  try { templateKey = localStorage.getItem(TEMPLATE_KEY) || '' } catch (e) { /* ignore */ }
+  const intro = TEMPLATE_INTROS[templateKey] || GENERIC_INTRO
+
   // Discover every widget anchored in the live dashboard. NodeList in
   // document order — exactly the visual top→bottom order the user sees.
+  // app:* shortcuts have an empty data-tour (no entry in tourKeyFor)
+  // and get filtered out here so the tour doesn't try to stop on them.
   const anchored = []
   try {
     const nodes = document.querySelectorAll('.beginner-dashboard [data-tour]')
@@ -127,14 +179,14 @@ function buildStepsForLayout() {
   } catch (e) { /* ignore — fall through to empty */ }
 
   const count = anchored.length
-  const layoutLabel = count === 0
-    ? 'Your dashboard is set up.'
-    : `We\'ll walk through the ${count} widget${count === 1 ? '' : 's'} on your dashboard — under a minute.`
+  const widgetSummary = count === 0
+    ? ''
+    : ` We\'ll stop at ${count} widget${count === 1 ? '' : 's'}.`
 
   steps.push({
     popover: {
-      title: 'Welcome to pebble',
-      description: `${layoutLabel} Replay it anytime with the ? button at the top.`,
+      title: intro.title,
+      description: `${intro.description}${widgetSummary}`,
       side: 'over',
       align: 'center',
     },
@@ -176,10 +228,17 @@ function buildStepsForLayout() {
     })
   }
 
+  // Closing card — flavored to whether the user is on a known premade
+  // (mention they can swap templates from Edit layout) or a custom
+  // layout (mention they're already personalising).
+  const closingTitle = templateKey ? 'You\'re set' : 'Looking good'
+  const closingDesc = templateKey
+    ? 'Swap to a different layout anytime from Edit layout → Pre-made.'
+    : 'Hit Edit layout to keep customising. Replay this tour from the ? button when you change things up.'
   steps.push({
     popover: {
-      title: "You're set",
-      description: 'Explore at your own pace. Your pebble is yours.',
+      title: closingTitle,
+      description: closingDesc,
       side: 'over',
       align: 'center',
     },

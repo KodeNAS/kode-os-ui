@@ -65,27 +65,46 @@
       </ol>
       <ul class="blocklist">
         <li>
-          <code class="server">https://raw.githubusercontent.com/StevenBlack/hosts/master/hosts</code>
-          <b-button size="is-small" rounded icon-pack="casa" icon-left="copy-outline" @click="copy('https://raw.githubusercontent.com/StevenBlack/hosts/master/hosts')">
-            {{ $t('Copy') }}
-          </b-button>
+          <div class="blocklist-meta">
+            <span class="blocklist-tag is-block">{{ $t('Blocklist') }}</span>
+            <span class="blocklist-desc">{{ $t('StevenBlack — ads, malware, trackers (the all-in-one).') }}</span>
+          </div>
+          <div class="blocklist-row">
+            <code class="server">https://raw.githubusercontent.com/StevenBlack/hosts/master/hosts</code>
+            <b-button size="is-small" rounded icon-pack="casa" icon-left="copy-outline" @click="copy('https://raw.githubusercontent.com/StevenBlack/hosts/master/hosts')">
+              {{ $t('Copy') }}
+            </b-button>
+          </div>
         </li>
         <li>
-          <code class="server">https://adaway.org/hosts.txt</code>
-          <b-button size="is-small" rounded icon-pack="casa" icon-left="copy-outline" @click="copy('https://adaway.org/hosts.txt')">
-            {{ $t('Copy') }}
-          </b-button>
+          <div class="blocklist-meta">
+            <span class="blocklist-tag is-block">{{ $t('Blocklist') }}</span>
+            <span class="blocklist-desc">{{ $t('AdAway — mobile-app ads on phones and tablets.') }}</span>
+          </div>
+          <div class="blocklist-row">
+            <code class="server">https://adaway.org/hosts.txt</code>
+            <b-button size="is-small" rounded icon-pack="casa" icon-left="copy-outline" @click="copy('https://adaway.org/hosts.txt')">
+              {{ $t('Copy') }}
+            </b-button>
+          </div>
         </li>
         <li>
-          <code class="server">https://v.firebog.net/hosts/Easyprivacy.txt</code>
-          <b-button size="is-small" rounded icon-pack="casa" icon-left="copy-outline" @click="copy('https://v.firebog.net/hosts/Easyprivacy.txt')">
-            {{ $t('Copy') }}
-          </b-button>
+          <div class="blocklist-meta">
+            <span class="blocklist-tag is-block">{{ $t('Blocklist') }}</span>
+            <span class="blocklist-desc">{{ $t('EasyPrivacy — analytics + cross-site trackers.') }}</span>
+          </div>
+          <div class="blocklist-row">
+            <code class="server">https://v.firebog.net/hosts/Easyprivacy.txt</code>
+            <b-button size="is-small" rounded icon-pack="casa" icon-left="copy-outline" @click="copy('https://v.firebog.net/hosts/Easyprivacy.txt')">
+              {{ $t('Copy') }}
+            </b-button>
+          </div>
         </li>
       </ul>
       <ol class="steps" start="2">
         <li>
           <strong>{{ $t('Fix false positives.') }}</strong>
+          <span class="blocklist-tag is-allow">{{ $t('Allowlist') }}</span>
           {{ $t('If a site breaks: Query Log → find the red row → Allowlist next to it → refresh.') }}
         </li>
       </ol>
@@ -164,7 +183,11 @@ export default {
 @import './_walkthrough.scss';
 .wt-icon.is-pihole { background: linear-gradient(135deg, #a83239, #d04a51); }
 
-/* Per-row copy button for blocklist URLs in the extras step. */
+/* Tagged blocklist URLs in the extras step. Each entry is a stacked
+   meta line (tag + short description) followed by the URL + copy
+   button row, so the user knows at a glance what each list does and
+   whether they're adding it to the deny side (Adlists/Blocklist) or
+   allow side (Allowlist). */
 .blocklist {
   list-style: none;
   margin: 0 0 0.75rem 0;
@@ -172,9 +195,48 @@ export default {
 
   li {
     display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    padding: 0.25rem 0;
+    flex-direction: column;
+    gap: 0.2rem;
+    padding: 0.35rem 0;
   }
+}
+
+.blocklist-meta {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  flex-wrap: wrap;
+}
+
+.blocklist-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.blocklist-tag {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 1px 7px;
+  border-radius: 999px;
+  white-space: nowrap;
+
+  &.is-block {
+    background: rgba(176, 74, 74, 0.16);
+    color: #b04a4a;
+  }
+
+  &.is-allow {
+    background: rgba(45, 95, 78, 0.16);
+    color: #2d5f4e;
+    margin: 0 0.2rem;
+  }
+}
+
+.blocklist-desc {
+  font-size: 0.8125rem;
+  color: rgba(0, 0, 0, 0.7);
 }
 </style>

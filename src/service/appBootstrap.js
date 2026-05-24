@@ -287,20 +287,29 @@ export async function bootstrapByAppId(appstoreId, host, creds) {
 /**
  * Jellyfin's stock compose binds /DATA/Media → /Media — which doesn't
  * match the rest of the OS where the user-facing folders are
- * /DATA/Videos, /DATA/Music, /DATA/Photos. Result: the buyer puts a
- * movie in /DATA/Videos via the file browser, opens Jellyfin's library
- * picker, and sees nothing useful (only /Media which is empty).
+ * /DATA/Movies, /DATA/Shows, /DATA/Music, /DATA/Photos. Result: the
+ * buyer puts a movie in /DATA/Movies via the file browser, opens
+ * Jellyfin's library picker, and sees nothing useful (only /Media
+ * which is empty).
  *
- * Replacement: swap the single /DATA/Media bind for three explicit
- * binds where the host path equals the container path. The buyer can
- * type /DATA/Videos in Jellyfin's library setup and it just works —
- * no mental translation, same path everywhere in the OS.
+ * Replacement: swap the single /DATA/Media bind for explicit binds
+ * where the host path equals the container path. The buyer types
+ * /DATA/Movies (or /DATA/Shows, /DATA/Music) in Jellyfin's library
+ * setup and it just works — no mental translation, same path
+ * everywhere in the OS. /DATA/Videos is kept for back-compat with
+ * the older "everything under Videos" pattern.
  */
 export function prepareJellyfinYaml(yaml) {
   if (!yaml) return yaml
   return yaml.replace(
     / {12}- type: bind\n {14}source: \/DATA\/Media\n {14}target: \/Media\n/,
     [
+      '            - type: bind\n',
+      '              source: /DATA/Movies\n',
+      '              target: /DATA/Movies\n',
+      '            - type: bind\n',
+      '              source: /DATA/Shows\n',
+      '              target: /DATA/Shows\n',
       '            - type: bind\n',
       '              source: /DATA/Videos\n',
       '              target: /DATA/Videos\n',

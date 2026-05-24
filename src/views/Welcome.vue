@@ -377,6 +377,14 @@ export default {
       // already) and for any unrecognized key.
       try {
         localStorage.removeItem('kode_tile_order') // legacy
+        // Record which premade the buyer picked so the dashboard tour
+        // can show layout-specific copy on first run. Cleared as soon
+        // as the user edits anything via saveLayout in BeginnerDashboard.
+        if (this.chosenLayoutKey && this.chosenLayoutKey !== 'blank') {
+          localStorage.setItem('kode_chosen_template_v1', this.chosenLayoutKey)
+        } else {
+          localStorage.removeItem('kode_chosen_template_v1')
+        }
         if (this.chosenLayoutKey === 'blank') {
           // Blank canvas — start with empty columns. Write a single
           // 2-column empty layout so the user has something to drop
