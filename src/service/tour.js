@@ -1,37 +1,28 @@
 /*
- * KODE OS — Easy-mode tour using driver.js. Triggered automatically on
- * first dashboard visit (gated by localStorage["kode_tour_seen"]) and
- * available on demand via the ? button in TopBar.
+ * KODE OS — Easy-mode tour service.
  *
- * Layout-aware: the tour reads `kode_chosen_template_v1` (set by
+ * Builds the layout-aware step list and dispatches it to the
+ * KodeTour.vue overlay (mounted globally in App.vue) via a window
+ * CustomEvent. Replaces the prior driver.js implementation, whose
+ * 1.4 positioning consistently rendered popovers in the top-left
+ * corner on KODE layouts no matter what side/align we set.
+ *
+ * Layout-aware: reads `kode_chosen_template_v1` (written by
  * BeginnerDashboard.applyTemplate + Welcome.resetDashboardLayoutForFirstBoot)
- * and uses a per-template intro line so a user on Minimalist sees
- * a different welcome than one on Full 2. Once any widget is moved /
- * added / removed, BeginnerDashboard.saveLayout clears that key and
- * the tour falls back to a generic "custom layout" intro.
+ * and uses a per-template intro. Once any widget is moved / added /
+ * removed, BeginnerDashboard.saveLayout clears that key and the tour
+ * falls back to a generic "custom layout" intro.
  *
- * Steps walked: every [data-tour] widget present in the live DOM, in
- * document order. WIDGET_POPOVERS holds the per-widget popover copy;
- * add an entry there when a new widget gets a data-tour anchor.
+ * Each step shape (matches KodeTour.vue):
+ *   - { selector, title, description, side?, onEnter?, onLeave? }
+ *       → highlights the matching element with a spotlight + anchored card
+ *   - { title, description }
+ *       → centered modal card (no element, used for intro/outro)
  */
-import { driver } from 'driver.js'
-import 'driver.js/dist/driver.css'
 
 const TOUR_SEEN_KEY = 'kode_tour_seen'
 const TEMPLATE_KEY = 'kode_chosen_template_v1'
-
-const baseConfig = {
-  showProgress: true,
-  smoothScroll: true,
-  allowClose: true,
-  overlayOpacity: 0.6,
-  stagePadding: 8,
-  stageRadius: 16,
-  nextBtnText: 'Next',
-  prevBtnText: 'Back',
-  doneBtnText: 'Done',
-  popoverClass: 'kode-tour-popover',
-}
+const SHOW_EVENT = 'kode:tour-show'
 
 // Per-widget popover content. Each entry maps a `data-tour` value to
 // the title + description shown when the tour stops on that widget.
@@ -39,80 +30,79 @@ const baseConfig = {
 const WIDGET_POPOVERS = {
   clock: {
     title: 'Clock',
-    description: 'Local time + date. Click the tile to swap between digital and analog. Edit mode shows a gear for 12/24h, seconds, etc.',
+    description: 'Local time + date. Click the tile to swap between digital and analog. In Edit layout, hover the tile and click the gear to switch 12/24-hour, show seconds, or change date format.',
     side: 'bottom',
   },
   weather: {
     title: 'Weather',
-    description: 'Live conditions for your location with an optional forecast. The gear in edit mode lets you change city, units, or how many days ahead.',
+    description: 'Live conditions for your location with an optional forecast. In Edit layout, hover and click the gear to change city, units (°C/°F), or how many days ahead to show.',
     side: 'bottom',
   },
   apps: {
     title: 'Your apps',
-    description: 'Everything installed on your pebble — click any tile to open the app.',
+    description: 'Every app installed on your pebble. Click a tile to open it; the App Store (top of the dashboard) installs more.',
     side: 'left',
   },
   search: {
     title: 'Web search',
-    description: 'Search the web from here. Press Enter to open results in a new tab.',
+    description: 'Search the web from here. Press Enter to open results in a new tab — defaults to DuckDuckGo; change the engine via the gear in Edit layout.',
     side: 'bottom',
   },
   photooftheday: {
     title: 'Photo of the day',
-    description: 'A nostalgic photo from your Immich library. Rotates daily — set it up from the Immich walkthrough or the widget gear.',
+    description: 'A nostalgic photo from your Immich library, rotated daily. Set it up once from the Immich walkthrough (or the widget\'s gear in Edit layout) — then it just runs.',
     side: 'left',
   },
   recent: {
     title: 'Recent activity',
-    description: 'Your latest files. Click the chevron to expand the full list, or tap any row to jump into the file browser.',
+    description: 'Your latest files. Click the chevron to expand the full list, or tap any row to jump straight into the file browser at that folder.',
     side: 'right',
   },
   files: {
     title: 'Files',
-    description: 'Opens the built-in file browser. Drop in everything you want backed up on your pebble.',
+    description: 'Opens the built-in file browser at /DATA. Drag files in from your desktop to upload; right-click any item to share, rename, or download.',
     side: 'right',
   },
   family: {
     title: 'On your pebble',
-    description: 'Accounts that use this pebble — handy for sharing.',
+    description: 'Everyone who uses this pebble. Click the + at the top right to add a family member (name, role, optional personal password). Hover a member to remove them. Multi-account logins on the pebble itself are on the roadmap.',
     side: 'right',
   },
   adddevice: {
     title: 'Add a device',
-    description: 'Step-by-step wizard for connecting a phone, computer, or smart TV.',
+    description: 'Click for a step-by-step wizard that walks you through connecting a phone (Immich app + photo backup), a computer (Samba/SMB drive mount), or a smart TV (Jellyfin app).',
     side: 'right',
   },
   sysinfo: {
     title: 'System monitor',
-    description: 'Live CPU, memory, and disk usage. The gear in edit mode toggles temperature, sparkline, and refresh rate.',
+    description: 'Live CPU, memory, and disk usage. In Edit layout, the gear toggles whether to show temperature, the sparkline graph, and the refresh rate.',
     side: 'left',
   },
   network: {
     title: 'Network',
-    description: 'Online status, your pebble\'s hostname, and a rolling 60-second graph of upload + download.',
+    description: 'Online status, your pebble\'s hostname, and a rolling 60-second graph of upload + download speed across whichever interface you\'re on.',
     side: 'left',
   },
   storage: {
     title: 'Storage',
-    description: 'Disk usage and SMART health. Anything red here means it\'s worth checking the drive in Settings.',
+    description: 'Disk usage and SMART health for every drive. Anything red here means it\'s worth checking the drive in Settings → Storage.',
     side: 'left',
   },
   appsrunning: {
     title: 'Apps running',
-    description: 'Live count of Docker containers up + recently restarted.',
+    description: 'Live count of Docker containers that are up plus anything that recently restarted. Helps you spot a crashed app at a glance.',
     side: 'left',
   },
   tips: {
     title: 'Tips & tricks',
-    description: 'Cycles through small hints for getting more out of your pebble.',
+    description: 'Cycles through small hints for getting more out of your pebble — keyboard shortcuts, app pairings, settings worth turning on.',
     side: 'right',
   },
 }
 
 // Per-template intro line. Each one names the layout, says what
-// shape it is (cols × what's where), and sets expectations for how
-// many stops the tour has. Generated copy reads "Welcome to your
-// pebble" if no template is matched (custom layout).
+// shape it is, and sets expectations. Generated copy falls back to
+// GENERIC_INTRO if no template matches (custom layout).
 const TEMPLATE_INTROS = {
   'builtin-default': {
     title: 'Welcome to your pebble — Default layout',
@@ -145,20 +135,16 @@ const GENERIC_INTRO = {
   description: 'A quick tour of your dashboard. Replay it anytime with the ? button at the top.',
 }
 
-// Build the per-layout step list. We:
+// Build the per-layout step list.
 //   1. Open with a Welcome card sized to whichever template the user
-//      is on (TEMPLATE_INTROS) or a generic line if they've already
-//      customised the layout.
+//      is on (TEMPLATE_INTROS) or a generic line if customised.
 //   2. Walk each data-tour widget IN DOM ORDER (top→bottom, left→
-//      right), pulling its popover from WIDGET_POPOVERS so the user
-//      sees them in the same order they're laid out.
-//   3. Close with the topbar + hint button so the user knows where
-//      help lives, then a final "you're set" card.
-function buildStepsForLayout() {
+//      right), pulling its popover from WIDGET_POPOVERS.
+//   3. Close with the topbar settings cog + hint button so the user
+//      knows where help lives, then a final "you're set" card.
+function buildSteps() {
   const steps = []
 
-  // Layout intro: prefer the per-template flavor if the user is
-  // currently on a known premade. Cleared as soon as they customise.
   let templateKey = ''
   try { templateKey = localStorage.getItem(TEMPLATE_KEY) || '' } catch (e) { /* ignore */ }
   const intro = TEMPLATE_INTROS[templateKey] || GENERIC_INTRO
@@ -167,6 +153,11 @@ function buildStepsForLayout() {
   // document order — exactly the visual top→bottom order the user sees.
   // app:* shortcuts have an empty data-tour (no entry in tourKeyFor)
   // and get filtered out here so the tour doesn't try to stop on them.
+  //
+  // SCOPED to `.beginner-dashboard` because there can be a second
+  // hidden BeginnerDashboard mounted (Vue keep-alive, advanced-mode
+  // preload, etc.) whose widget-slots return zero-size rects from
+  // getBoundingClientRect — those would silently break the spotlight.
   const anchored = []
   try {
     const nodes = document.querySelectorAll('.beginner-dashboard [data-tour]')
@@ -174,9 +165,9 @@ function buildStepsForLayout() {
       const key = node.getAttribute('data-tour')
       if (!key || anchored.find(a => a.key === key)) return
       if (!WIDGET_POPOVERS[key]) return
-      anchored.push({ key, selector: `[data-tour="${key}"]` })
+      anchored.push({ key, selector: `.beginner-dashboard [data-tour="${key}"]` })
     })
-  } catch (e) { /* ignore — fall through to empty */ }
+  } catch (e) { /* ignore */ }
 
   const count = anchored.length
   const widgetSummary = count === 0
@@ -184,34 +175,49 @@ function buildStepsForLayout() {
     : ` We\'ll stop at ${count} widget${count === 1 ? '' : 's'}.`
 
   steps.push({
-    popover: {
-      title: intro.title,
-      description: `${intro.description}${widgetSummary}`,
-      side: 'over',
-      align: 'center',
-    },
+    title: intro.title,
+    description: `${intro.description}${widgetSummary}`,
   })
 
-  for (const { key, selector } of anchored) {
+  // Edit-layout step BEFORE the widget walk so the user knows from
+  // the start that everything is rearrangeable.
+  if (document.querySelector('.beginner-dashboard [data-tour="editlayout"]')) {
     steps.push({
-      element: selector,
-      popover: WIDGET_POPOVERS[key],
+      selector: '.beginner-dashboard [data-tour="editlayout"]',
+      title: 'Edit layout',
+      description: 'Click here to enter Edit mode. Then: drag any widget between columns, drag the dividers to resize, hover a widget to see the × (remove) and gear (settings) buttons, and tap "+ Add widget" at the bottom for more. Click Done when you\'re happy.',
+      side: 'bottom',
     })
   }
 
-  // Top bar auto-hides — we reveal it for this step then release after.
-  if (document.querySelector('[data-tour="topbar"]')) {
+  for (const { key, selector } of anchored) {
+    const pop = WIDGET_POPOVERS[key]
     steps.push({
-      element: '[data-tour="topbar"]',
-      popover: {
-        title: 'Settings & shutdown',
-        description: 'Hover the top of the screen to reveal this bar — account settings, system controls, language, and shutdown all live here.',
-        side: 'bottom',
-      },
-      onHighlightStarted: () => {
+      selector,
+      title: pop.title,
+      description: pop.description,
+      side: pop.side,
+    })
+  }
+
+  // Settings cog in the topbar. The topbar auto-hides via
+  // `transform: translateY(-100%)` with a 0.35s transition — we
+  // reveal it on enter and re-trigger a reposition once the slide-
+  // down finishes so the spotlight lands on the actual cog button
+  // (rather than the topbar bar) at its post-animation position.
+  if (document.querySelector('[data-tour="settings"]')) {
+    steps.push({
+      selector: '[data-tour="settings"]',
+      title: 'Settings & shutdown',
+      description: 'The gear is your settings menu — account, language, network, factory reset, and shutdown all live here. The bar auto-hides; hover the very top of the screen to bring it back anytime.',
+      side: 'bottom',
+      onEnter: () => {
         try { window.dispatchEvent(new CustomEvent('kode:reveal-topbar')) } catch (e) { /* ignore */ }
+        setTimeout(() => {
+          try { window.dispatchEvent(new CustomEvent('kode:tour-reposition')) } catch (e) { /* ignore */ }
+        }, 400)
       },
-      onDeselected: () => {
+      onLeave: () => {
         try { window.dispatchEvent(new CustomEvent('kode:release-topbar')) } catch (e) { /* ignore */ }
       },
     })
@@ -219,47 +225,41 @@ function buildStepsForLayout() {
 
   if (document.querySelector('[data-tour="hintbutton"]')) {
     steps.push({
-      element: '[data-tour="hintbutton"]',
-      popover: {
-        title: 'Hints anytime',
-        description: 'Click this ? button to replay this tour or toggle hover hints on tiles.',
-        side: 'bottom',
-      },
+      selector: '[data-tour="hintbutton"]',
+      title: 'Hints anytime',
+      description: 'Click this ? button to replay this tour or toggle hover hints on tiles.',
+      side: 'bottom',
     })
   }
 
   // Closing card — flavored to whether the user is on a known premade
-  // (mention they can swap templates from Edit layout) or a custom
-  // layout (mention they're already personalising).
-  const closingTitle = templateKey ? 'You\'re set' : 'Looking good'
-  const closingDesc = templateKey
-    ? 'Swap to a different layout anytime from Edit layout → Pre-made.'
-    : 'Hit Edit layout to keep customising. Replay this tour from the ? button when you change things up.'
+  // (mention they can swap templates) or a custom layout.
   steps.push({
-    popover: {
-      title: closingTitle,
-      description: closingDesc,
-      side: 'over',
-      align: 'center',
-    },
+    title: templateKey ? 'You\'re set' : 'Looking good',
+    description: templateKey
+      ? 'Swap to a different layout anytime from Edit layout → Pre-made.'
+      : 'Hit Edit layout to keep customising. Replay this tour from the ? button when you change things up.',
   })
 
   return steps
 }
 
-/** Show the tour now. Marks tour-seen on completion or close. */
+/** Show the tour now. Marks tour-seen when the overlay closes. */
 export function startEasyTour() {
-  const tour = driver({
-    ...baseConfig,
-    steps: buildStepsForLayout(),
-    onDestroyed: () => {
-      // Belt-and-suspenders: if the user closes the tour while the
-      // top-bar step is active, make sure we release the lock.
-      try { window.dispatchEvent(new CustomEvent('kode:release-topbar')) } catch (e) { /* ignore */ }
+  const steps = buildSteps()
+  if (steps.length === 0) return
+  // Listener wires up once on first call so resetTourSeen → replay
+  // doesn't accumulate dupes. Marks tour-seen on every close.
+  if (!startEasyTour._listenerArmed) {
+    window.addEventListener('kode:tour-done', () => {
       try { localStorage.setItem(TOUR_SEEN_KEY, '1') } catch (e) { /* ignore */ }
-    },
-  })
-  tour.drive()
+      // Belt-and-suspenders: release the topbar in case the user closed
+      // mid-tour during the topbar step.
+      try { window.dispatchEvent(new CustomEvent('kode:release-topbar')) } catch (e) { /* ignore */ }
+    })
+    startEasyTour._listenerArmed = true
+  }
+  window.dispatchEvent(new CustomEvent(SHOW_EVENT, { detail: { steps } }))
 }
 
 /** Trigger the tour automatically on first visit only. */
@@ -289,7 +289,6 @@ export function setHintMode(on) {
   try {
     if (on) localStorage.setItem(HINT_MODE_KEY, '1')
     else localStorage.removeItem(HINT_MODE_KEY)
-    // Tell anyone listening that hint mode changed.
     window.dispatchEvent(new CustomEvent('kode:hint-mode', { detail: { on: !!on } }))
   } catch (e) { /* ignore */ }
 }

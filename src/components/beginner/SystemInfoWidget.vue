@@ -84,7 +84,10 @@ const DEFAULT_SETTINGS = {
   showMemBytes: true,
   showSparkline: true,
   showStorage: true,
-  pollMs: 5000,
+  // 10s default. The sysinfo endpoint walks /proc and shells out for
+  // SMART data — at 5s the Pi 5's casaos-main process showed
+  // measurable idle CPU just answering this widget.
+  pollMs: 10000,
 }
 const SAMPLE_WINDOW = 30
 
@@ -161,7 +164,7 @@ export default {
   methods: {
     restartPolling() {
       if (this.pollId) clearInterval(this.pollId)
-      this.pollId = setInterval(() => this.fetch(), this.settings.pollMs || 5000)
+      this.pollId = setInterval(() => this.fetch(), this.settings.pollMs || 10000)
     },
     openSettings() {
       this.$buefy.modal.open({

@@ -17,7 +17,7 @@
           :aria-label="$t('Back to list')"
           @click="selectedKey = ''"
         >
-          <b-icon icon="arrow-back" pack="casa" size="is-small" />
+          <b-icon icon="left-outline" pack="casa" size="is-small" />
           <span>{{ $t('All guides') }}</span>
         </button>
         <h2 v-else class="guides-title">{{ $t('App guides') }}</h2>
@@ -40,7 +40,7 @@
             <div class="guide-name">{{ app.title }}</div>
             <div class="guide-tagline">{{ app.tagline }}</div>
           </div>
-          <b-icon icon="arrow-right" pack="casa" size="is-small" class="guide-chevron" />
+          <b-icon icon="right-outline" pack="casa" size="is-small" class="guide-chevron" />
         </li>
       </ul>
 
@@ -68,12 +68,16 @@ import FileBrowserWalkthrough from '@/components/firstboot/walkthroughs/FileBrow
 import PiHoleWalkthrough from '@/components/firstboot/walkthroughs/PiHoleWalkthrough.vue'
 import HomeAssistantWalkthrough from '@/components/firstboot/walkthroughs/HomeAssistantWalkthrough.vue'
 
+// Icon names must exist in the casa pack. Earlier values (`image`,
+// `video`, `folder`, `shield-outline`, `home-outline`) aren't in the
+// pack, so each row rendered with no visible icon and the panel
+// looked broken. Verified casa-* glyph names below.
 const APPS = [
-  { key: 'immich',        icon: 'image',          title: 'Immich',         tagline: 'Photo & video backup from your phone.' },
-  { key: 'jellyfin',      icon: 'video',          title: 'Jellyfin',       tagline: 'Stream movies and music to your TV.' },
-  { key: 'filebrowser',   icon: 'folder',         title: 'File Browser',   tagline: 'Manage your files from any browser.' },
-  { key: 'pihole',        icon: 'shield-outline', title: 'Pi-hole',        tagline: 'Block ads on your whole network.' },
-  { key: 'homeassistant', icon: 'home-outline',   title: 'Home Assistant', tagline: 'Smart-home hub for lights, thermostats, sensors.' },
+  { key: 'immich',        icon: 'gallery-outline',        title: 'Immich',         tagline: 'Photo & video backup from your phone.' },
+  { key: 'jellyfin',      icon: 'media-outline',          title: 'Jellyfin',       tagline: 'Stream movies and music to your TV.' },
+  { key: 'filebrowser',   icon: 'folder-outline',         title: 'File Browser',   tagline: 'Manage your files from any browser.' },
+  { key: 'pihole',        icon: 'protection-outline',     title: 'Pi-hole',        tagline: 'Block ads on your whole network.' },
+  { key: 'homeassistant', icon: 'view-dashboard-outline', title: 'Home Assistant', tagline: 'Smart-home hub for lights, thermostats, sensors.' },
 ]
 
 const WALKTHROUGHS = {

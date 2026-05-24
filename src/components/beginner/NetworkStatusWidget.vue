@@ -79,7 +79,11 @@
 import { hintMode } from '@/mixins/hintMode'
 import NetworkSettingsModal from '@/components/beginner/NetworkSettingsModal.vue'
 
-const DEFAULT_POLL_MS = 2000
+// 5s balances "feels live" with not hammering /sys/net (which
+// enumerates every interface + reads counters from /proc each call).
+// 2s — the original CasaOS default — meant 30 requests/min per
+// browser tab; multiplied across devices that's real Pi 5 load.
+const DEFAULT_POLL_MS = 5000
 const SAMPLE_WINDOW = 30  // 30 samples * pollMs = ~60s history at 2s polling
 const SELECTED_INTERFACE_KEY = 'kode_network_interface'
 const SETTINGS_KEY = 'kode_network_settings'

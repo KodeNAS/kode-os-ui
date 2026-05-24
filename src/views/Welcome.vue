@@ -28,8 +28,7 @@
       </ol>
 
       <transition name="fb-fade" mode="out-in">
-        <LanguageStep  v-if="stepIndex === 0" key="lang"         @next="onLanguagePicked" />
-        <WelcomeStep   v-else-if="stepIndex === 1" key="welcome"  :is-replay="isReplay" @next="next" />
+        <WelcomeStep   v-if="stepIndex === 1" key="welcome"  :is-replay="isReplay" @next="next" />
         <UserTypeStep  v-else-if="stepIndex === 2" key="usertype" @next="onUserType" />
         <SystemCheckStep    v-else-if="stepIndex === 3" key="sys" @next="next"            @back="back" />
         <AdminAccountStep   v-else-if="stepIndex === 4" key="adm" @next="onAdminDone"     @back="back" />
@@ -46,26 +45,12 @@
         <WalkthroughStep    v-else-if="stepIndex === 9" key="wt"  :apps="pickedApps" :host="host" @next="next" @back="back" @restart="restart" />
         <DoneStep           v-else-if="stepIndex === 10" key="dn" :hostname="hostname" :apps="pickedApps" :is-replay="isReplay" @finish="finish" />
       </transition>
-
-      <!-- Dev wipe — pinned to the wizard shell so it's reachable from
-           every step. Opens the same FactoryResetModal the Settings
-           page uses, with the same type-WIPE confirmation. -->
-      <button
-        type="button"
-        class="fb-wipe"
-        :title="$t('Factory reset (developer)')"
-        @click="openWipe"
-      >
-        <b-icon icon="alert" pack="casa" size="is-small" />
-        <span>{{ $t('Wipe') }}</span>
-      </button>
     </div>
   </div>
 </template>
 
 <script>
 import WelcomeStep      from '@/components/firstboot/steps/WelcomeStep.vue'
-import LanguageStep     from '@/components/firstboot/steps/LanguageStep.vue'
 import UserTypeStep     from '@/components/firstboot/steps/UserTypeStep.vue'
 import SystemCheckStep  from '@/components/firstboot/steps/SystemCheckStep.vue'
 import AdminAccountStep from '@/components/firstboot/steps/AdminAccountStep.vue'
@@ -75,14 +60,12 @@ import LayoutChooserStep from '@/components/firstboot/steps/LayoutChooserStep.vu
 import InstallAppsStep  from '@/components/firstboot/steps/InstallAppsStep.vue'
 import WalkthroughStep  from '@/components/firstboot/steps/WalkthroughStep.vue'
 import DoneStep         from '@/components/firstboot/steps/DoneStep.vue'
-import FactoryResetModal from '@/components/settings/FactoryResetModal.vue'
 import { TEMPLATES } from '@/service/dashboardTemplates'
 
 export default {
   name: 'welcome-page',
   components: {
     WelcomeStep,
-    LanguageStep,
     UserTypeStep,
     SystemCheckStep,
     AdminAccountStep,
@@ -96,7 +79,10 @@ export default {
   data() {
     return {
       isLoading: true,
-      stepIndex: 0,
+      // Wizard starts on WelcomeStep (step 1). Step 0 was the removed
+      // LanguageStep — browser locale + post-install user settings
+      // already cover what it asked for.
+      stepIndex: 1,
       lastStep: 10,
       adminCreated: false,
       userType: '', // 'beginner' | 'normal' | 'developer' — chosen at step 2
@@ -241,24 +227,6 @@ export default {
           duration: 6000,
         })
       }
-    },
-    onLanguagePicked(payload) {
-      if (payload && payload.language) this.language = payload.language
-      this.next()
-    },
-    openWipe() {
-      // Same modal Settings → Factory reset opens. On confirm it
-      // wipes accounts + /DATA + custom storage + localStorage and
-      // hard-reloads to /welcome, which is exactly what dev wants
-      // when iterating on the wizard.
-      this.$buefy.modal.open({
-        parent: this,
-        component: FactoryResetModal,
-        hasModalCard: true,
-        trapFocus: true,
-        canCancel: ['x', 'outside', 'escape'],
-        animation: 'zoom-in',
-      })
     },
     onUserType(payload) {
       const type = (payload && payload.userType) || 'beginner'
@@ -544,36 +512,5 @@ export default {
 .fb-fade-leave-to {
   opacity: 0;
   transform: translateY(8px);
-}
-
-/* Dev wipe — small pill in the bottom-right of the wizard shell.
-   Low-prominence (red on hover only) so it doesn't compete with the
-   primary CTA, but always reachable across every step. */
-.fb-wipe {
-  position: absolute;
-  bottom: 0.85rem;
-  right: 0.85rem;
-  display: inline-flex;
-  align-items: center;
-  gap: 0.3rem;
-  padding: 4px 9px;
-  font-size: 0.7rem;
-  font-weight: 500;
-  letter-spacing: 0.02em;
-  color: rgba(255, 255, 255, 0.55);
-  background: rgba(255, 255, 255, 0.06);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  border-radius: 999px;
-  cursor: pointer;
-  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
-  z-index: 5;
-
-  &:hover {
-    color: #fff;
-    background: rgba(176, 74, 74, 0.55);
-    border-color: rgba(176, 74, 74, 0.7);
-  }
-
-  ::v-deep .icon { color: inherit; }
 }
 </style>

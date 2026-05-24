@@ -8,9 +8,6 @@ importers:
 
   .:
     dependencies:
-      '@fontsource/roboto':
-        specifier: ^5.0.5
-        version: 5.1.0
       '@icewhale/casaos-appmanagement-openapi':
         specifier: latest
         version: 0.4.10-alpha2
@@ -43,13 +40,13 @@ importers:
         version: 2.10.3(@tiptap/core@2.10.3(@tiptap/pm@2.10.3))(@tiptap/pm@2.10.3)(vue@2.7.16)
       '@vue-office/docx':
         specifier: ^1.6.0
-        version: 1.6.2(vue-demi@0.14.6(vue@2.7.16))(vue@2.7.16)
+        version: 1.6.2(vue-demi@0.14.10(vue@2.7.16))(vue@2.7.16)
       '@vue-office/excel':
         specifier: ^1.6.0
-        version: 1.7.11(vue-demi@0.14.6(vue@2.7.16))(vue@2.7.16)
+        version: 1.7.11(vue-demi@0.14.10(vue@2.7.16))(vue@2.7.16)
       '@vue-office/pdf':
         specifier: ^1.6.0
-        version: 1.6.5(vue-demi@0.14.6(vue@2.7.16))(vue@2.7.16)
+        version: 1.6.5(vue-demi@0.14.10(vue@2.7.16))(vue@2.7.16)
       '@vueuse/components':
         specifier: ^10.2.1
         version: 10.11.1(vue@2.7.16)
@@ -92,18 +89,9 @@ importers:
       dayjs:
         specifier: ^1.11.9
         version: 1.11.13
-      docx-preview:
-        specifier: ^0.3.0
-        version: 0.3.3
       dompurify:
         specifier: ^3.0.6
         version: 3.2.1
-      driver.js:
-        specifier: ^1.4.0
-        version: 1.4.0
-      ejs:
-        specifier: ^3.1.5
-        version: 3.1.10
       file-saver:
         specifier: ^2.0.5
         version: 2.0.5
@@ -179,9 +167,6 @@ importers:
       socket.io-client:
         specifier: ^2.5.0
         version: 2.5.0
-      tiptap-markdown:
-        specifier: ^0.6.1
-        version: 0.6.1(@tiptap/core@2.10.3(@tiptap/pm@2.10.3))(prosemirror-model@1.24.0)
       ua-parser-js:
         specifier: ^1.0.35
         version: 1.0.39
@@ -227,9 +212,6 @@ importers:
       vue-custom-scrollbar:
         specifier: ^1.4.4
         version: 1.4.4
-      vue-demi:
-        specifier: 0.14.6
-        version: 0.14.6(vue@2.7.16)
       vue-dompurify-html:
         specifier: 2.6.0
         version: 2.6.0(vue@2.7.16)
@@ -281,9 +263,6 @@ importers:
       yamljs:
         specifier: ^0.3.0
         version: 0.3.0
-      yargs-parser:
-        specifier: ^21.1.1
-        version: 21.1.1
     devDependencies:
       '@antfu/eslint-config':
         specifier: ^2.27.3
@@ -1108,9 +1087,6 @@ packages:
     resolution: {integrity: sha512-d9zaMRSTIKDLhctzH12MtXvJKSSUhaHcjV+2Z+GK+EEY7XKpP5yR4x+N3TAcHTcu963nIr+TMcCb4DBCYX1z6Q==}
     engines: {node: ^12.22.0 || ^14.17.0 || >=16.0.0}
 
-  '@fontsource/roboto@5.1.0':
-    resolution: {integrity: sha512-cFRRC1s6RqPygeZ8Uw/acwVHqih8Czjt6Q0MwoUoDe9U3m4dH1HmNDRBZyqlMSFwgNAUKgFImncKdmDHyKpwdg==}
-
   '@gar/promisify@1.1.3':
     resolution: {integrity: sha512-k2Ty1JcVojjJFwrg/ThKi2ujJ7XNLYaFGNB/bWT9wGR+oSMJHMa5w+CUq6p/pVrKeNNgA7pCqEcjSnHVoqJQFw==}
 
@@ -1556,9 +1532,6 @@ packages:
 
   '@types/linkify-it@5.0.0':
     resolution: {integrity: sha512-sVDA58zAw4eWAffKOaQH5/5j3XeayukzDk+ewSsnv3p4yJEZHCCzMDiZM8e0OUrRvmpGZ85jf4yDHkHsgBNr9Q==}
-
-  '@types/markdown-it@12.2.3':
-    resolution: {integrity: sha512-GKMHFfv3458yYy+v/N8gjufHO6MSZKCOXpZc5GXIWWy8uldwfmPn98vp81gZ5f9SVw8YYBctgfJ22a2d7AOMeQ==}
 
   '@types/markdown-it@14.1.2':
     resolution: {integrity: sha512-promo4eFwuiW+TfGxhi+0x3czqTYJkG8qB17ZUJiVF10Xm7NLVRSLUsfRTU/6h1e24VvRnXCx+hG7li58lkzog==}
@@ -3499,9 +3472,6 @@ packages:
     resolution: {integrity: sha512-yS+Q5i3hBf7GBkd4KG8a7eBNNWNGLTaEwwYWUijIYM7zrlYDM0BFXHjjPWlWZ1Rg7UaddZeIDmi9jF3HmqiQ2w==}
     engines: {node: '>=6.0.0'}
 
-  docx-preview@0.3.3:
-    resolution: {integrity: sha512-vg0bjmp5Q/hWYgalvVsnOOdqKlSBvgzdbrqX8pKw4KuTH8FkX2FIs21w10HZdx6ZhApmMbgfae+lOXjdCSsc8A==}
-
   dom-converter@0.2.0:
     resolution: {integrity: sha512-gd3ypIPfOMr9h5jIKq8E3sHOTCjeirnl0WK5ZdS1AW0Odt0b1PaWaHdJ4Qk4klv+YB9aJBS7mESXjFoDQPu6DA==}
 
@@ -3574,9 +3544,6 @@ packages:
   dotenv@16.4.5:
     resolution: {integrity: sha512-ZmdL2rui+eB2YwhsWzjInR8LldtZHGDoQ1ugH85ppHKwpUHL7j7rN0Ti9NCnGiQbhaZ11FpR+7ao1dNsmduNUg==}
     engines: {node: '>=12'}
-
-  driver.js@1.4.0:
-    resolution: {integrity: sha512-Gm64jm6PmcU+si21sQhBrTAM1JvUrR0QhNmjkprNLxohOBzul9+pNHXgQaT9lW84gwg9GMLB3NZGuGolsz5uew==}
 
   duplexer@0.1.2:
     resolution: {integrity: sha512-jtD6YG370ZCIi/9GTaJKQxWTZD045+4R4hTk/x1UyoqadyJ9x9CgSi1RlVDQF8U2sxLLSnFkCaMihqljHIWgMg==}
@@ -4525,9 +4492,6 @@ packages:
     resolution: {integrity: sha512-hsBTNUqQTDwkWtcdYI2i06Y/nUBEsNEDJKjWdigLvegy8kDuJAS8uRlpkkcQpyEXL0Z/pjDy5HBmMjRCJ2gq+g==}
     engines: {node: '>= 4'}
 
-  immediate@3.0.6:
-    resolution: {integrity: sha512-XXOFtyqDjNDAQxVfYxuF7g9Il/IbWmmlQg2MYKOH8ExIT1qg6xc4zyS3HaEEATgs1btfzxq15ciUiY7gjSXRGQ==}
-
   immutable@4.3.7:
     resolution: {integrity: sha512-1hqclzwYwjRDFLjcFxOM5AYkkG0rpFPpr1RLPMEuGczoS7YA8gLhy8SWXYRAA/XwfEHpfo3cw5JGioS32fnMRw==}
 
@@ -5004,9 +4968,6 @@ packages:
     engines: {node: '>= 0.6'}
     hasBin: true
 
-  jszip@3.10.1:
-    resolution: {integrity: sha512-xXDvecyTpGLrqFrvkrUSoxxfJI5AH7U8zxxtVclpsUtMCq4JQ290LY8AW5c7Ggnr/Y/oK+bQMbqK2qmtk3pN4g==}
-
   jwt-decode@3.1.2:
     resolution: {integrity: sha512-UfpWE/VZn0iP50d8cz9NrZLM9lSWhcJ+0Gt/nm4by88UL+J1SiKN8/5dkjMmbEzwL2CAe+67GsegCbIKtbp75A==}
 
@@ -5048,9 +5009,6 @@ packages:
   levn@0.4.1:
     resolution: {integrity: sha512-+bT2uH4E5LGE7h/n3evcS/sQlJXCpIp6ym8OWJ5eV6+67Dsql/LaaT7qJBAt2rzfoa/5QBGBhxDix1dMt2kQKQ==}
     engines: {node: '>= 0.8.0'}
-
-  lie@3.3.0:
-    resolution: {integrity: sha512-UaiMJzeWRlEujzAuw5LokY1L5ecNQYZKfmyZ9L7wDHb/p5etKaxXhohBcrw0EYby+G/NA52vRSN4N39dxHAIwQ==}
 
   lilconfig@2.1.0:
     resolution: {integrity: sha512-utWOt/GHzuUxnLKxB6dk81RoOeoNeHgbrXiuGk4yyF5qlRz+iIVWu56E2fqGHFrXz0QNUhLB/8nKqvRH66JKGQ==}
@@ -5201,9 +5159,6 @@ packages:
   markdown-it-table-of-contents@0.4.4:
     resolution: {integrity: sha512-TAIHTHPwa9+ltKvKPWulm/beozQU41Ab+FIefRaQV1NRnpzwcV9QOe6wXQS5WLivm5Q/nlo0rl6laGkMDZE7Gw==}
     engines: {node: '>6.4.0'}
-
-  markdown-it-task-lists@2.1.1:
-    resolution: {integrity: sha512-TxFAc76Jnhb2OUu+n3yz9RMu4CwGfaT788br6HhEDlvWfdeJcLUsxk1Hgw2yJio0OXsxv7pyIPmvECY7bMbluA==}
 
   markdown-it@12.3.2:
     resolution: {integrity: sha512-TchMembfxfNVpHkbtriWltGWc+m3xszaRD0CZup7GFFhzIgQqxIfn3eGj1yZpfuflzPvfkt611B2Q/Bsk1YnGg==}
@@ -7238,12 +7193,6 @@ packages:
   tippy.js@6.3.7:
     resolution: {integrity: sha512-E1d3oP2emgJ9dRQZdf3Kkn0qJgI6ZLpyS5z6ZkY1DF3kaQaBsGZsndEpHwx+eC+tYM41HaSNvNtLx8tU57FzTQ==}
 
-  tiptap-markdown@0.6.1:
-    resolution: {integrity: sha512-z4BBOhH5o3W9OmKZW+9+DDQgplmZiqOhSUBtOVgwh/I3RFepqsCvoHwgBiCBK6DTlPZFUSb5VDmZJMhiDDrc9w==}
-    peerDependencies:
-      '@tiptap/core': ^2.0.0-beta.129
-      prosemirror-model: ^1.14.1
-
   tmp@0.0.33:
     resolution: {integrity: sha512-jRCJlojKnZ3addtTOjdIqoRuPEKBvNXcGYqzO6zWZX8KfKEpnGY5jfggJQ3EjKuu8D4bJRr0y+cYJFmYbImXGw==}
     engines: {node: '>=0.6.0'}
@@ -7576,17 +7525,6 @@ packages:
 
   vue-demi@0.14.10:
     resolution: {integrity: sha512-nMZBOwuzabUO0nLgIcc6rycZEebF6eeUfaiQx9+WSk8e29IbLvPU9feI6tqW4kTo3hvoYAJkMh8n8D0fuISphg==}
-    engines: {node: '>=12'}
-    hasBin: true
-    peerDependencies:
-      '@vue/composition-api': ^1.0.0-rc.1
-      vue: ^3.0.0-0 || ^2.6.0
-    peerDependenciesMeta:
-      '@vue/composition-api':
-        optional: true
-
-  vue-demi@0.14.6:
-    resolution: {integrity: sha512-8QA7wrYSHKaYgUxDA5ZC24w+eHm3sYCbp0EzcDwKqN3p6HqtTCGR/GVsPyZW92unff4UlcSh++lmqDWN3ZIq4w==}
     engines: {node: '>=12'}
     hasBin: true
     peerDependencies:
@@ -8947,8 +8885,6 @@ snapshots:
 
   '@eslint/js@8.57.1': {}
 
-  '@fontsource/roboto@5.1.0': {}
-
   '@gar/promisify@1.1.3': {}
 
   '@hapi/hoek@9.3.0': {}
@@ -9480,11 +9416,6 @@ snapshots:
 
   '@types/linkify-it@5.0.0': {}
 
-  '@types/markdown-it@12.2.3':
-    dependencies:
-      '@types/linkify-it': 5.0.0
-      '@types/mdurl': 2.0.0
-
   '@types/markdown-it@14.1.2':
     dependencies:
       '@types/linkify-it': 5.0.0
@@ -9657,20 +9588,20 @@ snapshots:
     optionalDependencies:
       typescript: 5.7.2
 
-  '@vue-office/docx@1.6.2(vue-demi@0.14.6(vue@2.7.16))(vue@2.7.16)':
+  '@vue-office/docx@1.6.2(vue-demi@0.14.10(vue@2.7.16))(vue@2.7.16)':
     dependencies:
       vue: 2.7.16
-      vue-demi: 0.14.6(vue@2.7.16)
+      vue-demi: 0.14.10(vue@2.7.16)
 
-  '@vue-office/excel@1.7.11(vue-demi@0.14.6(vue@2.7.16))(vue@2.7.16)':
+  '@vue-office/excel@1.7.11(vue-demi@0.14.10(vue@2.7.16))(vue@2.7.16)':
     dependencies:
       vue: 2.7.16
-      vue-demi: 0.14.6(vue@2.7.16)
+      vue-demi: 0.14.10(vue@2.7.16)
 
-  '@vue-office/pdf@1.6.5(vue-demi@0.14.6(vue@2.7.16))(vue@2.7.16)':
+  '@vue-office/pdf@1.6.5(vue-demi@0.14.10(vue@2.7.16))(vue@2.7.16)':
     dependencies:
       vue: 2.7.16
-      vue-demi: 0.14.6(vue@2.7.16)
+      vue-demi: 0.14.10(vue@2.7.16)
 
   '@vue/babel-helper-vue-jsx-merge-props@1.4.0': {}
 
@@ -10446,7 +10377,8 @@ snapshots:
 
   async@3.2.3: {}
 
-  async@3.2.6: {}
+  async@3.2.6:
+    optional: true
 
   asynckit@0.4.0: {}
 
@@ -11782,10 +11714,6 @@ snapshots:
     dependencies:
       esutils: 2.0.3
 
-  docx-preview@0.3.3:
-    dependencies:
-      jszip: 3.10.1
-
   dom-converter@0.2.0:
     dependencies:
       utila: 0.4.0
@@ -11869,8 +11797,6 @@ snapshots:
 
   dotenv@16.4.5: {}
 
-  driver.js@1.4.0: {}
-
   duplexer@0.1.2: {}
 
   eastasianwidth@0.2.0: {}
@@ -11884,6 +11810,7 @@ snapshots:
   ejs@3.1.10:
     dependencies:
       jake: 10.9.2
+    optional: true
 
   electron-to-chromium@1.5.66: {}
 
@@ -12583,6 +12510,7 @@ snapshots:
   filelist@1.0.4:
     dependencies:
       minimatch: 5.1.6
+    optional: true
 
   fill-range@4.0.0:
     dependencies:
@@ -13064,8 +12992,6 @@ snapshots:
 
   ignore@5.3.2: {}
 
-  immediate@3.0.6: {}
-
   immutable@4.3.7: {}
 
   import-fresh@3.3.0:
@@ -13352,6 +13278,7 @@ snapshots:
       chalk: 4.1.2
       filelist: 1.0.4
       minimatch: 3.1.2
+    optional: true
 
   javascript-natural-sort@0.7.1: {}
 
@@ -13545,13 +13472,6 @@ snapshots:
       chalk: 2.4.2
       underscore: 1.13.7
 
-  jszip@3.10.1:
-    dependencies:
-      lie: 3.3.0
-      pako: 1.0.11
-      readable-stream: 2.3.8
-      setimmediate: 1.0.5
-
   jwt-decode@3.1.2: {}
 
   katex@0.13.24:
@@ -13593,10 +13513,6 @@ snapshots:
     dependencies:
       prelude-ls: 1.2.1
       type-check: 0.4.0
-
-  lie@3.3.0:
-    dependencies:
-      immediate: 3.0.6
 
   lilconfig@2.1.0: {}
 
@@ -13737,8 +13653,6 @@ snapshots:
   markdown-it-emoji@1.4.0: {}
 
   markdown-it-table-of-contents@0.4.4: {}
-
-  markdown-it-task-lists@2.1.1: {}
 
   markdown-it@12.3.2:
     dependencies:
@@ -13918,6 +13832,7 @@ snapshots:
   minimatch@5.1.6:
     dependencies:
       brace-expansion: 2.0.1
+    optional: true
 
   minimatch@9.0.5:
     dependencies:
@@ -15896,15 +15811,6 @@ snapshots:
     dependencies:
       '@popperjs/core': 2.11.8
 
-  tiptap-markdown@0.6.1(@tiptap/core@2.10.3(@tiptap/pm@2.10.3))(prosemirror-model@1.24.0):
-    dependencies:
-      '@tiptap/core': 2.10.3(@tiptap/pm@2.10.3)
-      '@types/markdown-it': 12.2.3
-      markdown-it: 12.3.2
-      markdown-it-task-lists: 2.1.1
-      prosemirror-markdown: 1.13.1
-      prosemirror-model: 1.24.0
-
   tmp@0.0.33:
     dependencies:
       os-tmpdir: 1.0.2
@@ -16219,10 +16125,6 @@ snapshots:
       vue: 2.7.16
 
   vue-demi@0.14.10(vue@2.7.16):
-    dependencies:
-      vue: 2.7.16
-
-  vue-demi@0.14.6(vue@2.7.16):
     dependencies:
       vue: 2.7.16
 

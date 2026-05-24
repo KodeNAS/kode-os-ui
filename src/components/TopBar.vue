@@ -556,7 +556,7 @@ export default {
             type="is-dark"
             @click.native="$messageBus('dashboardsetting')"
           >
-            <p role="button">
+            <p role="button" class="settings-trigger" data-tour="settings">
               <b-icon
                 :class="{ 'update-icon-dot': updateInfo.need_update }"
                 class="picon"
@@ -930,6 +930,14 @@ export default {
 </template>
 
 <style lang="scss">
+/* Tight inline-flex around the settings cog so the tour spotlight
+   (sized to the element rect) renders as a small circle, not a wide
+   oval. Matches the hint-trigger pattern in HintButton.vue. */
+.settings-trigger {
+	display: inline-flex;
+	align-items: center;
+}
+
 ._is-large {
 	// bulma 3rem;
 	//height: 2.5rem;
