@@ -29,6 +29,23 @@ export default [
 		}
 	},
 	{
+		// KODE OS v0.2.0-alpha+ — token-gated wizard entry point. The
+		// first-boot service mints a random token at boot, writes it to
+		// /.wizard-token (web-accessible), and shows the URL on the OLED
+		// + MOTD. Router guard validates the URL token matches the file
+		// before allowing the wizard to load. Maps to the same Welcome
+		// component as /welcome — only the entry guard differs.
+		path: '/wizard/:token',
+		name: 'WizardToken',
+		hidden: true,
+		component: () => import('@/views/Welcome.vue'),
+		meta: {
+			requireAuth: false,
+			showBackground: true,
+			wizardToken: true
+		}
+	},
+	{
 		path: '/',
 		name: 'Home',
 		hidden: true,
