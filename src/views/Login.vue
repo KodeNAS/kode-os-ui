@@ -81,11 +81,32 @@ export default {
 				if (versionRes.data.success == 200) {
 					localStorage.setItem("version", versionRes.data.data.current_version);
 				}
+
+				// Pull KODE-specific data from server-side custom storage into
+				// this origin's localStorage. localStorage is origin-scoped, so
+				// signing in for the first time on a new URL (e.g. switching
+				// from pebble.local to the LAN IP) would otherwise show no
+				// family members + force re-signup. Custom storage is shared
+				// across browsers + URLs because it lives on the pebble.
+				await this.hydrateFromCustomStorage();
+
 				this.$router.push("/");
 			} catch (err) {
 				this.message = this.$t(err.response.data.message)
 				this.notificationShow = true
 			}
+		},
+		async hydrateFromCustomStorage() {
+			const KEYS = ['kode_family_members', 'kode_user_roles']
+			await Promise.allSettled(KEYS.map(async (key) => {
+				try {
+					const res = await this.$api.users.getCustomStorage(key)
+					const value = res && res.data && res.data.data
+					if (value !== undefined && value !== null) {
+						localStorage.setItem(key, JSON.stringify(value))
+					}
+				} catch (e) { /* first run — server has no entry yet */ }
+			}))
 		}
 	}
 }
