@@ -685,6 +685,16 @@ export default {
               return Math.max(MIN_WEIGHT, Math.min(MAX_WEIGHT, n))
             })
           }
+        } else {
+          // No saved file at all (fresh install, post-reset, post-purge).
+          // Prefer the mode's authored defaults — Beginner default is
+          // [0.75, 1.75, 0.7] so the middle column hosts the hero apps.
+          // Falling back to all-1s here is what made the dashboard snap
+          // to even thirds on every refresh after a reset.
+          const defaults = defaultWeightsFor(this.mode)
+          if (Array.isArray(defaults) && defaults.length === count) {
+            return [...defaults]
+          }
         }
       } catch (e) { /* fall through */ }
       return Array(count).fill(1)
@@ -896,19 +906,17 @@ export default {
       })
     },
     resetLayoutToDefault() {
-      // Recovery hatch — clears the columns layout + weights + column-count
-      // state so the dashboard reverts to the Essential 1-style default.
-      // Keeps user-saved templates intact in case the user wants to
-      // re-apply one. Use when the layout state has drifted into a
-      // bad shape that won't render.
-      try {
-        localStorage.removeItem(keysFor(this.mode).layout)
-        localStorage.removeItem(keysFor(this.mode).weights)
-        localStorage.removeItem(keysFor(this.mode).colCount)
-      } catch (e) { /* ignore */ }
+      // Recovery hatch — reverts the dashboard to the mode's authored
+      // default layout + weights + column count. Persists the new state
+      // so a refresh doesn't snap back to all-1fr (the old version only
+      // cleared storage + updated in-memory state, so loadWeights saw an
+      // empty file and fell back to equal columns on next load).
       this.columnCount = 3
       this.columns = this.expandLayoutTo(defaultLayoutFor(this.mode), 3)
       this.colWeights = [...defaultWeightsFor(this.mode)]
+      this.saveLayout()
+      this.saveWeights()
+      try { localStorage.setItem(keysFor(this.mode).colCount, String(this.columnCount)) } catch (e) { /* ignore */ }
       this.$buefy.toast.open({
         message: this.$t('Layout reset to default.'),
         type: 'is-success',
