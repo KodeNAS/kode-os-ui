@@ -8,75 +8,87 @@ by IceWhale Technology Co., Ltd., licensed under
 [`LICENSE-CASAOS`](./LICENSE-CASAOS), [`NOTICE.md`](./NOTICE.md), and
 [`CHANGES.md`](./CHANGES.md) for license and modification details.
 
-The upstream CasaOS-UI development instructions follow.
+---
+
+## What this repo is
+
+This is the Vue 2 dashboard the buyer signs into after the wizard. It ships
+*inside* the [KODE OS image](https://github.com/KodeNAS/kode-os) — the image
+build clones this repo, runs `pnpm build`, and overlays the production
+artifacts onto `/var/lib/casaos/www/`.
+
+This repo is separate from `kode-os` so the UI can be iterated without
+re-flashing the OS. For ad-hoc UI fixes on a running pebble:
+`sudo kode-os update` on the pebble pulls + rebuilds everything in place.
+
+If you're a buyer looking for "how do I install KODE OS" — you're in the
+wrong repo. Head to [`KodeNAS/kode-os`](https://github.com/KodeNAS/kode-os)
+and download the latest image.
 
 ---
 
-[![Vulnerabilities](https://sonarcloud.io/api/project_badges/measure?project=IceWhaleTech_CasaOS-UI&metric=vulnerabilities)](https://sonarcloud.io/summary/new_code?id=IceWhaleTech_CasaOS-UI)
-[![Bugs](https://sonarcloud.io/api/project_badges/measure?project=IceWhaleTech_CasaOS-UI&metric=bugs)](https://sonarcloud.io/summary/new_code?id=IceWhaleTech_CasaOS-UI)
-[![Code Smells](https://sonarcloud.io/api/project_badges/measure?project=IceWhaleTech_CasaOS-UI&metric=code_smells)](https://sonarcloud.io/summary/new_code?id=IceWhaleTech_CasaOS-UI)
-[![Lines of Code](https://sonarcloud.io/api/project_badges/measure?project=IceWhaleTech_CasaOS-UI&metric=ncloc)](https://sonarcloud.io/summary/new_code?id=IceWhaleTech_CasaOS-UI)
-[![Duplicated Lines (%)](https://sonarcloud.io/api/project_badges/measure?project=IceWhaleTech_CasaOS-UI&metric=duplicated_lines_density)](https://sonarcloud.io/summary/new_code?id=IceWhaleTech_CasaOS-UI)
+## Local development
 
-# How to develop this project
+Prerequisites:
+- Node 18 (see [nvm](https://github.com/nvm-sh/nvm?tab=readme-ov-file#usage))
+- pnpm 9+ (see [pnpm installation](https://pnpm.io/installation))
+- A running pebble somewhere reachable on your network — the dev server
+  proxies API calls to it.
 
-## Prerequisites
-1. Node 18 ([installation instructions](https://github.com/nvm-sh/nvm?tab=readme-ov-file#usage))
-2. pnpm@9.0.6 ([installation instructions](https://pnpm.io/installation))
+### Environment variables
 
-## Environment variables
-If you want to connect dev UI version to your local CasaOS server, you will need to set up a couple of env variables:
-1. Copy `.env.dev` to `.env.dev.local` (this file is git-ignored)
-2. Set `VUE_APP_DEV_IP` to IP address of your local CasaOS server
+Point the dev UI at your pebble:
 
-## Set up dev server
-```shell
-# install dependencies
+1. Copy `.env.dev` to `.env.dev.local` (gitignored).
+2. Set `VUE_APP_DEV_IP` to the IP address of your local pebble.
+
+### Run the dev server
+
+```bash
 pnpm install
-
-# build
-pnpm dev 
+pnpm dev
 ```
 
-# How to build this project
+Vite will start on `http://localhost:8080` and proxy `/v1/...` / `/v2/...`
+API calls to `VUE_APP_DEV_IP`. Sign in with the admin account you created
+in your pebble's wizard.
 
-```shell
-# install dependencies
+---
+
+## Building for the pebble
+
+```bash
 pnpm install
-
-# build
-pnpm build 
+pnpm build
 ```
 
-# How to test this project
+Production artifacts land in `build/sysroot/var/lib/casaos/www/`. The
+KODE OS image build (in the `kode-os` repo, `image-build/build.sh`) does
+this natively on the host, then rsyncs the artifacts into the pi-gen
+stage — running the Vue build inside the chroot under qemu-user emulation
+takes ~30 min, native is ~80s.
 
-```shell
+You can also `pnpm build` then push the artifact to a running pebble via
+`scripts/deploy-to-pi.sh` (uses `PI_HOST=kode@pebble.local` by default).
+
+---
+
+## Testing
+
+```bash
 pnpm test
 ```
 
-# How to contribute to this project
+---
 
-CasaOS is a community-driven open source project and the people involved are CasaOS users. That means CasaOS will always
-need contributions from community members just like you!
+## Contributing
 
-- See <https://wiki.casaos.io/en/contribute> for ways of contribution to CasaOS
-- See <https://wiki.casaos.io/en/contribute/development> if you want to be involved in code contribution specificially
+Issues, bug reports, and pull requests welcome. See the
+[`kode-os` CONTRIBUTING guide](https://github.com/KodeNAS/kode-os/blob/main/CONTRIBUTING.md)
+— same contribution rules apply across the project.
 
-
-# How to contact this project
-
-The word Casa comes from the Spanish word for "home". Project CasaOS originated as a pre-installed system for
-crowdfunded product [ZimaBoard](https://www.zimaboard.com) on Kickstarter.
-
-After looking at many systems and software on the market, the team found no server system designed for home scenarios,
-sadly true.
-
-So, we set out to build this open source project to develop CasaOS with our own hands, everyone in the community, and
-you.
-
-We believes that through community-driven collaborative innovation and open communication with global developers, we can
-reshape the digital home experience like never before.
-
-**A warm welcome for you to get help or share great ideas in the [Discord](https://discord.gg/knqAbbBbeX)!**
-
-[![Discord Card](https://discordapp.com/api/guilds/884667213326463016/widget.png?style=banner2)](https://discord.gg/knqAbbBbeX)
+Some changes belong upstream in
+[CasaOS-UI](https://github.com/IceWhaleTech/CasaOS-UI) rather than here —
+we try to keep the diff against upstream small on purpose. If you're
+fixing a CasaOS bug rather than a KODE-specific feature, send the PR
+upstream first.
