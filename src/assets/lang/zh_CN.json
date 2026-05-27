@@ -147,7 +147,7 @@
   "the port mapping of the Host": "从主机到容器的端口映射",
   "optional configuration items": "其它可选配置",
   "These include but are not limited to these cases and <b>still need to be confirmed or modified by you.</b>": "请在单击确定后确认下一步的配置。",
-  "Feel free to suggest improvements to this feature in Discord Server!": "",
+  "Have feedback on this feature? Open an issue on GitHub.": "",
   "CATEGORY": "分类",
   "DEVELOPER": "开发者",
   "REQUIRE": "必须",

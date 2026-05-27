@@ -147,7 +147,7 @@
   "the port mapping of the Host": "ホストからコンテナへのポートマッピング",
   "optional configuration items": "その他のオプション設定",
   "These include but are not limited to these cases and <b>still need to be confirmed or modified by you.</b>": "OKをクリックした後、次のステップで設定を確認してください。",
-  "Feel free to suggest improvements to this feature in Discord Server!": "",
+  "Have feedback on this feature? Open an issue on GitHub.": "",
   "CATEGORY": "カテゴリ",
   "DEVELOPER": "開発者",
   "REQUIRE": "必要",

@@ -147,7 +147,7 @@
   "the port mapping of the Host": "Porttilordning fra vertsadresse til container",
   "optional configuration items": "Andre valgfrie konfigurasjoner",
   "These include but are not limited to these cases and <b>still need to be confirmed or modified by you.</b>": "Vennligst bekreft konfigurasjonen i neste trinn etter å ha klikket på OK.",
-  "Feel free to suggest improvements to this feature in Discord Server!": "",
+  "Have feedback on this feature? Open an issue on GitHub.": "",
   "CATEGORY": "KATEGORI",
   "DEVELOPER": "UTVIKLER",
   "REQUIRE": "PÅKREVD",
