@@ -14,7 +14,7 @@
 				<b-image :src="require('@/assets/img/smart/smart_icon.svg')" class="is-80x80"></b-image>
 			</div>
 			<div class="buttons is-flex is-flex-shrink-0 is-flex-direction-row-reverse">
-				<b-button class="mb-0" rounded size="is-small" type="is-primary" @click="goToDiscord">{{
+				<b-button class="mb-0" rounded size="is-small" type="is-primary" disabled>{{
 					$t('In development')
 					}}
 				</b-button>
@@ -25,23 +25,13 @@
 </template>
 
 <script>
+// KODE OS: was a "Shoot it on Discord!" button pointing at the
+// CasaOS upstream Discord. Removed per the v0.2.0-alpha cleanup —
+// we don't have a Discord yet and don't want to send users to the
+// upstream channel. Button is now `disabled` so the card still
+// communicates "in development" without offering a dead action.
 export default {
 	name: "smart-block",
-	methods: {
-		goToDiscord() {
-			this.$buefy.dialog.confirm({
-				title: ' ',
-				message: this.$t('Have an idea? Shoot it on Discord!'),
-				hasIcon: true,
-				icon: 'discord',
-				confirmText: this.$t('Go'),
-				cancelText: this.$t('Cancel'),
-				onConfirm: () => {
-					window.open('https://discord.gg/Gx4BCEtHjx', '_blank', 'noopener');
-				}
-			})
-		}
-	},
 }
 </script>
 
